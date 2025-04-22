@@ -1,181 +1,115 @@
 
-import { createContext, useContext, ReactNode, useState, useCallback, useEffect } from "react";
-import { User, AuthState } from "@/types/user";
+import { createContext, useContext, useEffect, useState } from "react";
+import { AuthService } from "@/services/auth-service";
+import { UserDTO } from "@/types/api";
+import { useToast } from "@/components/ui/use-toast";
 
-// API URL from environment or default
-const API_BASE_URL = "http://elcentre.runasp.net/";
-
-interface AuthContextType extends AuthState {
+type AuthContextType = {
+  user: UserDTO | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (userData: RegisterData) => Promise<void>;
+  register: (userData: any) => Promise<void>;
   logout: () => Promise<void>;
-  clearError: () => void;
-}
-
-interface RegisterData {
-  name: string;
-  email: string;
-  password: string;
-  gender?: string;
-  // Add other registration fields as needed
-}
-
-const initialState: AuthState = {
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
-  error: null,
+  updateProfile: (userData: UserDTO) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>(initialState);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<UserDTO | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Check for existing auth on mount
+  const fetchUser = async () => {
+    try {
+      const userData = await AuthService.getProfile();
+      setUser(userData);
+    } catch (error) {
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/auth/me`, {
-          method: "GET",
-          credentials: "include", // Important for cookies
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setState({
-            user: userData,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          });
-        } else {
-          setState({
-            ...initialState,
-            isLoading: false,
-          });
-        }
-      } catch (error) {
-        setState({
-          ...initialState,
-          isLoading: false,
-          error: "Failed to authenticate",
-        });
-      }
-    };
-
-    checkAuth();
+    fetchUser();
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
-    
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: "POST",
-        credentials: "include", // Important for cookies
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+      await AuthService.login({ email, password });
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
       });
-
-      if (response.ok) {
-        const userData = await response.json();
-        setState({
-          user: userData,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        });
-      } else {
-        const errorData = await response.json();
-        setState((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: errorData.message || "Invalid credentials",
-        }));
-      }
+      await fetchUser();
     } catch (error) {
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: "Login failed. Please try again.",
-      }));
+      setUser(null);
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  };
 
-  const register = useCallback(async (userData: RegisterData) => {
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
-    
+  const register = async (userData: any) => {
+    setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (response.ok) {
-        // Auto login after registration
-        login(userData.email, userData.password);
-      } else {
-        const errorData = await response.json();
-        setState((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: errorData.message || "Registration failed",
-        }));
-      }
-    } catch (error) {
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: "Registration failed. Please try again.",
-      }));
-    }
-  }, [login]);
-
-  const logout = useCallback(async () => {
-    setState((prev) => ({ ...prev, isLoading: true }));
-    
-    try {
-      await fetch(`${API_BASE_URL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-      
-      setState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null,
+      await AuthService.register(userData);
+      toast({
+        title: "Registration successful",
+        description: "Please check your email to activate your account.",
       });
     } catch (error) {
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: "Logout failed. Please try again.",
-      }));
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  };
 
-  const clearError = useCallback(() => {
-    setState((prev) => ({ ...prev, error: null }));
-  }, []);
+  const logout = async () => {
+    setIsLoading(true);
+    try {
+      await AuthService.logout();
+      setUser(null);
+      toast({
+        title: "Logged out",
+        description: "You have been logged out successfully.",
+      });
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateProfile = async (userData: UserDTO) => {
+    setIsLoading(true);
+    try {
+      await AuthService.updateProfile(userData);
+      setUser(userData);
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <AuthContext.Provider
       value={{
-        ...state,
+        user,
+        isAuthenticated: !!user,
+        isLoading,
         login,
         register,
         logout,
-        clearError,
+        updateProfile,
       }}
     >
       {children}
@@ -183,10 +117,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
-}
+};

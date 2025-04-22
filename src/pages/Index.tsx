@@ -6,141 +6,65 @@ import { FeaturedCourses } from "@/components/home/featured-courses";
 import { CategoryList } from "@/components/home/category-list";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-
-// Mock data for development
-const MOCK_FEATURED_COURSES = [
-  {
-    id: "course-1",
-    title: "Introduction to Web Development",
-    description: "Learn the fundamentals of web development, including HTML, CSS, and JavaScript.",
-    thumbnail: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=500&h=300&fit=crop",
-    rating: 4.7,
-    price: 49.99,
-    category: "Web Development",
-    instructor: {
-      id: "instructor-1",
-      name: "John Doe",
-    },
-    duration: "10 hours",
-  },
-  {
-    id: "course-2",
-    title: "Data Science Fundamentals",
-    description: "Master the basics of data science, statistics, and machine learning algorithms.",
-    thumbnail: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=500&h=300&fit=crop",
-    rating: 4.5,
-    price: 59.99,
-    category: "Data Science",
-    instructor: {
-      id: "instructor-2",
-      name: "Jane Smith",
-    },
-    duration: "12 hours",
-  },
-  {
-    id: "course-3",
-    title: "Digital Marketing Masterclass",
-    description: "Learn effective digital marketing strategies for businesses of all sizes.",
-    thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500&h=300&fit=crop",
-    rating: 4.8,
-    price: 0,
-    category: "Marketing",
-    instructor: {
-      id: "instructor-3",
-      name: "Sarah Johnson",
-    },
-    duration: "8 hours",
-  },
-  {
-    id: "course-4",
-    title: "Mobile App Development with React Native",
-    description: "Build cross-platform mobile apps using React Native and JavaScript.",
-    thumbnail: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=500&h=300&fit=crop",
-    rating: 4.6,
-    price: 69.99,
-    category: "Mobile Development",
-    instructor: {
-      id: "instructor-4",
-      name: "Michael Brown",
-    },
-    duration: "15 hours",
-  },
-];
-
-const MOCK_CATEGORIES = [
-  {
-    id: "category-1",
-    name: "Web Development",
-    slug: "web-development",
-    description: "Learn to build dynamic websites and web applications",
-    courseCount: 42,
-    icon: "book" as const,
-  },
-  {
-    id: "category-2",
-    name: "Data Science",
-    slug: "data-science",
-    description: "Master data analysis and machine learning",
-    courseCount: 35,
-    icon: "users" as const,
-  },
-  {
-    id: "category-3",
-    name: "Business",
-    slug: "business",
-    description: "Develop essential business and management skills",
-    courseCount: 28,
-    icon: "users" as const,
-  },
-  {
-    id: "category-4",
-    name: "Design",
-    slug: "design",
-    description: "Create stunning visual content and user interfaces",
-    courseCount: 24,
-    icon: "video" as const,
-  },
-  {
-    id: "category-5",
-    name: "Marketing",
-    slug: "marketing",
-    description: "Learn effective digital and traditional marketing strategies",
-    courseCount: 19,
-    icon: "book" as const,
-  },
-  {
-    id: "category-6",
-    name: "Personal Development",
-    slug: "personal-development",
-    description: "Improve your personal and professional skills",
-    courseCount: 31,
-    icon: "users" as const,
-  },
-];
+import { CourseService } from "@/services/course-service";
+import { CategoryService } from "@/services/category-service";
+import { Course, Category } from "@/types/api";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Index() {
-  // In a real app, we would fetch this data from the API
-  const [featuredCourses, setFeaturedCourses] = useState(MOCK_FEATURED_COURSES);
-  const [categories, setCategories] = useState(MOCK_CATEGORIES);
+  // Use React Query for data fetching
+  const { 
+    data: coursesData,
+    isLoading: isCoursesLoading,
+    error: coursesError
+  } = useQuery({
+    queryKey: ['featuredCourses'],
+    queryFn: async () => {
+      // Get first page of courses, sorted by rating (descending)
+      const result = await CourseService.getAllCourses(1, 4, "rating_desc");
+      return result.items;
+    }
+  });
 
-  // You would use useEffect to fetch real data here
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const coursesResponse = await fetch("http://elcentre.runasp.net/courses/featured");
-  //       const coursesData = await coursesResponse.json();
-  //       setFeaturedCourses(coursesData);
-  //
-  //       const categoriesResponse = await fetch("http://elcentre.runasp.net/categories");
-  //       const categoriesData = await categoriesResponse.json();
-  //       setCategories(categoriesData);
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     }
-  //   };
-  //   
-  //   fetchData();
-  // }, []);
+  const { 
+    data: categoriesData,
+    isLoading: isCategoriesLoading,
+    error: categoriesError
+  } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      return await CategoryService.getAllCategories();
+    }
+  });
+
+  // Prepare data for components
+  const categories = categoriesData || [];
+  const courses = coursesData || [];
+
+  // Map API response to match the format expected by components
+  const mappedCourses = courses.map((course: Course) => ({
+    id: course.id.toString(),
+    title: course.title,
+    description: course.description,
+    thumbnail: course.thumbnail,
+    rating: course.rating || 0,
+    price: course.price,
+    category: course.categoryName || "Uncategorized",
+    instructor: {
+      id: course.instructorId || "",
+      name: course.instructorName || "Unknown Instructor",
+    },
+    duration: `${course.durationInHours} hours`,
+  }));
+
+  const mappedCategories = categories.map((category: Category) => ({
+    id: `category-${category.id}`,
+    name: category.name,
+    slug: category.name.toLowerCase().replace(/\s+/g, '-'),
+    description: `Explore ${category.name} courses`,
+    courseCount: 0, // We don't have this info from the API
+    icon: "book" as const,
+  }));
 
   return (
     <MainLayout>
@@ -156,7 +80,18 @@ export default function Index() {
             <Link to="/courses">View All</Link>
           </Button>
         </div>
-        <FeaturedCourses courses={featuredCourses} />
+        
+        {isCoursesLoading ? (
+          <div className="flex justify-center py-12">
+            <p>Loading courses...</p>
+          </div>
+        ) : coursesError ? (
+          <div className="text-center py-8 text-red-500">
+            <p>Failed to load courses. Please try again later.</p>
+          </div>
+        ) : (
+          <FeaturedCourses courses={mappedCourses} />
+        )}
       </section>
       
       <section className="py-16 bg-muted/30">
@@ -167,7 +102,18 @@ export default function Index() {
               Discover courses in a variety of domains to enhance your skills and knowledge
             </p>
           </div>
-          <CategoryList categories={categories} />
+          
+          {isCategoriesLoading ? (
+            <div className="flex justify-center py-12">
+              <p>Loading categories...</p>
+            </div>
+          ) : categoriesError ? (
+            <div className="text-center py-8 text-red-500">
+              <p>Failed to load categories. Please try again later.</p>
+            </div>
+          ) : (
+            <CategoryList categories={mappedCategories} />
+          )}
         </div>
       </section>
       
