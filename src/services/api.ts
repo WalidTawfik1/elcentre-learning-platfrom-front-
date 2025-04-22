@@ -11,9 +11,10 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   
-  // Include credentials to manage cookies
+  // Include credentials to manage cookies and add CORS mode
   const defaultOptions: RequestInit = {
     credentials: "include",
+    mode: "cors",
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
@@ -21,6 +22,7 @@ export async function apiRequest<T>(
   };
 
   try {
+    console.log(`Making API request to: ${url}`);
     const response = await fetch(url, { ...defaultOptions, ...options });
     
     if (!response.ok) {
@@ -44,7 +46,7 @@ export async function apiRequest<T>(
     console.error("API request failed:", error);
     
     // Create a more user-friendly error message
-    let errorMessage = "Network error. Please check your connection.";
+    let errorMessage = "Network error. Please check your connection or the API server status.";
     if (error instanceof Error) {
       errorMessage = error.message;
       toast({
@@ -71,11 +73,13 @@ export async function apiFormRequest<T>(
   // Browser will set it automatically with boundary
   const defaultOptions: RequestInit = {
     credentials: "include",
+    mode: "cors",
     method: "POST",
     body: formData,
   };
 
   try {
+    console.log(`Making API form request to: ${url}`);
     const response = await fetch(url, { ...defaultOptions, ...options });
     
     if (!response.ok) {
@@ -93,7 +97,7 @@ export async function apiFormRequest<T>(
   } catch (error) {
     console.error("API form request failed:", error);
     
-    let errorMessage = "Network error. Please check your connection.";
+    let errorMessage = "Network error. Please check your connection or the API server status.";
     if (error instanceof Error) {
       errorMessage = error.message;
       toast({

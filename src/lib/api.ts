@@ -1,3 +1,4 @@
+
 // API Service for interacting with the backend
 
 // Base API URL - Update to HTTP (not HTTPS)
@@ -19,6 +20,7 @@ async function apiRequest<T>(
   const config: RequestInit = {
     method,
     headers,
+    mode: "cors", // Add CORS mode
     credentials: requiresAuth ? "include" : "omit", // Include cookies for auth
   };
 
@@ -27,6 +29,7 @@ async function apiRequest<T>(
   }
 
   try {
+    console.log(`Making API request to: ${url}`);
     const response = await fetch(url, config);
     
     if (!response.ok) {
