@@ -1,8 +1,8 @@
 
 // API Service for interacting with the backend
 
-// Base API URL
-const API_BASE_URL = "http://elcentre.runasp.net/";
+// Base API URL - Update to HTTPS 
+const API_BASE_URL = "https://elcentre.runasp.net/";
 
 // Helper function for making API requests
 async function apiRequest<T>(

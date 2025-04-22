@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { AuthService } from "@/services/auth-service";
 import { UserDTO } from "@/types/api";
@@ -57,7 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetchUser();
     } catch (error: any) {
       setUser(null);
-      setError(error.message || "Login failed");
+      const errorMessage = error.message || "Login failed. Please check your network connection.";
+      setError(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);
@@ -74,7 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Please check your email to activate your account.",
       });
     } catch (error: any) {
-      setError(error.message || "Registration failed");
+      const errorMessage = error.message || "Registration failed. Please check your network connection.";
+      setError(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);
@@ -92,6 +95,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error) {
       console.error("Logout failed:", error);
+      toast({
+        title: "Logout Failed",
+        description: "There was an issue logging you out. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -107,6 +115,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Your profile has been updated successfully.",
       });
     } catch (error) {
+      toast({
+        title: "Update Failed",
+        description: "There was an issue updating your profile. Please try again.",
+        variant: "destructive"
+      });
       throw error;
     } finally {
       setIsLoading(false);

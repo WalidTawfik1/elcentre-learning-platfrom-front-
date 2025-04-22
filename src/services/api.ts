@@ -1,7 +1,8 @@
 
 import { toast } from "@/components/ui/use-toast";
 
-const API_BASE_URL = "http://elcentre.runasp.net";
+// Updated API URL with HTTPS protocol
+const API_BASE_URL = "https://elcentre.runasp.net";
 
 // Generic request handler with error management
 export async function apiRequest<T>(
@@ -41,13 +42,19 @@ export async function apiRequest<T>(
     return await response.json();
   } catch (error) {
     console.error("API request failed:", error);
+    
+    // Create a more user-friendly error message
+    let errorMessage = "Network error. Please check your connection.";
     if (error instanceof Error) {
+      errorMessage = error.message;
       toast({
         title: "Request Failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }
+    
+    // For development, throw a more detailed error
     throw error;
   }
 }
@@ -85,13 +92,17 @@ export async function apiFormRequest<T>(
     return await response.json();
   } catch (error) {
     console.error("API form request failed:", error);
+    
+    let errorMessage = "Network error. Please check your connection.";
     if (error instanceof Error) {
+      errorMessage = error.message;
       toast({
         title: "Request Failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }
+    
     throw error;
   }
 }
