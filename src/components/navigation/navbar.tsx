@@ -1,0 +1,73 @@
+
+import { Button } from "@/components/ui/button"
+import { Search } from "lucide-react"
+import { Link } from "react-router-dom"
+import { useAuth } from "@/hooks/use-auth"
+import { UserNav } from "./user-nav"
+
+export function NavBar() {
+  const { user, isAuthenticated } = useAuth()
+
+  return (
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center">
+        <div className="mr-4 hidden md:flex">
+          <Link to="/" className="mr-6 flex items-center space-x-2">
+            <span className="hidden font-bold sm:inline-block text-eduBlue-500 text-xl">EduPath</span>
+          </Link>
+          <nav className="flex items-center space-x-6 text-sm font-medium">
+            <Link to="/courses" className="transition-colors hover:text-foreground/80">
+              Courses
+            </Link>
+            <Link to="/categories" className="transition-colors hover:text-foreground/80">
+              Categories
+            </Link>
+            <Link to="/instructors" className="transition-colors hover:text-foreground/80">
+              Instructors
+            </Link>
+            {isAuthenticated && user?.userType === "instructor" && (
+              <Link to="/instructor/dashboard" className="transition-colors hover:text-foreground/80">
+                Instructor Dashboard
+              </Link>
+            )}
+            {isAuthenticated && user?.userType === "admin" && (
+              <Link to="/admin/dashboard" className="transition-colors hover:text-foreground/80">
+                Admin Dashboard
+              </Link>
+            )}
+          </nav>
+        </div>
+
+        <div className="flex-1 md:hidden">
+          <Link to="/" className="flex items-center">
+            <span className="font-bold text-eduBlue-500 text-xl">EduPath</span>
+          </Link>
+        </div>
+
+        <div className="flex flex-1 items-center justify-end space-x-4">
+          <div className="w-full flex-1 md:w-auto md:flex-none">
+            <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
+              <Search className="h-4 w-4" />
+              <span className="sr-only">Search</span>
+            </Button>
+          </div>
+          
+          {isAuthenticated ? (
+            <UserNav />
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link to="/login">
+                <Button variant="ghost" size="sm">
+                  Log in
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button size="sm">Sign up</Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  )
+}

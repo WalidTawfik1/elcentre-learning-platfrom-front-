@@ -61,7 +61,29 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// EduPath custom colors
+                eduBlue: {
+                    50: '#E5F5F9',
+                    100: '#CCE9F2',
+                    200: '#99D3E5',
+                    300: '#66BDD8',
+                    400: '#33A7CB',
+                    500: '#0D7EA2', // Primary blue
+                    600: '#0A6582',
+                    700: '#084C61',
+                    800: '#053241',
+                    900: '#021920',
+                },
+                eduDark: {
+                    DEFAULT: '#2D3B45', // Dark blue-gray
+                    light: '#4A5A64',
+                },
+                eduAccent: {
+                    DEFAULT: '#E85F5C', // Coral
+                    secondary: '#F9C46B', // Amber
+                    tertiary: '#4CB69F', // Teal
+                }
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
