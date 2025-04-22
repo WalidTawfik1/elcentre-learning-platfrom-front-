@@ -7,9 +7,15 @@ export function HeroSection() {
     <section className="relative py-20 md:py-32 overflow-hidden bg-gradient-to-b from-eduBlue-50 to-transparent">
       <div className="container relative z-10">
         <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
+          <img
+            src="/lovable-uploads/9b447436-da1d-48da-a60f-33c2518e8e50.png"
+            alt="ElCentre Logo"
+            className="h-16 w-auto mb-3"
+            draggable={false}
+          />
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
             Discover Your Learning Path with{" "}
-            <span className="text-eduBlue-500">EduPath</span>
+            <span className="text-eduBlue-500">ElCentre</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl">
             Unlock your potential with our expert-led courses. Learn at your own pace 

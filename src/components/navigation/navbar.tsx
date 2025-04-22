@@ -13,7 +13,12 @@ export function NavBar() {
       <div className="container flex h-16 items-center">
         <div className="mr-4 hidden md:flex">
           <Link to="/" className="mr-6 flex items-center space-x-2">
-            <span className="hidden font-bold sm:inline-block text-eduBlue-500 text-xl">EduPath</span>
+            <img
+              src="/lovable-uploads/9b447436-da1d-48da-a60f-33c2518e8e50.png"
+              alt="ElCentre Logo"
+              className="h-10 w-auto"
+            />
+            <span className="hidden font-bold sm:inline-block text-eduBlue-500 text-xl">ElCentre</span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <Link to="/courses" className="transition-colors hover:text-foreground/80">
@@ -39,8 +44,13 @@ export function NavBar() {
         </div>
 
         <div className="flex-1 md:hidden">
-          <Link to="/" className="flex items-center">
-            <span className="font-bold text-eduBlue-500 text-xl">EduPath</span>
+          <Link to="/" className="flex items-center space-x-2">
+            <img
+              src="/lovable-uploads/9b447436-da1d-48da-a60f-33c2518e8e50.png"
+              alt="ElCentre Logo"
+              className="h-8 w-auto"
+            />
+            <span className="font-bold text-eduBlue-500 text-xl">ElCentre</span>
           </Link>
         </div>
 
