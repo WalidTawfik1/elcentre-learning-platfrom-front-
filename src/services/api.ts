@@ -1,8 +1,8 @@
 
 import { toast } from "@/components/ui/use-toast";
 
-// Updated API URL with HTTPS protocol
-const API_BASE_URL = "https://elcentre.runasp.net";
+// Updated API URL with HTTP protocol (not HTTPS)
+const API_BASE_URL = "http://elcentre.runasp.net";
 
 // Generic request handler with error management
 export async function apiRequest<T>(
