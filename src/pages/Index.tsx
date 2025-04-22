@@ -80,7 +80,7 @@ const mockCategories = [
     slug: "web-development",
     description: "Explore Web Development courses",
     courseCount: 24,
-    icon: "code" as const,
+    icon: "book" as const,
   },
   {
     id: "category-2",
@@ -88,7 +88,7 @@ const mockCategories = [
     slug: "data-science",
     description: "Explore Data Science courses",
     courseCount: 18,
-    icon: "bar-chart" as const,
+    icon: "video" as const,
   },
   {
     id: "category-3",
@@ -96,7 +96,7 @@ const mockCategories = [
     slug: "mobile-development",
     description: "Explore Mobile Development courses",
     courseCount: 12,
-    icon: "smartphone" as const,
+    icon: "users" as const,
   },
   {
     id: "category-4",
@@ -104,7 +104,7 @@ const mockCategories = [
     slug: "cloud-computing",
     description: "Explore Cloud Computing courses",
     courseCount: 15,
-    icon: "cloud" as const,
+    icon: "book" as const,
   },
 ];
 
@@ -174,7 +174,7 @@ export default function Index() {
     slug: category.name.toLowerCase().replace(/\s+/g, '-'),
     description: `Explore ${category.name} courses`,
     courseCount: 0, // We don't have this info from the API
-    icon: "book" as const,
+    icon: "book" as const, // Default to 'book' icon for all categories from API
   })) : mockCategories;
 
   return (
