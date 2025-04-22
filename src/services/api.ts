@@ -1,7 +1,7 @@
 
 import { toast } from "@/components/ui/use-toast";
 
-// Updated API URL with HTTP protocol (not HTTPS)
+// API URL with HTTP protocol
 const API_BASE_URL = "http://elcentre.runasp.net";
 
 // Generic request handler with error management
@@ -11,23 +11,32 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   
-  // Include credentials to manage cookies and add CORS mode
+  // Configure request options with proper CORS settings
   const defaultOptions: RequestInit = {
     credentials: "include",
     mode: "cors",
     headers: {
       "Content-Type": "application/json",
+      "Accept": "application/json",
       ...options.headers,
     },
   };
 
+  const mergedOptions = { ...defaultOptions, ...options };
+  
   try {
-    console.log(`Making API request to: ${url}`);
-    const response = await fetch(url, { ...defaultOptions, ...options });
+    console.log(`Making API request to: ${url}`, mergedOptions);
+    const response = await fetch(url, mergedOptions);
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.message || `Error: ${response.status} ${response.statusText}`;
+      let errorMessage;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || `Error: ${response.status} ${response.statusText}`;
+      } catch {
+        errorMessage = `Error: ${response.status} ${response.statusText}`;
+      }
+      
       toast({
         title: "API Error",
         description: errorMessage,
@@ -46,7 +55,7 @@ export async function apiRequest<T>(
     console.error("API request failed:", error);
     
     // Create a more user-friendly error message
-    let errorMessage = "Network error. Please check your connection or the API server status.";
+    let errorMessage = "Network error. Please check your connection or verify API server is accessible.";
     if (error instanceof Error) {
       errorMessage = error.message;
       toast({
@@ -56,7 +65,6 @@ export async function apiRequest<T>(
       });
     }
     
-    // For development, throw a more detailed error
     throw error;
   }
 }
@@ -83,8 +91,14 @@ export async function apiFormRequest<T>(
     const response = await fetch(url, { ...defaultOptions, ...options });
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.message || `Error: ${response.status} ${response.statusText}`;
+      let errorMessage;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || `Error: ${response.status} ${response.statusText}`;
+      } catch {
+        errorMessage = `Error: ${response.status} ${response.statusText}`;
+      }
+      
       toast({
         title: "API Error",
         description: errorMessage,
@@ -97,7 +111,7 @@ export async function apiFormRequest<T>(
   } catch (error) {
     console.error("API form request failed:", error);
     
-    let errorMessage = "Network error. Please check your connection or the API server status.";
+    let errorMessage = "Network error. Please check your connection or verify API server is accessible.";
     if (error instanceof Error) {
       errorMessage = error.message;
       toast({

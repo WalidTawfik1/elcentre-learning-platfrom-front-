@@ -1,8 +1,8 @@
 
 // API Service for interacting with the backend
 
-// Base API URL - Update to HTTP (not HTTPS)
-const API_BASE_URL = "http://elcentre.runasp.net/";
+// Base API URL - uses HTTP (not HTTPS)
+const API_BASE_URL = "http://elcentre.runasp.net";
 
 // Helper function for making API requests
 async function apiRequest<T>(
@@ -15,12 +15,13 @@ async function apiRequest<T>(
   
   const headers: HeadersInit = {
     "Content-Type": "application/json",
+    "Accept": "application/json",
   };
 
   const config: RequestInit = {
     method,
     headers,
-    mode: "cors", // Add CORS mode
+    mode: "cors",
     credentials: requiresAuth ? "include" : "omit", // Include cookies for auth
   };
 
@@ -29,7 +30,7 @@ async function apiRequest<T>(
   }
 
   try {
-    console.log(`Making API request to: ${url}`);
+    console.log(`Making API request to: ${url}`, { method, hasData: !!data });
     const response = await fetch(url, config);
     
     if (!response.ok) {
@@ -62,96 +63,96 @@ export const API = {
   // Courses
   courses: {
     getAll: (params?: { category?: string; search?: string; page?: number; limit?: number }) => 
-      apiRequest(`courses${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
+      apiRequest(`/Course/get-all-courses${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
     
     getFeatured: () => 
-      apiRequest("courses/featured"),
+      apiRequest("/Course/get-featured-courses"),
     
     getById: (id: string) => 
-      apiRequest(`courses/${id}`),
+      apiRequest(`/Course/get-course-by-id?courseId=${id}`),
     
     getModules: (courseId: string) => 
-      apiRequest(`courses/${courseId}/modules`),
+      apiRequest(`/Module/get-course-modules?courseId=${courseId}`),
     
     getLessons: (courseId: string, moduleId: string) => 
-      apiRequest(`courses/${courseId}/modules/${moduleId}/lessons`),
+      apiRequest(`/Lesson/get-module-lessons?moduleId=${moduleId}`),
     
     enroll: (courseId: string) => 
-      apiRequest(`enrollments`, "POST", { courseId }),
+      apiRequest(`/Enrollment/enroll-course`, "POST", { courseId }),
     
     getEnrollments: () => 
-      apiRequest("enrollments"),
+      apiRequest("/Enrollment/get-student-enrollments"),
     
     submitReview: (courseId: string, data: { rating: number; content: string }) => 
-      apiRequest(`courses/${courseId}/reviews`, "POST", data),
+      apiRequest(`/Review/add-review`, "POST", { courseId, ...data }),
   },
   
   // Categories
   categories: {
     getAll: () => 
-      apiRequest("categories"),
+      apiRequest("/Category/get-all-categories"),
     
     getBySlug: (slug: string) => 
-      apiRequest(`categories/${slug}`),
+      apiRequest(`/Category/get-category-by-slug?slug=${slug}`),
     
     getCourses: (slug: string, params?: { page?: number; limit?: number }) => 
-      apiRequest(`categories/${slug}/courses${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
+      apiRequest(`/Category/get-category-courses?slug=${slug}${params ? `&${new URLSearchParams(params as any).toString()}` : ""}`),
   },
   
   // User profile
   profile: {
     get: () => 
-      apiRequest("users/me"),
+      apiRequest("/Account/profile"),
     
     update: (data: { name?: string; avatar?: string }) => 
-      apiRequest("users/me", "PATCH", data),
+      apiRequest("/Account/edit-profile", "PUT", data),
     
     changePassword: (data: { currentPassword: string; newPassword: string }) => 
-      apiRequest("users/me/password", "PUT", data),
+      apiRequest("/Account/change-password", "PUT", data),
   },
   
   // Instructors
   instructors: {
     getAll: (params?: { page?: number; limit?: number }) => 
-      apiRequest(`instructors${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
+      apiRequest(`/Instructor/get-all-instructors${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
     
     getById: (id: string) => 
-      apiRequest(`instructors/${id}`),
+      apiRequest(`/Instructor/get-instructor-by-id?instructorId=${id}`),
     
     getCourses: (id: string, params?: { page?: number; limit?: number }) => 
-      apiRequest(`instructors/${id}/courses${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
+      apiRequest(`/Instructor/get-instructor-courses?instructorId=${id}${params ? `&${new URLSearchParams(params as any).toString()}` : ""}`),
   },
   
   // Admin functions
   admin: {
     getUsers: (params?: { page?: number; limit?: number; userType?: string }) => 
-      apiRequest(`admin/users${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
+      apiRequest(`/Admin/get-all-users${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
     
     updateUser: (userId: string, data: { name?: string; isActive?: boolean; userType?: string }) => 
-      apiRequest(`admin/users/${userId}`, "PATCH", data),
+      apiRequest(`/Admin/update-user`, "PUT", { userId, ...data }),
   },
   
   // Instructor dashboard
   instructor: {
     getCourses: (params?: { published?: boolean; page?: number; limit?: number }) => 
-      apiRequest(`instructor/courses${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
+      apiRequest(`/Instructor/get-my-courses${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
     
     createCourse: (data: { title: string; description: string; price: number; categoryId: string; thumbnail?: string }) => 
-      apiRequest("instructor/courses", "POST", data),
+      apiRequest("/Instructor/create-course", "POST", data),
     
     updateCourse: (courseId: string, data: { title?: string; description?: string; price?: number; categoryId?: string; thumbnail?: string; isPublished?: boolean }) => 
-      apiRequest(`instructor/courses/${courseId}`, "PATCH", data),
+      apiRequest("/Instructor/update-course", "PUT", { courseId, ...data }),
     
     createModule: (courseId: string, data: { title: string; orderIndex: number }) => 
-      apiRequest(`instructor/courses/${courseId}/modules`, "POST", data),
+      apiRequest("/Instructor/create-module", "POST", { courseId, ...data }),
     
     updateModule: (courseId: string, moduleId: string, data: { title?: string; orderIndex?: number }) => 
-      apiRequest(`instructor/courses/${courseId}/modules/${moduleId}`, "PATCH", data),
+      apiRequest("/Instructor/update-module", "PUT", { courseId, moduleId, ...data }),
     
     createLesson: (courseId: string, moduleId: string, data: { title: string; content: string; contentType: string; orderIndex: number; duration?: number }) => 
-      apiRequest(`instructor/courses/${courseId}/modules/${moduleId}/lessons`, "POST", data),
+      apiRequest("/Instructor/create-lesson", "POST", { courseId, moduleId, ...data }),
     
     updateLesson: (courseId: string, moduleId: string, lessonId: string, data: { title?: string; content?: string; contentType?: string; orderIndex?: number; duration?: number }) => 
-      apiRequest(`instructor/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}`, "PATCH", data),
+      apiRequest("/Instructor/update-lesson", "PUT", { courseId, moduleId, lessonId, ...data }),
   }
 };
