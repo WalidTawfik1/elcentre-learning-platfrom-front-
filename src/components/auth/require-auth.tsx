@@ -28,18 +28,23 @@ export function RequireAuth({ children, allowedRoles }: RequireAuthProps) {
   }
 
   // Check roles if specified
-  if (allowedRoles && user && !allowedRoles.includes(user.userType)) {
-    // Redirect based on role
-    if (user.userType === "student") {
-      return <Navigate to="/dashboard" replace />;
-    } else if (user.userType === "instructor") {
-      return <Navigate to="/instructor/dashboard" replace />;
-    } else if (user.userType === "admin") {
-      return <Navigate to="/admin/dashboard" replace />;
-    }
+  if (allowedRoles && user) {
+    // Convert userType to UserRole type to ensure compatibility
+    const userRole = user.userType as UserRole;
     
-    // Fallback
-    return <Navigate to="/" replace />;
+    if (!allowedRoles.includes(userRole)) {
+      // Redirect based on role
+      if (userRole === "student") {
+        return <Navigate to="/dashboard" replace />;
+      } else if (userRole === "instructor") {
+        return <Navigate to="/instructor/dashboard" replace />;
+      } else if (userRole === "admin") {
+        return <Navigate to="/admin/dashboard" replace />;
+      }
+      
+      // Fallback
+      return <Navigate to="/" replace />;
+    }
   }
 
   return <>{children}</>;

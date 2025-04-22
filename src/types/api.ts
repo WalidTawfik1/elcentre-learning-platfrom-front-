@@ -1,4 +1,3 @@
-
 // Auth related types
 export interface LoginDTO {
   email: string;
@@ -25,6 +24,8 @@ export interface UserDTO {
   gender: string;
   userType: string;
   dateOfBirth: string;
+  name?: string;
+  avatar?: string;
 }
 
 // Course related types

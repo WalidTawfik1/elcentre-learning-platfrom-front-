@@ -1,13 +1,14 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { AuthService } from "@/services/auth-service";
 import { UserDTO } from "@/types/api";
 import { useToast } from "@/components/ui/use-toast";
+import { UserRole } from "@/types/user";
 
 type AuthContextType = {
   user: UserDTO | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  error: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
   logout: () => Promise<void>;
@@ -19,14 +20,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserDTO | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchUser = async () => {
     try {
       const userData = await AuthService.getProfile();
-      setUser(userData);
+      const userWithComputedProps = {
+        ...userData,
+        name: `${userData.firstName} ${userData.lastName}`,
+        avatar: undefined
+      };
+      setUser(userWithComputedProps);
+      setError(null);
     } catch (error) {
       setUser(null);
+      setError("Failed to fetch user profile");
     } finally {
       setIsLoading(false);
     }
@@ -38,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
+    setError(null);
     try {
       await AuthService.login({ email, password });
       toast({
@@ -45,8 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Welcome back!",
       });
       await fetchUser();
-    } catch (error) {
+    } catch (error: any) {
       setUser(null);
+      setError(error.message || "Login failed");
       throw error;
     } finally {
       setIsLoading(false);
@@ -55,13 +66,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (userData: any) => {
     setIsLoading(true);
+    setError(null);
     try {
       await AuthService.register(userData);
       toast({
         title: "Registration successful",
         description: "Please check your email to activate your account.",
       });
-    } catch (error) {
+    } catch (error: any) {
+      setError(error.message || "Registration failed");
       throw error;
     } finally {
       setIsLoading(false);
@@ -106,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isAuthenticated: !!user,
         isLoading,
+        error,
         login,
         register,
         logout,
