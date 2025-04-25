@@ -1,4 +1,6 @@
 
+import { toast } from "@/components/ui/use-toast";
+
 // API URL with HTTP protocol
 const API_BASE_URL = "http://elcentre.runasp.net";
 
@@ -11,6 +13,7 @@ export async function apiRequest<T>(
   
   // Configure request options with proper CORS settings
   const defaultOptions: RequestInit = {
+    credentials: "include",
     mode: "cors",
     headers: {
       "Content-Type": "application/json",
@@ -35,6 +38,12 @@ export async function apiRequest<T>(
       }
       
       console.error("API Error:", errorMessage);
+      
+      toast({
+        title: "API Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
       throw new Error(errorMessage);
     }
     
@@ -55,6 +64,12 @@ export async function apiRequest<T>(
       errorMessage = error.message;
     }
     
+    toast({
+      title: "Request Failed",
+      description: errorMessage,
+      variant: "destructive",
+    });
+    
     throw error;
   }
 }
@@ -70,6 +85,7 @@ export async function apiFormRequest<T>(
   // Don't set Content-Type header for multipart/form-data
   // Browser will set it automatically with boundary
   const defaultOptions: RequestInit = {
+    credentials: "include",
     mode: "cors",
     method: "POST",
     body: formData,
@@ -88,6 +104,11 @@ export async function apiFormRequest<T>(
         errorMessage = `Error: ${response.status} ${response.statusText}`;
       }
       
+      toast({
+        title: "API Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
       throw new Error(errorMessage);
     }
     
@@ -99,6 +120,12 @@ export async function apiFormRequest<T>(
     if (error instanceof Error) {
       errorMessage = error.message;
     }
+    
+    toast({
+      title: "Request Failed",
+      description: errorMessage,
+      variant: "destructive",
+    });
     
     throw error;
   }

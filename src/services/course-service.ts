@@ -1,6 +1,8 @@
-
-import { apiRequest, apiFormRequest, API_BASE_URL } from "./api";
+import { apiRequest, apiFormRequest } from "./api";
 import { Course, PaginatedResponse, CourseModule, Lesson, CourseReview } from "@/types/api";
+
+// Base API URL
+const API_BASE_URL = "http://elcentre.runasp.net";
 
 export const CourseService = {
   getAllCourses: async (
@@ -77,11 +79,6 @@ export const CourseService = {
   
   // Get course thumbnail full URL
   getCourseThumbnailUrl: (thumbnailPath: string): string => {
-    // If the thumbnail is null or undefined, return placeholder
-    if (!thumbnailPath) {
-      return "/placeholder.svg";
-    }
-    
     // If the thumbnail is a full URL, return it as is
     if (thumbnailPath.startsWith('http')) {
       return thumbnailPath;
