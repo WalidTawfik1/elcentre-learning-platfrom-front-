@@ -51,22 +51,52 @@ async function apiRequest<T>(
       return {} as T;
     }
     
-    return await response.json();
+    const result = await response.json();
+    console.log("API response data:", result);
+    return result;
   } catch (error) {
     console.error("API request failed:", error);
     throw error;
   }
 }
 
+// Function to get full URL for course thumbnails
+export function getFullImageUrl(path: string): string {
+  if (!path) return "/placeholder.svg";
+  if (path.startsWith("http")) return path;
+  return `${API_BASE_URL}${path}`;
+}
+
 // API Functions
 export const API = {
   // Courses
   courses: {
-    getAll: (params?: { category?: string; search?: string; page?: number; limit?: number }) => 
-      apiRequest(`/Course/get-all-courses${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
+    getAll: async (params?: { category?: string; search?: string; page?: number; limit?: number }) => {
+      const queryString = params ? `?${new URLSearchParams(params as any).toString()}` : "";
+      const response = await apiRequest<any>(`/Course/get-all-courses${queryString}`);
+      
+      // Transform the response to match our expected format
+      return {
+        items: response.data || [],
+        totalCount: response.totalCount,
+        pageNumber: response.pageNumber,
+        pageSize: response.pageSize,
+        totalPages: Math.ceil(response.totalCount / response.pageSize)
+      };
+    },
     
-    getFeatured: () => 
-      apiRequest("/Course/get-featured-courses"),
+    getFeatured: async () => {
+      const response = await apiRequest<any>("/Course/get-all-courses?pagenum=1&pagesize=4");
+      
+      // Transform the response to match our expected format
+      return {
+        items: response.data || [],
+        totalCount: response.totalCount,
+        pageNumber: response.pageNumber,
+        pageSize: response.pageSize,
+        totalPages: Math.ceil(response.totalCount / response.pageSize)
+      };
+    },
     
     getById: (id: string) => 
       apiRequest(`/Course/get-course-by-id?courseId=${id}`),
@@ -156,3 +186,5 @@ export const API = {
       apiRequest("/Instructor/update-lesson", "PUT", { courseId, moduleId, lessonId, ...data }),
   }
 };
+
+export { API_BASE_URL };

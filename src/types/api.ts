@@ -1,3 +1,4 @@
+
 // Auth related types
 export interface LoginDTO {
   email: string;
@@ -48,6 +49,7 @@ export interface Course {
   instructorId?: string;
   instructorName?: string;
   enrollmentCount?: number;
+  createdAt?: string;
 }
 
 export interface CourseModule {
@@ -100,4 +102,12 @@ export interface PaginatedResponse<T> {
   pageNumber: number;
   pageSize: number;
   totalPages: number;
+}
+
+// API response for courses
+export interface CoursesApiResponse {
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  data: Course[];
 }
