@@ -6,9 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
-import { API } from "@/lib/api";
+import { CourseService } from "@/services/course-service";
+import { CategoryService } from "@/services/category-service";
+import { Course, Category } from "@/types/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { useQuery } from "@tanstack/react-query";
 
-// Mock data for development
+// Mock data for fallback when API is unavailable
 const MOCK_COURSES = [
   {
     id: "course-1",
@@ -110,60 +115,146 @@ const MOCK_CATEGORIES = [
 
 export default function CoursesIndex() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All Categories");
-  const [courses, setCourses] = useState(MOCK_COURSES);
-  const [filteredCourses, setFilteredCourses] = useState(MOCK_COURSES);
-  const [categories, setCategories] = useState(MOCK_CATEGORIES);
-  const [isLoading, setIsLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8; // Number of courses per page
 
-  // In a real app, we would fetch actual data from the API
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     setIsLoading(true);
-  //     try {
-  //       const [coursesData, categoriesData] = await Promise.all([
-  //         API.courses.getAll(),
-  //         API.categories.getAll()
-  //       ]);
-  //       
-  //       setCourses(coursesData);
-  //       setFilteredCourses(coursesData);
-  //       setCategories([{ id: "all", name: "All Categories" }, ...categoriesData]);
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-  //
-  //   fetchData();
-  // }, []);
+  // Use React Query for data fetching
+  const { 
+    data: coursesData,
+    isLoading: isCoursesLoading,
+    error: coursesError,
+    refetch: refetchCourses
+  } = useQuery({
+    queryKey: ['courses', currentPage, selectedCategory, searchTerm],
+    queryFn: async () => {
+      try {
+        const categoryId = selectedCategory ? parseInt(selectedCategory) : undefined;
+        return await CourseService.getAllCourses(
+          currentPage, 
+          pageSize, 
+          "rating_desc", 
+          categoryId,
+          searchTerm.length > 0 ? searchTerm : undefined
+        );
+      } catch (error) {
+        console.error("Failed to fetch courses:", error);
+        throw error;
+      }
+    }
+  });
 
-  // Filter courses when search term or category changes
-  useEffect(() => {
-    let filtered = courses;
-    
-    // Apply category filter
-    if (selectedCategory !== "All Categories") {
-      filtered = filtered.filter(course => course.category === selectedCategory);
+  const { 
+    data: categoriesData,
+    isLoading: isCategoriesLoading
+  } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      try {
+        return await CategoryService.getAllCategories();
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+        return [];
+      }
     }
-    
-    // Apply search filter
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        course => 
-          course.title.toLowerCase().includes(search) || 
-          course.description.toLowerCase().includes(search)
-      );
-    }
-    
-    setFilteredCourses(filtered);
-  }, [searchTerm, selectedCategory, courses]);
+  });
+
+  // Prepare courses data for display
+  const courses = coursesData?.items || [];
+  const totalPages = coursesData?.totalPages || 1;
+  
+  // Prepare categories for the select input
+  const categories = categoriesData?.length 
+    ? [{ id: 0, name: "All Categories" }, ...categoriesData]
+    : MOCK_CATEGORIES;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // The filtering is already handled by the useEffect
+    setCurrentPage(1); // Reset to first page on new search
+    refetchCourses();
+  };
+
+  // Function to generate pagination links
+  const generatePaginationLinks = () => {
+    const links = [];
+    const maxPagesToShow = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+    
+    // Adjust if we're near the end
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+    
+    // Add ellipsis at the beginning if needed
+    if (startPage > 1) {
+      links.push(
+        <PaginationItem key="start">
+          <PaginationLink onClick={() => setCurrentPage(1)} isActive={currentPage === 1}>
+            1
+          </PaginationLink>
+        </PaginationItem>
+      );
+      
+      if (startPage > 2) {
+        links.push(
+          <PaginationItem key="ellipsis-start">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+    }
+    
+    // Add page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      links.push(
+        <PaginationItem key={i}>
+          <PaginationLink onClick={() => setCurrentPage(i)} isActive={currentPage === i}>
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+    
+    // Add ellipsis at the end if needed
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        links.push(
+          <PaginationItem key="ellipsis-end">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+      
+      links.push(
+        <PaginationItem key="end">
+          <PaginationLink onClick={() => setCurrentPage(totalPages)} isActive={currentPage === totalPages}>
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+    
+    return links;
+  };
+
+  // Map API courses to the format expected by CourseCard
+  const mapApiCourseToCardFormat = (course: Course) => {
+    return {
+      id: course.id.toString(),
+      title: course.title,
+      description: course.description,
+      thumbnail: CourseService.getCourseThumbnailUrl(course.thumbnail),
+      rating: course.rating || 0,
+      price: course.price,
+      category: course.categoryName || "Uncategorized",
+      instructor: {
+        id: course.instructorId?.toString() || "",
+        name: course.instructorName || "Unknown Instructor",
+      },
+      duration: `${course.durationInHours} hours`,
+    };
   };
 
   return (
@@ -195,7 +286,7 @@ export default function CoursesIndex() {
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.name}>
+                  <SelectItem key={category.id} value={category.id.toString()}>
                     {category.name}
                   </SelectItem>
                 ))}
@@ -205,27 +296,56 @@ export default function CoursesIndex() {
           </form>
         </div>
 
-        {isLoading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        ) : filteredCourses.length > 0 ? (
+        {isCoursesLoading || isCategoriesLoading ? (
           <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {filteredCourses.map((course) => (
-              <CourseCard
-                key={course.id}
-                id={course.id}
-                title={course.title}
-                description={course.description}
-                thumbnail={course.thumbnail}
-                rating={course.rating}
-                price={course.price}
-                category={course.category}
-                instructor={course.instructor}
-                duration={course.duration}
-              />
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div key={i} className="rounded-lg overflow-hidden border">
+                <Skeleton className="h-48 w-full" />
+                <div className="p-4">
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-1/2 mb-4" />
+                  <Skeleton className="h-20 w-full mb-4" />
+                  <div className="flex justify-between">
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-8 w-24" />
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
+        ) : courses.length > 0 ? (
+          <>
+            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mb-8">
+              {courses.map((course) => (
+                <CourseCard
+                  key={course.id}
+                  {...mapApiCourseToCardFormat(course)}
+                />
+              ))}
+            </div>
+            
+            {totalPages > 1 && (
+              <Pagination className="mt-8">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                  
+                  {generatePaginationLinks()}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </>
         ) : (
           <div className="text-center py-20">
             <h3 className="text-xl font-medium mb-2">No courses found</h3>
@@ -236,7 +356,9 @@ export default function CoursesIndex() {
               variant="outline"
               onClick={() => {
                 setSearchTerm("");
-                setSelectedCategory("All Categories");
+                setSelectedCategory("");
+                setCurrentPage(1);
+                refetchCourses();
               }}
             >
               Clear filters

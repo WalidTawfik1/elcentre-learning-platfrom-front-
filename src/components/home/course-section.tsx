@@ -5,7 +5,6 @@ import { FeaturedCourses } from "@/components/home/featured-courses";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Course } from "@/types/api";
 import { CourseService } from "@/services/course-service";
-import { API_BASE_URL } from "@/services/api";
 
 interface CourseSectionProps {
   courses: any[];
@@ -17,18 +16,11 @@ interface CourseSectionProps {
 export function CourseSection({ courses, isLoading, error, mockCourses }: CourseSectionProps) {
   // Map API response to match the format expected by components
   const mappedCourses = courses?.length ? courses.map((course: Course) => {
-    let thumbnailUrl = course.thumbnail || "/placeholder.svg";
-    
-    // If the thumbnail path is relative, make it absolute
-    if (thumbnailUrl && !thumbnailUrl.startsWith('http') && !thumbnailUrl.startsWith('/placeholder')) {
-      thumbnailUrl = `${API_BASE_URL}${thumbnailUrl}`;
-    }
-    
     return {
       id: course.id.toString(),
       title: course.title,
       description: course.description,
-      thumbnail: thumbnailUrl,
+      thumbnail: CourseService.getCourseThumbnailUrl(course.thumbnail),
       rating: course.rating || 0,
       price: course.price,
       category: course.categoryName || "Uncategorized",
