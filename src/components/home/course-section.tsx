@@ -1,11 +1,10 @@
 
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { FeaturedCourses } from "@/components/home/featured-courses";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Course } from "@/types/api";
-import { CourseService } from "@/services/course-service";
-import { API_BASE_URL } from "@/services/api";
 
 interface CourseSectionProps {
   courses: any[];
@@ -16,29 +15,20 @@ interface CourseSectionProps {
 
 export function CourseSection({ courses, isLoading, error, mockCourses }: CourseSectionProps) {
   // Map API response to match the format expected by components
-  const mappedCourses = courses?.length ? courses.map((course: Course) => {
-    let thumbnailUrl = course.thumbnail || "/placeholder.svg";
-    
-    // If the thumbnail path is relative, make it absolute
-    if (thumbnailUrl && !thumbnailUrl.startsWith('http') && !thumbnailUrl.startsWith('/placeholder')) {
-      thumbnailUrl = `${API_BASE_URL}${thumbnailUrl}`;
-    }
-    
-    return {
-      id: course.id.toString(),
-      title: course.title,
-      description: course.description,
-      thumbnail: thumbnailUrl,
-      rating: course.rating || 0,
-      price: course.price,
-      category: course.categoryName || "Uncategorized",
-      instructor: {
-        id: course.instructorId?.toString() || "",
-        name: course.instructorName || "Unknown Instructor",
-      },
-      duration: `${course.durationInHours} hours`,
-    };
-  }) : mockCourses;
+  const mappedCourses = courses?.length ? courses.map((course: Course) => ({
+    id: course.id.toString(),
+    title: course.title,
+    description: course.description,
+    thumbnail: course.thumbnail || "/placeholder.svg",
+    rating: course.rating || 0,
+    price: course.price,
+    category: course.categoryName || "Uncategorized",
+    instructor: {
+      id: course.instructorId || "",
+      name: course.instructorName || "Unknown Instructor",
+    },
+    duration: `${course.durationInHours} hours`,
+  })) : mockCourses;
 
   return (
     <section className="py-16 container">
@@ -47,11 +37,7 @@ export function CourseSection({ courses, isLoading, error, mockCourses }: Course
           <h2 className="text-3xl font-bold">Featured Courses</h2>
           <p className="text-muted-foreground">Explore our most popular courses</p>
         </div>
-        <Button 
-          variant="outline" 
-          className="border-eduPurple-500 text-eduPurple-500 hover:bg-eduPurple-50" 
-          asChild
-        >
+        <Button variant="outline" className="border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50" asChild>
           <Link to="/courses">View All</Link>
         </Button>
       </div>

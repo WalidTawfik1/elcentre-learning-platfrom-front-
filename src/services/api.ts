@@ -37,8 +37,6 @@ export async function apiRequest<T>(
         errorMessage = `Error: ${response.status} ${response.statusText}`;
       }
       
-      console.error("API Error:", errorMessage);
-      
       toast({
         title: "API Error",
         description: errorMessage,
@@ -52,9 +50,7 @@ export async function apiRequest<T>(
       return {} as T;
     }
     
-    const result = await response.json();
-    console.log("API response:", result);
-    return result;
+    return await response.json();
   } catch (error) {
     console.error("API request failed:", error);
     
@@ -130,6 +126,3 @@ export async function apiFormRequest<T>(
     throw error;
   }
 }
-
-// Export the base URL so it can be used elsewhere
-export { API_BASE_URL };

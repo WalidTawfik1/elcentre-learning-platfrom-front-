@@ -63,27 +63,27 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// New purple color scheme
-                eduPurple: {
-                    50: '#F5F3FF',
-                    100: '#EDE9FE',
-                    200: '#DDD6FE',
-                    300: '#C4B5FD',
-                    400: '#A78BFA',
-                    500: '#8B5CF6', // Primary purple
-                    600: '#7C3AED',
-                    700: '#6D28D9',
-                    800: '#5B21B6',
-                    900: '#4C1D95',
+				// EduPath custom colors - updated to match the logo
+                eduBlue: {
+                    50: '#EBF7FB',
+                    100: '#D7EEF7',
+                    200: '#AFDEEF',
+                    300: '#87CDE7',
+                    400: '#5FBDDF',
+                    500: '#37ACE0', // Primary blue from logo
+                    600: '#2C8AB3',
+                    700: '#216786',
+                    800: '#16455A',
+                    900: '#0B222D',
                 },
                 eduDark: {
-                    DEFAULT: '#1A1F2C', // Dark purple
-                    light: '#2E3A59',
+                    DEFAULT: '#172B4D', // Dark blue from logo
+                    light: '#2E4A73',
                 },
                 eduAccent: {
-                    DEFAULT: '#D6BCFA', // Light purple accent
-                    secondary: '#9b87f5', // Secondary purple
-                    tertiary: '#7E69AB', // Tertiary purple
+                    DEFAULT: '#FF6B6B', // Red accent color
+                    secondary: '#FFC857', // Yellow accent
+                    tertiary: '#3ECF8E', // Green accent from logo
                 }
 			},
 			borderRadius: {

@@ -6,43 +6,43 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 261 41% 18%;  /* eduDark */
+    --foreground: 214 63% 20%;  /* eduDark */
 
     --card: 0 0% 100%;
-    --card-foreground: 261 41% 18%;  /* eduDark */
+    --card-foreground: 214 63% 20%;  /* eduDark */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 261 41% 18%;  /* eduDark */
+    --popover-foreground: 214 63% 20%;  /* eduDark */
 
-    --primary: 262 83% 58%;  /* eduPurple-500 */
+    --primary: 197 74% 55%;  /* eduBlue-500 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 262 83% 96%;  /* Light purple */
-    --secondary-foreground: 261 41% 18%;  /* eduDark */
+    --secondary: 195 13% 91%;  /* Light blue-gray */
+    --secondary-foreground: 214 63% 20%;  /* eduDark */
 
-    --muted: 262 45% 95%;  /* Very light purple */
-    --muted-foreground: 261 20% 45%;  /* Medium purple-gray */
+    --muted: 197 45% 95%;  /* Very light blue */
+    --muted-foreground: 214 20% 45%;  /* Medium blue-gray */
 
-    --accent: 261 85% 80%;  /* eduAccent light purple */
+    --accent: 0 100% 70%;  /* eduAccent red */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 262 15% 86%;
-    --input: 262 15% 86%;
-    --ring: 262 83% 58%;  /* eduPurple-500 */
+    --border: 197 15% 86%;
+    --input: 197 15% 86%;
+    --ring: 197 74% 55%;  /* eduBlue-500 */
 
     --radius: 0.5rem;
 
-    --sidebar-background: 261 41% 18%;  /* Dark purple from theme */
+    --sidebar-background: 214 63% 20%;  /* Dark blue from logo */
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 262 83% 58%;  /* eduPurple-500 */
+    --sidebar-primary: 197 74% 55%;  /* eduBlue-500 */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 261 41% 25%;  /* Slightly lighter eduDark */
+    --sidebar-accent: 214 63% 25%;  /* Slightly lighter eduDark */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 261 41% 25%;
-    --sidebar-ring: 262 83% 58%;  /* eduPurple-500 */
+    --sidebar-border: 214 63% 25%;
+    --sidebar-ring: 197 74% 55%;  /* eduBlue-500 */
   }
 
   .dark {
