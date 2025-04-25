@@ -10,136 +10,76 @@ import { Badge } from "@/components/ui/badge";
 import { StarIcon, Play, Clock, User, Book, Video, CheckCircle } from "lucide-react";
 import { API } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
-
-// Mock course data for development
-const MOCK_COURSE = {
-  id: "course-1",
-  title: "Introduction to Web Development",
-  description: "Learn the fundamentals of web development, including HTML, CSS, and JavaScript. This comprehensive course takes you from a beginner to building complete websites. You'll understand how the web works, create responsive layouts, add interactivity, and deploy your sites to the internet.",
-  thumbnail: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=500&fit=crop",
-  rating: 4.7,
-  reviewCount: 128,
-  price: 49.99,
-  category: "Web Development",
-  instructor: {
-    id: "instructor-1",
-    name: "John Doe",
-    avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-    bio: "Web development expert with 10+ years of experience. Former senior developer at Google and Meta.",
-    coursesCount: 12,
-    studentsCount: 10240,
-    rating: 4.8,
-  },
-  duration: "10 hours",
-  studentsCount: 2450,
-  lastUpdated: "2023-12-10",
-  modules: [
-    {
-      id: "module-1",
-      title: "Getting Started with HTML",
-      lessons: [
-        { id: "lesson-1-1", title: "Introduction to HTML", duration: "15 mins", contentType: "video" },
-        { id: "lesson-1-2", title: "HTML Document Structure", duration: "20 mins", contentType: "video" },
-        { id: "lesson-1-3", title: "HTML Elements and Attributes", duration: "25 mins", contentType: "video" },
-        { id: "lesson-1-4", title: "Practice: Your First HTML Page", duration: "15 mins", contentType: "article" },
-      ],
-    },
-    {
-      id: "module-2",
-      title: "Styling with CSS",
-      lessons: [
-        { id: "lesson-2-1", title: "Introduction to CSS", duration: "18 mins", contentType: "video" },
-        { id: "lesson-2-2", title: "CSS Selectors", duration: "22 mins", contentType: "video" },
-        { id: "lesson-2-3", title: "Box Model", duration: "20 mins", contentType: "video" },
-        { id: "lesson-2-4", title: "Flexbox Layout", duration: "30 mins", contentType: "video" },
-        { id: "lesson-2-5", title: "CSS Grid", duration: "28 mins", contentType: "video" },
-        { id: "lesson-2-6", title: "Practice: Styling Your HTML Page", duration: "20 mins", contentType: "article" },
-      ],
-    },
-    {
-      id: "module-3",
-      title: "JavaScript Fundamentals",
-      lessons: [
-        { id: "lesson-3-1", title: "Introduction to JavaScript", duration: "15 mins", contentType: "video" },
-        { id: "lesson-3-2", title: "Variables and Data Types", duration: "25 mins", contentType: "video" },
-        { id: "lesson-3-3", title: "Functions and Scope", duration: "30 mins", contentType: "video" },
-        { id: "lesson-3-4", title: "DOM Manipulation", duration: "35 mins", contentType: "video" },
-        { id: "lesson-3-5", title: "Events and Event Handling", duration: "25 mins", contentType: "video" },
-        { id: "lesson-3-6", title: "Practice: Adding Interactivity", duration: "25 mins", contentType: "article" },
-      ],
-    },
-  ],
-  requirements: [
-    "Basic computer skills",
-    "No prior programming experience needed",
-    "A computer with internet access",
-    "Text editor (recommended: VS Code, will be covered in the course)"
-  ],
-  whatYouWillLearn: [
-    "Build complete, responsive websites from scratch",
-    "Write clean, semantic HTML",
-    "Style websites using CSS and modern layout techniques",
-    "Add interactivity to websites with JavaScript",
-    "Understand web development best practices",
-    "Deploy websites to the internet"
-  ],
-  reviews: [
-    {
-      id: "review-1",
-      user: { id: "user-1", name: "Alice Smith", avatar: "https://randomuser.me/api/portraits/women/12.jpg" },
-      rating: 5,
-      content: "This course was exactly what I needed to start my web development journey. Very clear explanations and practical examples.",
-      createdAt: "2023-11-15",
-    },
-    {
-      id: "review-2",
-      user: { id: "user-2", name: "Bob Johnson", avatar: "https://randomuser.me/api/portraits/men/23.jpg" },
-      rating: 4,
-      content: "Great content overall. Some sections could use more examples, but I learned a lot and was able to build my first website.",
-      createdAt: "2023-10-22",
-    },
-    {
-      id: "review-3",
-      user: { id: "user-3", name: "Carol Williams", avatar: "https://randomuser.me/api/portraits/women/35.jpg" },
-      rating: 5,
-      content: "John is an excellent instructor! He explains complex concepts in a way that's easy to understand. Highly recommended!",
-      createdAt: "2023-09-18",
-    },
-  ],
-};
+import { toast } from "@/components/ui/use-toast";
 
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, user } = useAuth();
-  const [course, setCourse] = useState(MOCK_COURSE);
-  const [isLoading, setIsLoading] = useState(false);
+  const [course, setCourse] = useState<any>(null);
+  const [modules, setModules] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
-
-  // In a real app, we would fetch the course from the API
-  // useEffect(() => {
-  //   if (!id) return;
-  //   
-  //   const fetchCourse = async () => {
-  //     setIsLoading(true);
-  //     try {
-  //       const courseData = await API.courses.getById(id);
-  //       setCourse(courseData);
-  //       
-  //       // Check if user is enrolled
-  //       if (isAuthenticated) {
-  //         const enrollments = await API.courses.getEnrollments();
-  //         setIsEnrolled(enrollments.some(enrollment => enrollment.courseId === id));
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching course:", error);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-  //   
-  //   fetchCourse();
-  // }, [id, isAuthenticated]);
+  
+  useEffect(() => {
+    if (!id) return;
+    
+    const fetchCourse = async () => {
+      setIsLoading(true);
+      try {
+        const courseData = await API.courses.getById(id);
+        setCourse(courseData);
+        
+        // Get modules and lessons for this course
+        const modulesData = await API.courses.getModules(id);
+        
+        // If we have modules, fetch lessons for each module
+        if (modulesData && Array.isArray(modulesData)) {
+          const modulesWithLessons = await Promise.all(
+            modulesData.map(async (module) => {
+              try {
+                const lessons = await API.courses.getLessons(id, module.id.toString());
+                return {
+                  ...module,
+                  lessons: Array.isArray(lessons) ? lessons : []
+                };
+              } catch (error) {
+                console.error(`Error fetching lessons for module ${module.id}:`, error);
+                return { ...module, lessons: [] };
+              }
+            })
+          );
+          
+          setModules(modulesWithLessons);
+        }
+        
+        // Check if user is enrolled
+        if (isAuthenticated) {
+          try {
+            const enrollments = await API.courses.getEnrollments();
+            if (Array.isArray(enrollments)) {
+              setIsEnrolled(enrollments.some(enrollment => 
+                enrollment.courseId.toString() === id
+              ));
+            }
+          } catch (error) {
+            console.error("Error fetching enrollments:", error);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching course:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load course details. Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCourse();
+  }, [id, isAuthenticated]);
 
   const handleEnroll = async () => {
     if (!isAuthenticated) {
@@ -150,12 +90,19 @@ export default function CourseDetail() {
     
     setIsEnrolling(true);
     try {
-      // In a real app, we would call the API
-      // await API.courses.enroll(id);
-      console.log("Enrolling in course:", id);
+      await API.courses.enroll(id!);
       setIsEnrolled(true);
+      toast({
+        title: "Success!",
+        description: "You have successfully enrolled in this course.",
+      });
     } catch (error) {
       console.error("Error enrolling in course:", error);
+      toast({
+        title: "Enrollment Failed",
+        description: "There was a problem with your enrollment. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsEnrolling(false);
     }
@@ -163,16 +110,18 @@ export default function CourseDetail() {
 
   // Helper function to calculate total duration
   const calculateTotalDuration = () => {
+    if (!modules || modules.length === 0) return "0h 0m";
+    
     let totalMinutes = 0;
     
-    course.modules.forEach(module => {
-      module.lessons.forEach(lesson => {
-        // Extract just the number from durations like "15 mins"
-        const mins = parseInt(lesson.duration.split(" ")[0], 10);
-        if (!isNaN(mins)) {
-          totalMinutes += mins;
-        }
-      });
+    modules.forEach(module => {
+      if (module.lessons && Array.isArray(module.lessons)) {
+        module.lessons.forEach(lesson => {
+          if (lesson.durationInMinutes) {
+            totalMinutes += lesson.durationInMinutes;
+          }
+        });
+      }
     });
     
     const hours = Math.floor(totalMinutes / 60);
@@ -183,18 +132,47 @@ export default function CourseDetail() {
 
   // Helper function to count total lessons
   const getTotalLessons = () => {
-    return course.modules.reduce((total, module) => total + module.lessons.length, 0);
+    if (!modules || modules.length === 0) return 0;
+    return modules.reduce((total, module) => {
+      return total + (module.lessons ? module.lessons.length : 0);
+    }, 0);
   };
+
+  // Fallback for when the API fails to load data
+  const useFallbackData = !course;
 
   if (isLoading) {
     return (
       <MainLayout>
         <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-eduBlue-500"></div>
         </div>
       </MainLayout>
     );
   }
+
+  // Use fallback data if API call failed
+  const courseData = useFallbackData ? {
+    id: id,
+    title: "Course Not Found",
+    description: "We couldn't load this course's details. Please try again later.",
+    thumbnail: "/placeholder.svg",
+    rating: 0,
+    reviewCount: 0,
+    price: 0,
+    category: "Uncategorized",
+    instructor: {
+      id: "unknown",
+      name: "Unknown Instructor",
+      avatar: "",
+    },
+    durationInHours: 0,
+    studentsCount: 0,
+    lastUpdated: new Date().toISOString().split('T')[0],
+    requirements: ["No requirements available"],
+    whatYouWillLearn: ["Content not available"],
+    reviews: [],
+  } : course;
 
   return (
     <MainLayout>
@@ -203,29 +181,29 @@ export default function CourseDetail() {
         <div className="container py-8 md:py-12">
           <div className="flex flex-col md:flex-row gap-8">
             <div className="flex-1">
-              <Link to="/courses" className="text-sm text-primary mb-4 inline-block">
+              <Link to="/courses" className="text-sm text-eduBlue-500 mb-4 inline-block">
                 &larr; Back to Courses
               </Link>
               <div className="flex items-center gap-2 mb-3">
-                <Badge variant="outline" className="bg-primary/10 hover:bg-primary/20">
-                  {course.category}
+                <Badge variant="outline" className="bg-eduBlue-500/10 hover:bg-eduBlue-500/20">
+                  {courseData.categoryName || courseData.category || "Uncategorized"}
                 </Badge>
                 <div className="flex items-center text-sm text-muted-foreground">
                   <StarIcon className="h-4 w-4 text-yellow-400 fill-yellow-400 mr-1" />
-                  <span>{course.rating} ({course.reviewCount} reviews)</span>
+                  <span>{courseData.rating || 0} ({courseData.reviewCount || 0} reviews)</span>
                 </div>
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">{course.title}</h1>
-              <p className="text-lg text-muted-foreground mb-6">{course.description}</p>
+              <h1 className="text-3xl md:text-4xl font-bold mb-4">{courseData.title}</h1>
+              <p className="text-lg text-muted-foreground mb-6">{courseData.description}</p>
               
               <div className="flex items-center mb-6">
                 <Avatar className="h-12 w-12 mr-3">
-                  <AvatarImage src={course.instructor.avatar} />
-                  <AvatarFallback>{course.instructor.name.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={courseData.instructor?.avatar || ''} />
+                  <AvatarFallback>{courseData.instructorName?.charAt(0) || courseData.instructor?.name?.charAt(0) || '?'}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium">Created by {course.instructor.name}</p>
-                  <p className="text-sm text-muted-foreground">Last updated: {course.lastUpdated}</p>
+                  <p className="font-medium">Created by {courseData.instructorName || courseData.instructor?.name || "Unknown Instructor"}</p>
+                  <p className="text-sm text-muted-foreground">Last updated: {courseData.lastUpdated || new Date().toISOString().split('T')[0]}</p>
                 </div>
               </div>
               
@@ -240,28 +218,28 @@ export default function CourseDetail() {
                 </div>
                 <div className="flex items-center">
                   <User className="h-4 w-4 mr-1" />
-                  <span>{course.studentsCount.toLocaleString()} students</span>
+                  <span>{courseData.enrollmentCount?.toLocaleString() || courseData.studentsCount?.toLocaleString() || 0} students</span>
                 </div>
               </div>
               
               <div className="hidden md:block">
                 {isEnrolled ? (
                   <div className="flex gap-4">
-                    <Button asChild>
-                      <Link to={`/my-courses/${course.id}/learn`}>
+                    <Button asChild className="bg-eduBlue-500 hover:bg-eduBlue-600">
+                      <Link to={`/my-courses/${courseData.id}/learn`}>
                         Continue Learning
                       </Link>
                     </Button>
-                    <Button variant="outline">
+                    <Button variant="outline" className="border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50">
                       View Course Materials
                     </Button>
                   </div>
                 ) : (
                   <div className="flex gap-4">
-                    <Button onClick={handleEnroll} disabled={isEnrolling}>
-                      {isEnrolling ? "Enrolling..." : course.price === 0 ? "Enroll for Free" : `Enroll for $${course.price}`}
+                    <Button onClick={handleEnroll} disabled={isEnrolling} className="bg-eduBlue-500 hover:bg-eduBlue-600">
+                      {isEnrolling ? "Enrolling..." : courseData.price === 0 ? "Enroll for Free" : `Enroll for $${courseData.price}`}
                     </Button>
-                    <Button variant="outline">
+                    <Button variant="outline" className="border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50">
                       Add to Wishlist
                     </Button>
                   </div>
@@ -273,18 +251,18 @@ export default function CourseDetail() {
               <div className="rounded-lg border overflow-hidden bg-card">
                 <div className="aspect-video">
                   <img 
-                    src={course.thumbnail} 
-                    alt={course.title} 
+                    src={courseData.thumbnail || "/placeholder.svg"} 
+                    alt={courseData.title} 
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="p-6">
                   <div className="mb-4">
                     <p className="text-2xl font-bold mb-2">
-                      {course.price === 0 ? (
+                      {courseData.price === 0 ? (
                         <span className="text-eduAccent">Free</span>
                       ) : (
-                        <span>${course.price}</span>
+                        <span>${courseData.price}</span>
                       )}
                     </p>
                   </div>
@@ -308,7 +286,7 @@ export default function CourseDetail() {
                       <User className="h-5 w-5 text-muted-foreground shrink-0" />
                       <div>
                         <p className="font-medium">Students Enrolled</p>
-                        <p className="text-sm text-muted-foreground">{course.studentsCount.toLocaleString()} students</p>
+                        <p className="text-sm text-muted-foreground">{courseData.enrollmentCount?.toLocaleString() || courseData.studentsCount?.toLocaleString() || 0} students</p>
                       </div>
                     </div>
                   </div>
@@ -316,21 +294,21 @@ export default function CourseDetail() {
                   <div className="md:hidden mb-6">
                     {isEnrolled ? (
                       <div className="flex flex-col gap-2">
-                        <Button asChild className="w-full">
-                          <Link to={`/my-courses/${course.id}/learn`}>
+                        <Button asChild className="w-full bg-eduBlue-500 hover:bg-eduBlue-600">
+                          <Link to={`/my-courses/${courseData.id}/learn`}>
                             Continue Learning
                           </Link>
                         </Button>
-                        <Button variant="outline" className="w-full">
+                        <Button variant="outline" className="w-full border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50">
                           View Course Materials
                         </Button>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-2">
-                        <Button onClick={handleEnroll} disabled={isEnrolling} className="w-full">
-                          {isEnrolling ? "Enrolling..." : course.price === 0 ? "Enroll for Free" : `Enroll for $${course.price}`}
+                        <Button onClick={handleEnroll} disabled={isEnrolling} className="w-full bg-eduBlue-500 hover:bg-eduBlue-600">
+                          {isEnrolling ? "Enrolling..." : courseData.price === 0 ? "Enroll for Free" : `Enroll for $${courseData.price}`}
                         </Button>
-                        <Button variant="outline" className="w-full">
+                        <Button variant="outline" className="w-full border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50">
                           Add to Wishlist
                         </Button>
                       </div>
@@ -353,25 +331,25 @@ export default function CourseDetail() {
           <TabsList className="w-full justify-start border-b rounded-none mb-8 px-0 h-auto">
             <TabsTrigger 
               value="curriculum"
-              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary h-10"
+              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
             >
               Curriculum
             </TabsTrigger>
             <TabsTrigger 
               value="overview"
-              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary h-10"
+              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger 
               value="instructor"
-              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary h-10"
+              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
             >
               Instructor
             </TabsTrigger>
             <TabsTrigger 
               value="reviews"
-              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary h-10"
+              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
             >
               Reviews
             </TabsTrigger>
@@ -382,48 +360,58 @@ export default function CourseDetail() {
               <h2 className="text-2xl font-bold mb-6">Course Curriculum</h2>
               
               <div className="text-sm text-muted-foreground flex items-center justify-between mb-6">
-                <span>{course.modules.length} modules • {getTotalLessons()} lessons • {calculateTotalDuration()} total length</span>
+                <span>{modules.length} modules • {getTotalLessons()} lessons • {calculateTotalDuration()} total length</span>
               </div>
               
-              <Accordion type="single" collapsible className="w-full">
-                {course.modules.map((module, moduleIndex) => (
-                  <AccordionItem key={module.id} value={module.id}>
-                    <AccordionTrigger className="hover:no-underline">
-                      <div className="flex items-center text-left">
-                        <span className="mr-2 font-bold">{moduleIndex + 1}.</span>
-                        <span className="font-medium">{module.title}</span>
-                      </div>
-                      <div className="flex items-center space-x-2 ml-4 text-sm text-muted-foreground">
-                        <span>{module.lessons.length} lessons</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <ul className="space-y-1 pl-6">
-                        {module.lessons.map((lesson, lessonIndex) => (
-                          <li key={lesson.id} className="py-3 border-b last:border-0">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                {lesson.contentType === "video" ? (
-                                  <Play className="h-4 w-4 mr-2 text-muted-foreground" />
-                                ) : (
-                                  <Book className="h-4 w-4 mr-2 text-muted-foreground" />
-                                )}
-                                <span>
-                                  <span className="font-medium">{moduleIndex + 1}.{lessonIndex + 1}</span>
-                                  <span className="ml-2">{lesson.title}</span>
-                                </span>
-                              </div>
-                              <div className="flex items-center text-sm text-muted-foreground">
-                                <span>{lesson.duration}</span>
-                              </div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+              {modules.length > 0 ? (
+                <Accordion type="single" collapsible className="w-full">
+                  {modules.map((module, moduleIndex) => (
+                    <AccordionItem key={module.id} value={module.id.toString()}>
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex items-center text-left">
+                          <span className="mr-2 font-bold">{moduleIndex + 1}.</span>
+                          <span className="font-medium">{module.title}</span>
+                        </div>
+                        <div className="flex items-center space-x-2 ml-4 text-sm text-muted-foreground">
+                          <span>{module.lessons?.length || 0} lessons</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        {module.lessons && module.lessons.length > 0 ? (
+                          <ul className="space-y-1 pl-6">
+                            {module.lessons.map((lesson: any, lessonIndex: number) => (
+                              <li key={lesson.id} className="py-3 border-b last:border-0">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    {lesson.contentType === "video" ? (
+                                      <Play className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    ) : (
+                                      <Book className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    )}
+                                    <span>
+                                      <span className="font-medium">{moduleIndex + 1}.{lessonIndex + 1}</span>
+                                      <span className="ml-2">{lesson.title}</span>
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center text-sm text-muted-foreground">
+                                    <span>{lesson.durationInMinutes} min</span>
+                                  </div>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="pl-6 text-muted-foreground">No lessons available in this module.</p>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              ) : (
+                <div className="text-center py-6 border rounded-lg">
+                  <p className="text-muted-foreground">No curriculum available for this course yet.</p>
+                </div>
+              )}
             </div>
           </TabsContent>
           
@@ -431,68 +419,82 @@ export default function CourseDetail() {
             <div className="max-w-3xl">
               <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">What You'll Learn</h2>
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {course.whatYouWillLearn.map((item, index) => (
-                    <li key={index} className="flex items-start">
-                      <CheckCircle className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                {courseData.whatYouWillLearn && Array.isArray(courseData.whatYouWillLearn) && courseData.whatYouWillLearn.length > 0 ? (
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {courseData.whatYouWillLearn.map((item: string, index: number) => (
+                      <li key={index} className="flex items-start">
+                        <CheckCircle className="h-5 w-5 mr-2 text-eduBlue-500 shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted-foreground">No learning outcomes have been specified for this course yet.</p>
+                )}
               </div>
               
               <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Requirements</h2>
-                <ul className="space-y-2">
-                  {course.requirements.map((requirement, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="mr-2">•</span>
-                      <span>{requirement}</span>
-                    </li>
-                  ))}
-                </ul>
+                {courseData.requirements && Array.isArray(courseData.requirements) && courseData.requirements.length > 0 ? (
+                  <ul className="space-y-2">
+                    {courseData.requirements.map((requirement: string, index: number) => (
+                      <li key={index} className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>{requirement}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted-foreground">No specific requirements for this course.</p>
+                )}
               </div>
             </div>
           </TabsContent>
           
           <TabsContent value="instructor">
             <div className="max-w-3xl">
-              <div className="flex items-start gap-4 mb-6">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage src={course.instructor.avatar} />
-                  <AvatarFallback>{course.instructor.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <h2 className="text-2xl font-bold">{course.instructor.name}</h2>
-                  <p className="text-muted-foreground">{course.instructor.bio}</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div className="flex flex-col items-center p-4 border rounded-lg">
-                  <StarIcon className="h-8 w-8 text-yellow-400 fill-yellow-400 mb-2" />
-                  <p className="text-2xl font-bold">{course.instructor.rating}</p>
-                  <p className="text-sm text-muted-foreground">Instructor Rating</p>
-                </div>
-                <div className="flex flex-col items-center p-4 border rounded-lg">
-                  <Book className="h-8 w-8 text-primary mb-2" />
-                  <p className="text-2xl font-bold">{course.instructor.coursesCount}</p>
-                  <p className="text-sm text-muted-foreground">Courses</p>
-                </div>
-                <div className="flex flex-col items-center p-4 border rounded-lg">
-                  <User className="h-8 w-8 text-primary mb-2" />
-                  <p className="text-2xl font-bold">{course.instructor.studentsCount.toLocaleString()}</p>
-                  <p className="text-sm text-muted-foreground">Students</p>
-                </div>
-              </div>
-              
-              <div>
-                <Button variant="outline" asChild>
-                  <Link to={`/instructors/${course.instructor.id}`}>
-                    View All Courses by {course.instructor.name}
-                  </Link>
-                </Button>
-              </div>
+              {courseData.instructor ? (
+                <>
+                  <div className="flex items-start gap-4 mb-6">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage src={courseData.instructor.avatar || ''} />
+                      <AvatarFallback>{courseData.instructorName?.charAt(0) || courseData.instructor?.name?.charAt(0) || '?'}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h2 className="text-2xl font-bold">{courseData.instructorName || courseData.instructor.name}</h2>
+                      <p className="text-muted-foreground">{courseData.instructor.bio || "No instructor biography available."}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div className="flex flex-col items-center p-4 border rounded-lg">
+                      <StarIcon className="h-8 w-8 text-yellow-400 fill-yellow-400 mb-2" />
+                      <p className="text-2xl font-bold">{courseData.instructor.rating || "N/A"}</p>
+                      <p className="text-sm text-muted-foreground">Instructor Rating</p>
+                    </div>
+                    <div className="flex flex-col items-center p-4 border rounded-lg">
+                      <Book className="h-8 w-8 text-eduBlue-500 mb-2" />
+                      <p className="text-2xl font-bold">{courseData.instructor.coursesCount || "N/A"}</p>
+                      <p className="text-sm text-muted-foreground">Courses</p>
+                    </div>
+                    <div className="flex flex-col items-center p-4 border rounded-lg">
+                      <User className="h-8 w-8 text-eduBlue-500 mb-2" />
+                      <p className="text-2xl font-bold">{courseData.instructor.studentsCount?.toLocaleString() || "N/A"}</p>
+                      <p className="text-sm text-muted-foreground">Students</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Button variant="outline" asChild className="border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50">
+                      <Link to={`/instructors/${courseData.instructorId || courseData.instructor.id}`}>
+                        View All Courses by {courseData.instructorName || courseData.instructor.name}
+                      </Link>
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-muted-foreground">Instructor information not available.</p>
+              )}
             </div>
           </TabsContent>
           
@@ -501,21 +503,21 @@ export default function CourseDetail() {
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-bold">Student Reviews</h2>
                 {isAuthenticated && isEnrolled && (
-                  <Button>Write a Review</Button>
+                  <Button className="bg-eduBlue-500 hover:bg-eduBlue-600">Write a Review</Button>
                 )}
               </div>
               
               <div className="flex items-center mb-8">
                 <div className="text-center mr-8">
-                  <p className="text-5xl font-bold">{course.rating}</p>
+                  <p className="text-5xl font-bold">{courseData.rating || 0}</p>
                   <div className="flex items-center justify-center my-2">
                     {[...Array(5)].map((_, i) => (
                       <StarIcon
                         key={i}
                         className={`h-5 w-5 ${
-                          i < Math.floor(course.rating) 
+                          i < Math.floor(courseData.rating || 0) 
                             ? "text-yellow-400 fill-yellow-400" 
-                            : i < course.rating 
+                            : i < (courseData.rating || 0) 
                               ? "text-yellow-400 fill-yellow-400 opacity-50" 
                               : "text-gray-300"
                         }`}
@@ -531,33 +533,39 @@ export default function CourseDetail() {
               </div>
               
               <div className="space-y-6">
-                {course.reviews.map((review) => (
-                  <div key={review.id} className="border-b pb-6 last:border-0">
-                    <div className="flex items-start">
-                      <Avatar className="h-10 w-10 mr-3">
-                        <AvatarImage src={review.user.avatar} />
-                        <AvatarFallback>{review.user.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium">{review.user.name}</h4>
-                          <span className="text-sm text-muted-foreground">{review.createdAt}</span>
+                {courseData.reviews && Array.isArray(courseData.reviews) && courseData.reviews.length > 0 ? (
+                  courseData.reviews.map((review: any) => (
+                    <div key={review.id} className="border-b pb-6 last:border-0">
+                      <div className="flex items-start">
+                        <Avatar className="h-10 w-10 mr-3">
+                          <AvatarImage src={review.user?.avatar || ''} />
+                          <AvatarFallback>{review.userName?.charAt(0) || review.user?.name?.charAt(0) || '?'}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">{review.userName || review.user?.name}</h4>
+                            <span className="text-sm text-muted-foreground">{review.createdAt ? new Date(review.createdAt).toLocaleDateString() : ""}</span>
+                          </div>
+                          <div className="flex items-center my-1">
+                            {[...Array(5)].map((_, i) => (
+                              <StarIcon
+                                key={i}
+                                className={`h-4 w-4 ${
+                                  i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <p className="text-muted-foreground mt-2">{review.reviewContent || review.content}</p>
                         </div>
-                        <div className="flex items-center my-1">
-                          {[...Array(5)].map((_, i) => (
-                            <StarIcon
-                              key={i}
-                              className={`h-4 w-4 ${
-                                i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <p className="text-muted-foreground mt-2">{review.content}</p>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6 border rounded-lg">
+                    <p className="text-muted-foreground">No reviews yet. Be the first to review this course!</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </TabsContent>
