@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,43 +6,43 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 210 29% 22%;  /* eduDark */
+    --foreground: 214 63% 20%;  /* eduDark */
 
     --card: 0 0% 100%;
-    --card-foreground: 210 29% 22%;  /* eduDark */
+    --card-foreground: 214 63% 20%;  /* eduDark */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 29% 22%;  /* eduDark */
+    --popover-foreground: 214 63% 20%;  /* eduDark */
 
-    --primary: 195 84% 34%;  /* eduBlue-500 */
+    --primary: 197 74% 55%;  /* eduBlue-500 */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 195 13% 91%;  /* Light blue-gray */
-    --secondary-foreground: 210 29% 22%;  /* eduDark */
+    --secondary-foreground: 214 63% 20%;  /* eduDark */
 
-    --muted: 195 45% 95%;  /* Very light blue */
-    --muted-foreground: 210 10% 45%;  /* Medium blue-gray */
+    --muted: 197 45% 95%;  /* Very light blue */
+    --muted-foreground: 214 20% 45%;  /* Medium blue-gray */
 
-    --accent: 2 82% 63%;  /* eduAccent coral */
+    --accent: 0 100% 70%;  /* eduAccent red */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 195 15% 86%;
-    --input: 195 15% 86%;
-    --ring: 195 84% 34%;  /* eduBlue-500 */
+    --border: 197 15% 86%;
+    --input: 197 15% 86%;
+    --ring: 197 74% 55%;  /* eduBlue-500 */
 
     --radius: 0.5rem;
 
-    --sidebar-background: 195 84% 10%;  /* Dark blue */
+    --sidebar-background: 214 63% 20%;  /* Dark blue from logo */
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 195 84% 34%;  /* eduBlue-500 */
+    --sidebar-primary: 197 74% 55%;  /* eduBlue-500 */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 195 84% 15%;  /* Dark blue, slightly lighter */
+    --sidebar-accent: 214 63% 25%;  /* Slightly lighter eduDark */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 195 84% 15%;
-    --sidebar-ring: 195 84% 34%;  /* eduBlue-500 */
+    --sidebar-border: 214 63% 25%;
+    --sidebar-ring: 197 74% 55%;  /* eduBlue-500 */
   }
 
   .dark {

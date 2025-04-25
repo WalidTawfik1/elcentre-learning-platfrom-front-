@@ -22,10 +22,10 @@ export function HeroSection() {
             and achieve your goals with structured learning paths.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button size="lg" asChild>
+            <Button size="lg" className="bg-eduBlue-500 hover:bg-eduBlue-600" asChild>
               <Link to="/courses">Browse Courses</Link>
             </Button>
-            <Button size="lg" variant="outline" asChild>
+            <Button size="lg" variant="outline" className="border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50" asChild>
               <Link to="/register">Join for Free</Link>
             </Button>
           </div>

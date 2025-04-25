@@ -63,27 +63,27 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// EduPath custom colors
+				// EduPath custom colors - updated to match the logo
                 eduBlue: {
-                    50: '#E5F5F9',
-                    100: '#CCE9F2',
-                    200: '#99D3E5',
-                    300: '#66BDD8',
-                    400: '#33A7CB',
-                    500: '#0D7EA2', // Primary blue
-                    600: '#0A6582',
-                    700: '#084C61',
-                    800: '#053241',
-                    900: '#021920',
+                    50: '#EBF7FB',
+                    100: '#D7EEF7',
+                    200: '#AFDEEF',
+                    300: '#87CDE7',
+                    400: '#5FBDDF',
+                    500: '#37ACE0', // Primary blue from logo
+                    600: '#2C8AB3',
+                    700: '#216786',
+                    800: '#16455A',
+                    900: '#0B222D',
                 },
                 eduDark: {
-                    DEFAULT: '#2D3B45', // Dark blue-gray
-                    light: '#4A5A64',
+                    DEFAULT: '#172B4D', // Dark blue from logo
+                    light: '#2E4A73',
                 },
                 eduAccent: {
-                    DEFAULT: '#E85F5C', // Coral
-                    secondary: '#F9C46B', // Amber
-                    tertiary: '#4CB69F', // Teal
+                    DEFAULT: '#FF6B6B', // Red accent color
+                    secondary: '#FFC857', // Yellow accent
+                    tertiary: '#3ECF8E', // Green accent from logo
                 }
 			},
 			borderRadius: {

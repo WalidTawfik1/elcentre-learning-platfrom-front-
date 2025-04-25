@@ -1,7 +1,7 @@
 
 import { toast } from "@/components/ui/use-toast";
 
-// API URL with HTTP protocol (not HTTPS)
+// API URL with HTTP protocol
 const API_BASE_URL = "http://elcentre.runasp.net";
 
 // Generic request handler with improved error management

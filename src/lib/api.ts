@@ -1,7 +1,7 @@
 
 // API Service for interacting with the backend
 
-// Base API URL - uses HTTP (not HTTPS)
+// Base API URL
 const API_BASE_URL = "http://elcentre.runasp.net";
 
 // Helper function for making API requests
