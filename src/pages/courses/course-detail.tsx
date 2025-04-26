@@ -6,14 +6,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { StarIcon, Play, Clock, User, Book, Video, CheckCircle } from "lucide-react";
+import { StarIcon, Play, Clock, User, Book, Video, CheckCircle, Edit, Trash2 } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { CourseReview } from "@/types/api";
+
+// Define the review form schema
+const reviewFormSchema = z.object({
+  rating: z.number().min(1, "Please select a rating").max(5),
+  reviewContent: z.string().min(3, "Review content is required").max(1000, "Review cannot exceed 1000 characters"),
+});
+
+type ReviewFormValues = z.infer<typeof reviewFormSchema>;
 
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [course, setCourse] = useState<any>(null);
   const [modules, setModules] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,7 +38,169 @@ export default function CourseDetail() {
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [enrollmentCount, setEnrollmentCount] = useState<number>(0);
   const [reviewCount, setReviewCount] = useState<number>(0);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [currentReview, setCurrentReview] = useState<CourseReview | null>(null);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [userReview, setUserReview] = useState<CourseReview | null>(null);
+  const [selectedRating, setSelectedRating] = useState<number>(0);
   
+  // Form handling for reviews
+  const form = useForm<ReviewFormValues>({
+    resolver: zodResolver(reviewFormSchema),
+    defaultValues: {
+      rating: 0,  // We'll validate this before submission
+      reviewContent: "",
+    },
+  });
+
+  // Open the review modal and set up the form for adding or editing a review
+  const handleOpenReviewModal = (review: CourseReview | null = null) => {
+    setCurrentReview(review);
+    setSelectedRating(review ? review.rating : 0);
+    
+    form.reset({
+      rating: review ? review.rating : 0,
+      reviewContent: review ? review.reviewContent : "",
+    });
+    
+    setReviewModalOpen(true);
+  };
+
+  // Handle submitting a review (add or update)
+  const onSubmitReview = async (values: ReviewFormValues) => {
+    if (!id || !isAuthenticated || !isEnrolled) {
+      toast({
+        title: "Error",
+        description: "You must be enrolled in this course to leave a review.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Extra validation to ensure rating is set
+    if (!values.rating || values.rating < 1) {
+      form.setError("rating", { 
+        type: "manual",
+        message: "Please select a rating before submitting"
+      });
+      return;
+    }
+    
+    setIsSubmittingReview(true);
+    
+    try {
+      console.log("Submitting review:", values);
+      
+      if (currentReview) {
+        // Update existing review
+        await CourseService.updateCourseReview(
+          currentReview.id,
+          values.rating,
+          values.reviewContent
+        );
+        
+        // Update the review in the local state
+        setReviews(prevReviews => 
+          prevReviews.map(review => 
+            review.id === currentReview.id 
+              ? { ...review, rating: values.rating, reviewContent: values.reviewContent }
+              : review
+          )
+        );
+        
+        toast({
+          title: "Review Updated",
+          description: "Your review has been updated successfully.",
+        });
+      } else {
+        // Add new review
+        console.log("Adding new review for course:", id);
+        const newReview = await CourseService.addCourseReview(
+          id,
+          values.rating,
+          values.reviewContent
+        );
+        
+        console.log("New review result:", newReview);
+        
+        // Add the new review to the local state
+        if (newReview) {
+          setReviews(prevReviews => [newReview, ...prevReviews]);
+          setUserReview(newReview);
+          
+          // Update review count
+          setReviewCount(prevCount => prevCount + 1);
+        }
+        
+        toast({
+          title: "Review Added",
+          description: "Your review has been added successfully.",
+        });
+      }
+      
+      // Close the modal
+      setReviewModalOpen(false);
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit your review. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  // Check if the current user has already reviewed this course
+  const findUserReview = () => {
+    if (!isAuthenticated || !user || !reviews.length) return null;
+    
+    const userReview = reviews.find(review => review.userId === user.id);
+    if (userReview) {
+      setUserReview(userReview);
+      return userReview;
+    }
+    return null;
+  };
+  
+  // Update userReview whenever reviews change
+  useEffect(() => {
+    if (reviews.length > 0 && isAuthenticated && user) {
+      findUserReview();
+    }
+  }, [reviews, isAuthenticated, user]);
+
+  // Handle deleting a review
+  const handleDeleteReview = async (reviewId: number) => {
+    if (!isAuthenticated) return;
+    
+    try {
+      await CourseService.deleteCourseReview(reviewId);
+      
+      // Remove the review from the local state
+      setReviews(prevReviews => prevReviews.filter(review => review.id !== reviewId));
+      
+      // Reset user review
+      setUserReview(null);
+      
+      // Update review count
+      setReviewCount(prevCount => prevCount - 1);
+      
+      toast({
+        title: "Review Deleted",
+        description: "Your review has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error("Error deleting review:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete your review. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Backend base URL for serving static content
   const API_BASE_URL = "http://elcentre.runasp.net";
   
@@ -559,8 +736,8 @@ export default function CourseDetail() {
             <div className="max-w-3xl">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-bold">Student Reviews</h2>
-                {isAuthenticated && isEnrolled && (
-                  <Button className="bg-eduBlue-500 hover:bg-eduBlue-600">Write a Review</Button>
+                {isAuthenticated && isEnrolled && !userReview && (
+                  <Button className="bg-eduBlue-500 hover:bg-eduBlue-600" onClick={() => handleOpenReviewModal(null)}>Write a Review</Button>
                 )}
               </div>
               
@@ -618,6 +795,16 @@ export default function CourseDetail() {
                               ))}
                             </div>
                             <p className="text-muted-foreground mt-2">{review.reviewContent}</p>
+                            {user && review.userId === user.id && (
+                              <div className="flex items-center space-x-2 mt-2">
+                                <Button variant="outline" size="sm" onClick={() => handleOpenReviewModal(review)}>
+                                  <Edit className="h-4 w-4 mr-1" /> Edit
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => handleDeleteReview(review.id)}>
+                                  <Trash2 className="h-4 w-4 mr-1" /> Delete
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -634,6 +821,63 @@ export default function CourseDetail() {
           
         </Tabs>
       </div>
+
+      {/* Review Modal */}
+      <Dialog open={reviewModalOpen} onOpenChange={setReviewModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{currentReview ? "Edit Review" : "Write a Review"}</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmitReview)}>
+              <FormField
+                name="rating"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rating (required)</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center space-x-1">
+                        {[...Array(5)].map((_, i) => (
+                          <StarIcon
+                            key={i}
+                            className={`h-6 w-6 cursor-pointer ${
+                              i < field.value ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                            }`}
+                            onClick={() => {
+                              field.onChange(i + 1);
+                              console.log("Setting rating to:", i + 1);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="reviewContent"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Review</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} placeholder="Write your review here..." />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end mt-4">
+                <Button type="submit" disabled={isSubmittingReview}>
+                  {isSubmittingReview ? "Submitting..." : "Submit Review"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

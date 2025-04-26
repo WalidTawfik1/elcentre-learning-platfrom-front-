@@ -4,6 +4,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MainLayout } from "@/components/layouts/main-layout";
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -76,6 +78,7 @@ export default function Register() {
   };
 
   return (
+    <MainLayout>
     <div className="container py-10 flex flex-col items-center justify-center">
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[500px]">
         <div className="flex flex-col space-y-2 text-center">
@@ -242,5 +245,6 @@ export default function Register() {
         </Card>
       </div>
     </div>
+    </MainLayout>
   );
 }

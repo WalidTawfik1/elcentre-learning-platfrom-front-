@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MainLayout } from "@/components/layouts/main-layout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -26,13 +27,23 @@ export default function Login() {
           navigate('/');
         }, 300);
       }
+      // Check for verification error and redirect if needed
+    if (error?.includes("verify your email")) {
+      console.log("Email verification required, redirecting to verification page");
+      // Save the email in localStorage for the verification page
+      localStorage.setItem("registrationEmail", email);
+      // Redirect to verify account page
+      navigate('/verify-account');
+    }
     } catch (error) {
       // Error is already handled in the useAuth hook
       console.error("Login failed:", error);
     }
+    
   };
 
   return (
+    <MainLayout>
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
         <div className="flex flex-col space-y-2 text-center">
@@ -101,5 +112,6 @@ export default function Login() {
         </Card>
       </div>
     </div>
+    </MainLayout>
   );
 }

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
+import { MainLayout } from "@/components/layouts/main-layout";
 
 export default function VerifyAccount() {
   const navigate = useNavigate();
@@ -114,76 +115,78 @@ export default function VerifyAccount() {
   };
 
   return (
-    <div className="container flex h-screen w-screen flex-col items-center justify-center">
-      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-        <div className="flex flex-col space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-eduBlue-500">Verify Your Account</h1>
-          <p className="text-sm text-muted-foreground">
-            Enter the verification code sent to your email
-          </p>
-        </div>
+    <MainLayout>
+      <div className="container py-12 flex flex-col items-center justify-center">
+        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
+          <div className="flex flex-col space-y-2 text-center">
+            <h1 className="text-2xl font-semibold tracking-tight text-eduBlue-500">Verify Your Account</h1>
+            <p className="text-sm text-muted-foreground">
+              Enter the verification code sent to your email
+            </p>
+          </div>
 
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-xl">Email Verification</CardTitle>
-            <CardDescription>
-              We've sent a verification code to {email || "your email"}
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={handleVerify}>
-            <CardContent className="grid gap-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
-              <div className="grid gap-2">
-                <Label htmlFor="verificationCode">Verification Code</Label>
-                <Input
-                  id="verificationCode"
-                  placeholder="Enter 6-digit code"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  required
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col">
-              <Button 
-                className="w-full" 
-                type="submit" 
-                disabled={isVerifying}
-              >
-                {isVerifying ? "Verifying..." : "Verify Account"}
-              </Button>
-              
-              <div className="mt-4 text-sm text-center">
-                Didn't receive a code?{" "}
-                <button
-                  type="button"
-                  onClick={handleResendCode}
-                  disabled={isResendActive}
-                  className={`text-primary underline-offset-4 hover:underline ${isResendActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+          <Card>
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-xl">Email Verification</CardTitle>
+              <CardDescription>
+                We've sent a verification code to {email || "your email"}
+              </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleVerify}>
+              <CardContent className="grid gap-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="verificationCode">Verification Code</Label>
+                  <Input
+                    id="verificationCode"
+                    placeholder="Enter 6-digit code"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    required
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col">
+                <Button 
+                  className="w-full" 
+                  type="submit" 
+                  disabled={isVerifying}
                 >
-                  {isResendActive ? `Resend in ${countdown}s` : "Resend code"}
-                </button>
-              </div>
-              
-              <div className="mt-4 text-sm text-center">
-                Go back to{" "}
-                <button
-                  type="button"
-                  onClick={() => navigate("/login")}
-                  className="text-primary underline-offset-4 hover:underline"
-                >
-                  Login
-                </button>
-              </div>
-            </CardFooter>
-          </form>
-        </Card>
+                  {isVerifying ? "Verifying..." : "Verify Account"}
+                </Button>
+                
+                <div className="mt-4 text-sm text-center">
+                  Didn't receive a code?{" "}
+                  <button
+                    type="button"
+                    onClick={handleResendCode}
+                    disabled={isResendActive}
+                    className={`text-primary underline-offset-4 hover:underline ${isResendActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {isResendActive ? `Resend in ${countdown}s` : "Resend code"}
+                  </button>
+                </div>
+                
+                <div className="mt-4 text-sm text-center">
+                  Go back to{" "}
+                  <button
+                    type="button"
+                    onClick={() => navigate("/login")}
+                    className="text-primary underline-offset-4 hover:underline"
+                  >
+                    Login
+                  </button>
+                </div>
+              </CardFooter>
+            </form>
+          </Card>
+        </div>
       </div>
-    </div>
+    </MainLayout>
   );
 }
