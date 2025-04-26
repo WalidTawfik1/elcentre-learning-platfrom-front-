@@ -61,14 +61,19 @@ export default function CourseDetail() {
           setModules(modulesWithLessons);
         }
         
-        // Check if user is enrolled
+        // Check if user is enrolled - with better debugging
         if (isAuthenticated) {
           try {
+            console.log("Checking enrollment status for course:", id);
             const isUserEnrolled = await CourseService.isEnrolled(id);
+            console.log("Enrollment check result:", isUserEnrolled);
             setIsEnrolled(!!isUserEnrolled);
           } catch (error) {
-            console.error("Error checking enrollment:", error);
+            console.error("Error checking enrollment status:", error);
+            // Don't change the enrollment status if there's an error checking it
           }
+        } else {
+          console.log("User not authenticated, skipping enrollment check");
         }
       } catch (error) {
         console.error("Error fetching course:", error);
@@ -115,11 +120,12 @@ export default function CourseDetail() {
     
     setIsEnrolling(true);
     try {
-      await CourseService.enroll(id!);
+      // Always enroll for free regardless of course price
+      await CourseService.freeEnroll(id!);
       setIsEnrolled(true);
       toast({
         title: "Success!",
-        description: "You have successfully enrolled in this course.",
+        description: "You have successfully enrolled in this course for free.",
       });
     } catch (error) {
       console.error("Error enrolling in course:", error);
@@ -273,7 +279,7 @@ export default function CourseDetail() {
                 ) : (
                   <div className="flex gap-4">
                     <Button onClick={handleEnroll} disabled={isEnrolling} className="bg-eduBlue-500 hover:bg-eduBlue-600">
-                      {isEnrolling ? "Enrolling..." : courseData.price === 0 ? "Enroll for Free" : `Enroll for $${courseData.price}`}
+                      {isEnrolling ? "Enrolling..." : courseData.price === 0 ? "Enroll for Free" : `Enroll for ${courseData.price} LE`}
                     </Button>
                     <Button variant="outline" className="border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50">
                       Add to Wishlist
@@ -298,7 +304,7 @@ export default function CourseDetail() {
                       {courseData.price === 0 ? (
                         <span className="text-eduAccent">Free</span>
                       ) : (
-                        <span>${courseData.price}</span>
+                        <span>{courseData.price} LE</span>
                       )}
                     </p>
                   </div>
@@ -342,7 +348,7 @@ export default function CourseDetail() {
                     ) : (
                       <div className="flex flex-col gap-2">
                         <Button onClick={handleEnroll} disabled={isEnrolling} className="w-full bg-eduBlue-500 hover:bg-eduBlue-600">
-                          {isEnrolling ? "Enrolling..." : courseData.price === 0 ? "Enroll for Free" : `Enroll for $${courseData.price}`}
+                          {isEnrolling ? "Enrolling..." : courseData.price === 0 ? "Enroll for Free" : `Enroll for ${courseData.price} LE`}
                         </Button>
                         <Button variant="outline" className="w-full border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50">
                           Add to Wishlist

@@ -1,5 +1,6 @@
 import { API } from "@/lib/api";
 import { Course, PaginatedResponse, CourseModule, Lesson, CourseReview } from "@/types/api";
+import { EnrollmentService } from "./enrollment-service";
 
 export const CourseService = {
   getAllCourses: async (
@@ -76,10 +77,16 @@ export const CourseService = {
   },
 
   enroll: async (courseId: string | number): Promise<any> => {
-    return API.enrollments.enroll(Number(courseId));
+    return EnrollmentService.enrollInCourse(Number(courseId));
+  },
+  
+  // New method for free enrollment regardless of course price
+  freeEnroll: async (courseId: string | number): Promise<any> => {
+    return EnrollmentService.freeEnrollment(Number(courseId));
   },
 
   isEnrolled: async (courseId: string | number): Promise<any> => {
-    return API.enrollments.isEnrolled(Number(courseId));
+    // Use EnrollmentService directly for consistency
+    return EnrollmentService.isEnrolled(Number(courseId));
   }
 };

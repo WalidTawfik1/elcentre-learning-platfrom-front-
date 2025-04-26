@@ -99,7 +99,7 @@ export function CourseCard({
           {price === 0 ? (
             <span className="text-eduAccent">Free</span>
           ) : (
-            <span>${price.toFixed(2)}</span>
+            <span>{price.toFixed(2)} LE</span>
           )}
         </div>
         <Button variant="outline" size="sm" asChild>
