@@ -60,11 +60,19 @@ export const CourseService = {
   },
   
   addCourseReview: async (courseId: string | number, rating: number, reviewContent: string): Promise<any> => {
-    return API.reviews.add({ courseId: Number(courseId), rating, reviewContent });
+    return API.reviews.add({
+      CourseId: Number(courseId),
+      Rating: rating,
+      ReviewContent: reviewContent
+    });
   },
   
   updateCourseReview: async (id: string | number, rating: number, reviewContent: string): Promise<any> => {
-    return API.reviews.update({ id: Number(id), rating, reviewContent });
+    return API.reviews.update({
+      Id: Number(id),
+      Rating: rating,
+      ReviewContent: reviewContent
+    });
   },
   
   deleteCourseReview: async (reviewId: string | number): Promise<any> => {

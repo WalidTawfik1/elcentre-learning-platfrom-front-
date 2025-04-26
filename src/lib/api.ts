@@ -3,6 +3,18 @@
 // Base API URL
 const API_BASE_URL = "http://elcentre.runasp.net";
 
+// Helper function to get a cookie value
+const getCookie = (name: string): string | null => {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+};
+
 // Helper function for making API requests
 async function apiRequest<T>(
   endpoint: string,
@@ -21,12 +33,23 @@ async function apiRequest<T>(
   if (!isFormData) {
     headers["Content-Type"] = "application/json";
   }
+  
+  // Add JWT token to Authorization header if authentication is required
+  if (requiresAuth) {
+    const token = getCookie('jwt');
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+      console.log(`Adding JWT token to request: Bearer ${token.substring(0, 10)}...`);
+    } else {
+      console.warn('No JWT token found in cookies for authenticated request');
+    }
+  }
 
   const config: RequestInit = {
     method,
     headers,
     mode: "cors",
-    credentials: requiresAuth ? "include" : "omit", // Include cookies for auth
+    credentials: requiresAuth ? "include" : "omit", // Still include cookies for redundancy
   };
 
   if (data) {
@@ -34,6 +57,7 @@ async function apiRequest<T>(
       config.body = data;
     } else if (method === "POST" || method === "PUT" || method === "PATCH") {
       config.body = JSON.stringify(data);
+      console.log(`Request payload for ${url}:`, JSON.stringify(data));
     }
   }
 
@@ -41,12 +65,35 @@ async function apiRequest<T>(
     console.log(`Making API request to: ${url}`, { method, hasData: !!data, requiresAuth });
     const response = await fetch(url, config);
     
+    // Log full response for debugging
+    console.log(`Response status for ${endpoint}:`, response.status);
+    console.log(`Response status text:`, response.statusText);
+    
+    // Clone response for logging and actual usage
+    const responseClone = response.clone();
+    
+    try {
+      const responseText = await responseClone.text();
+      console.log(`Response body for ${endpoint}:`, responseText);
+      
+      // Try to parse as JSON for debugging
+      try {
+        const responseData = JSON.parse(responseText);
+        console.log(`Parsed response data:`, responseData);
+      } catch (parseError) {
+        console.log(`Response is not valid JSON:`, responseText);
+      }
+    } catch (textError) {
+      console.log(`Couldn't read response as text:`, textError);
+    }
+    
     if (!response.ok) {
       // Try to get error message from response
       let errorMessage;
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || `API Error: ${response.status}`;
+        console.error(`API error details:`, errorData);
       } catch (e) {
         errorMessage = `API Error: ${response.status}`;
       }
@@ -59,7 +106,13 @@ async function apiRequest<T>(
       return {} as T;
     }
     
-    return await response.json();
+    // Try to parse JSON or return empty object
+    try {
+      return await response.json();
+    } catch (jsonError) {
+      console.warn(`Could not parse response as JSON:`, jsonError);
+      return {} as T;
+    }
   } catch (error) {
     console.error("API request failed:", error);
     throw error;
@@ -261,17 +314,23 @@ export const API = {
   
   // Reviews
   reviews: {
-    add: (data: { courseId: number; rating: number; reviewContent: string }) => 
-      apiRequest('/CourseReview/add-course-review', 'POST', data),
+    add: (data: { CourseId: number; Rating: number; ReviewContent: string }) => {
+      // Log the request payload for debugging
+      console.log('Sending review data:', data);
+      // Explicitly set requiresAuth to true to ensure cookies are included
+      return apiRequest('/CourseReview/add-course-review', 'POST', data, true);
+    },
     
     getByCourse: (courseId: number) => 
       apiRequest(`/CourseReview/get-course-review/${courseId}`, 'GET', undefined, false),
     
-    update: (data: { id: number; rating: number; reviewContent: string }) => 
-      apiRequest('/CourseReview/update-course-review', 'PUT', data),
+    update: (data: { Id: number; Rating: number; ReviewContent: string }) => 
+      // Explicitly set requiresAuth to true to ensure cookies are included
+      apiRequest('/CourseReview/update-course-review', 'PUT', data, true),
     
     delete: (reviewId: number) => 
-      apiRequest(`/CourseReview/delete-course-review/${reviewId}`, 'DELETE'),
+      // Explicitly set requiresAuth to true to ensure cookies are included
+      apiRequest(`/CourseReview/delete-course-review/${reviewId}`, 'DELETE', undefined, true),
   },
   
   // Enrollments

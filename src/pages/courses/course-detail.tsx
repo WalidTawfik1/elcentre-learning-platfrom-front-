@@ -91,62 +91,58 @@ export default function CourseDetail() {
     try {
       console.log("Submitting review:", values);
       
+      // Format request with PascalCase property names as required by the API
+      const courseId = typeof id === 'string' ? parseInt(id, 10) : id;
+      
       if (currentReview) {
         // Update existing review
-        await CourseService.updateCourseReview(
+        const response = await CourseService.updateCourseReview(
           currentReview.id,
           values.rating,
           values.reviewContent
         );
         
-        // Update the review in the local state
-        setReviews(prevReviews => 
-          prevReviews.map(review => 
-            review.id === currentReview.id 
-              ? { ...review, rating: values.rating, reviewContent: values.reviewContent }
-              : review
-          )
-        );
-        
-        toast({
-          title: "Review Updated",
-          description: "Your review has been updated successfully.",
-        });
+        if (response) {
+          toast({
+            title: "Review Updated",
+            description: "Your review has been updated successfully.",
+          });
+          
+          // Close the modal and refresh the page
+          setReviewModalOpen(false);
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000); // Delay reload by 1 second to show the toast message
+        }
       } else {
-        // Add new review
-        console.log("Adding new review for course:", id);
-        const newReview = await CourseService.addCourseReview(
-          id,
+        // Add new review using CourseService
+        const response = await CourseService.addCourseReview(
+          courseId,
           values.rating,
           values.reviewContent
         );
         
-        console.log("New review result:", newReview);
-        
-        // Add the new review to the local state
-        if (newReview) {
-          setReviews(prevReviews => [newReview, ...prevReviews]);
-          setUserReview(newReview);
+        if (response) {
+          toast({
+            title: "Review Added",
+            description: "Your review has been added successfully.",
+          });
           
-          // Update review count
-          setReviewCount(prevCount => prevCount + 1);
+          // Close the modal and refresh the page
+          setReviewModalOpen(false);
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000); // Delay reload by 1 second to show the toast message
         }
-        
-        toast({
-          title: "Review Added",
-          description: "Your review has been added successfully.",
-        });
       }
-      
-      // Close the modal
-      setReviewModalOpen(false);
     } catch (error) {
       console.error("Error submitting review:", error);
       toast({
         title: "Error",
-        description: "Failed to submit your review. Please try again.",
+        description: "Failed to submit your review (You may already submit a review to this course), Please try again.",
         variant: "destructive",
       });
+      setReviewModalOpen(false);
     } finally {
       setIsSubmittingReview(false);
     }
@@ -178,19 +174,15 @@ export default function CourseDetail() {
     try {
       await CourseService.deleteCourseReview(reviewId);
       
-      // Remove the review from the local state
-      setReviews(prevReviews => prevReviews.filter(review => review.id !== reviewId));
-      
-      // Reset user review
-      setUserReview(null);
-      
-      // Update review count
-      setReviewCount(prevCount => prevCount - 1);
-      
       toast({
         title: "Review Deleted",
         description: "Your review has been deleted successfully.",
       });
+      
+      // Refresh the page after a short delay to show the toast message
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       console.error("Error deleting review:", error);
       toast({
@@ -473,9 +465,6 @@ export default function CourseDetail() {
                         Continue Learning
                       </Link>
                     </Button>
-                    <Button variant="outline" className="border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50">
-                      View Course Materials
-                    </Button>
                   </div>
                 ) : (
                   <div className="flex gap-4">
@@ -547,9 +536,6 @@ export default function CourseDetail() {
                       <div className="flex flex-col gap-2">
                         <Button onClick={handleEnroll} disabled={isEnrolling} className="w-full bg-eduBlue-500 hover:bg-eduBlue-600">
                           {isEnrolling ? "Enrolling..." : courseData.price === 0 ? "Enroll for Free" : `Enroll for ${courseData.price} LE`}
-                        </Button>
-                        <Button variant="outline" className="w-full border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50">
-                          Add to Wishlist
                         </Button>
                       </div>
                     )}
@@ -747,7 +733,7 @@ export default function CourseDetail() {
                   <div className="flex items-center justify-center my-2">
                     {[...Array(5)].map((_, i) => (
                       <StarIcon
-                        key={i}
+                        key={`course-rating-star-${i}`}
                         className={`h-5 w-5 ${
                           i < Math.floor(courseData.rating || 0) 
                             ? "text-yellow-400 fill-yellow-400" 
@@ -787,7 +773,7 @@ export default function CourseDetail() {
                             <div className="flex items-center my-1">
                               {[...Array(5)].map((_, i) => (
                                 <StarIcon
-                                  key={i}
+                                  key={`review-star-${review.id}-${i}`}
                                   className={`h-4 w-4 ${
                                     i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
                                   }`}
@@ -795,10 +781,10 @@ export default function CourseDetail() {
                               ))}
                             </div>
                             <p className="text-muted-foreground mt-2">{review.reviewContent}</p>
-                            {user && review.userId === user.id && (
+                            {user && (review.userId === user.id || review.studentId === user.id) && (
                               <div className="flex items-center space-x-2 mt-2">
-                                <Button variant="outline" size="sm" onClick={() => handleOpenReviewModal(review)}>
-                                  <Edit className="h-4 w-4 mr-1" /> Edit
+                                <Button variant="outline" size="sm" onClick={() => handleOpenReviewModal(review)} className="bg-eduBlue-500 hover:bg-eduBlue-600 text-white">
+                                  <Edit className="text-white h-4 w-4 mr-1" /> Edit
                                 </Button>
                                 <Button variant="destructive" size="sm" onClick={() => handleDeleteReview(review.id)}>
                                   <Trash2 className="h-4 w-4 mr-1" /> Delete
@@ -840,7 +826,7 @@ export default function CourseDetail() {
                       <div className="flex items-center space-x-1">
                         {[...Array(5)].map((_, i) => (
                           <StarIcon
-                            key={i}
+                            key={`rating-input-star-${i}`}
                             className={`h-6 w-6 cursor-pointer ${
                               i < field.value ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
                             }`}

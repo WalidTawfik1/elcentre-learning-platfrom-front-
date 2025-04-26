@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
 import { AuthService } from "@/services/auth-service";
 import { UserDTO } from "@/types/api";
 import { useToast } from "@/components/ui/use-toast";
@@ -23,16 +23,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-
-  const fetchUser = async () => {
+  
+  // Use refs to prevent multiple fetch attempts
+  const isFetchingRef = useRef(false);
+  const lastFetchTimeRef = useRef<number>(0);
+  const minimumFetchInterval = 5000; // 5 seconds minimum between fetches
+  
+  // Use useCallback to memoize the fetchUser function
+  const fetchUser = useCallback(async (force = false) => {
+    // Check if we're already fetching or if it's too soon since last fetch
+    const currentTime = Date.now();
+    const timeSinceLastFetch = currentTime - lastFetchTimeRef.current;
+    
+    if (!force && (isFetchingRef.current || (timeSinceLastFetch < minimumFetchInterval && lastFetchTimeRef.current !== 0))) {
+      console.log(
+        `Profile fetch skipped: ${isFetchingRef.current ? 'Already fetching' : 'Too soon'} (${Math.round(timeSinceLastFetch / 1000)}s since last fetch)`
+      );
+      return;
+    }
+    
+    // Check if we have JWT cookie before even trying
+    if (!document.cookie.includes('jwt=')) {
+      console.log("No JWT cookie found, skipping profile fetch");
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
+    
     try {
+      isFetchingRef.current = true;
+      lastFetchTimeRef.current = currentTime;
       console.log("Attempting to fetch user profile...");
-      // Check if we have JWT cookie before even trying
-      if (!document.cookie.includes('jwt=')) {
-        console.log("No JWT cookie found, skipping profile fetch");
-        setUser(null);
-        return;
-      }
       
       const userData = await AuthService.getProfile();
       console.log("Profile fetch successful:", userData);
@@ -51,23 +72,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError("Failed to fetch user profile");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Function to refresh user data that can be called from anywhere
-  const refreshUser = async () => {
-    await fetchUser();
-  };
-
-  // Check for existing authentication on load
-  useEffect(() => {
-    console.log("Auth provider initialized, checking for JWT cookie");
-    if (document.cookie.includes('jwt=')) {
-      fetchUser();
-    } else {
-      setIsLoading(false);
+      isFetchingRef.current = false;
     }
   }, []);
+
+  // Function to refresh user data that can be called from anywhere
+  const refreshUser = useCallback(async () => {
+    await fetchUser(true); // Force refresh
+  }, [fetchUser]);
+
+  // Check for existing authentication on load - only once when component mounts
+  useEffect(() => {
+    console.log("Auth provider initialized, checking for JWT cookie");
+    fetchUser();
+  }, [fetchUser]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
@@ -82,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Force immediate fetch of user profile
       try {
-        await fetchUser();
+        await fetchUser(true); // Force fetch
         
         // Important fix: The state might not be updated immediately due to React's async state updates
         // So we need to set the user directly here to ensure isAuthenticated becomes true
