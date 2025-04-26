@@ -1,10 +1,12 @@
-
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { StarIcon } from "lucide-react";
+
+// Backend base URL for serving static content
+const API_BASE_URL = "http://elcentre.runasp.net";
 
 interface Course {
   id: string;

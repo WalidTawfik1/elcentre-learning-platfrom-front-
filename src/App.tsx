@@ -14,6 +14,7 @@ import VerifyAccount from "./pages/auth/verify-account";
 import CoursesIndex from "./pages/courses/index";
 import CourseDetail from "./pages/courses/course-detail";
 import ProfilePage from "./pages/profile";
+import CategoriesIndex from "./pages/categories";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -43,7 +44,7 @@ const App = () => (
             {/* Student routes */}
             <Route path="/courses" element={<CoursesIndex />} />
             <Route path="/courses/:id" element={<CourseDetail />} />
-            <Route path="/categories" element={<NotFound />} /> {/* Placeholder */}
+            <Route path="/categories" element={<CategoriesIndex />} />
             <Route path="/categories/:slug" element={<NotFound />} /> {/* Placeholder */}
             <Route path="/instructors" element={<NotFound />} /> {/* Placeholder */}
             

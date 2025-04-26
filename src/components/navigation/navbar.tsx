@@ -50,9 +50,6 @@ export function NavBar() {
             <Link to="/categories" className="transition-colors hover:text-foreground/80">
               Categories
             </Link>
-            <Link to="/instructors" className="transition-colors hover:text-foreground/80">
-              Instructors
-            </Link>
             {isAuthenticated && user?.userType === "Instructor" && (
               <Link to="/instructor/dashboard" className="transition-colors hover:text-foreground/80">
                 Instructor Dashboard

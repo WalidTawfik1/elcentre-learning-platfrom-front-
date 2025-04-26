@@ -5,6 +5,9 @@ import { FeaturedCourses } from "@/components/home/featured-courses";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Course } from "@/types/api";
 
+// Backend base URL for serving static content
+const API_BASE_URL = "http://elcentre.runasp.net";
+
 interface CourseSectionProps {
   courses: any[];
   isLoading: boolean;
@@ -18,7 +21,9 @@ export function CourseSection({ courses, isLoading, error, mockCourses }: Course
     id: course.id.toString(),
     title: course.title || "Untitled Course",
     description: course.description || "No description available",
-    thumbnail: course.thumbnail || "/placeholder.svg",
+    thumbnail: course.thumbnail ? 
+      (course.thumbnail.startsWith('http') ? course.thumbnail : `${API_BASE_URL}/${course.thumbnail.replace(/^\//, '')}`) : 
+      "/placeholder.svg",
     rating: course.rating || 0,
     price: course.price || 0,
     category: course.categoryName || "Uncategorized",

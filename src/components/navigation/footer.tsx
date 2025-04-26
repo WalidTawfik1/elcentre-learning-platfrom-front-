@@ -7,7 +7,7 @@ export function Footer() {
       <div className="container py-8 md:py-12">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-eduBlue-500">EduPath</h3>
+            <h3 className="text-lg font-semibold mb-4 text-eduBlue-500">ElCentre</h3>
             <p className="text-sm text-muted-foreground">
               Empowering knowledge seekers with quality online education.
             </p>
@@ -70,7 +70,7 @@ export function Footer() {
         </div>
         <div className="mt-8 border-t pt-8 text-center">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} EduPath. All rights reserved.
+            © {new Date().getFullYear()} ElCentre. All rights reserved.
           </p>
         </div>
       </div>

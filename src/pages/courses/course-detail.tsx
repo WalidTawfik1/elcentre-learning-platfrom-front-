@@ -20,6 +20,9 @@ export default function CourseDetail() {
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
   
+  // Backend base URL for serving static content
+  const API_BASE_URL = "http://elcentre.runasp.net";
+  
   useEffect(() => {
     if (!id) return;
     
@@ -137,6 +140,17 @@ export default function CourseDetail() {
     }, 0);
   };
 
+  // Format the thumbnail URL properly
+  const formatThumbnailUrl = (thumbnail: string | undefined): string => {
+    if (!thumbnail) return "/placeholder.svg";
+    
+    // If it's already a full URL, use it as is
+    if (thumbnail.startsWith('http')) return thumbnail;
+    
+    // Otherwise, prefix with API base URL and ensure no double slashes
+    return `${API_BASE_URL}/${thumbnail.replace(/^\//, '')}`;
+  };
+
   // Fallback for when the API fails to load data
   const useFallbackData = !course;
 
@@ -250,7 +264,7 @@ export default function CourseDetail() {
               <div className="rounded-lg border overflow-hidden bg-card">
                 <div className="aspect-video">
                   <img 
-                    src={courseData.thumbnail || "/placeholder.svg"} 
+                    src={formatThumbnailUrl(courseData.thumbnail)} 
                     alt={courseData.title} 
                     className="w-full h-full object-cover"
                   />

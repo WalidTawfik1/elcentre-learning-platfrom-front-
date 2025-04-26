@@ -11,107 +11,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { useLocation } from "react-router-dom";
+import { toast } from "@/components/ui/use-toast";
 
-// Mock data for fallback when API is unavailable
-const MOCK_COURSES = [
-  {
-    id: "course-1",
-    title: "Introduction to Web Development",
-    description: "Learn the fundamentals of web development, including HTML, CSS, and JavaScript.",
-    thumbnail: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=500&h=300&fit=crop",
-    rating: 4.7,
-    price: 49.99,
-    category: "Web Development",
-    instructor: {
-      id: "instructor-1",
-      name: "John Doe",
-    },
-    duration: "10 hours",
-  },
-  {
-    id: "course-2",
-    title: "Data Science Fundamentals",
-    description: "Master the basics of data science, statistics, and machine learning algorithms.",
-    thumbnail: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=500&h=300&fit=crop",
-    rating: 4.5,
-    price: 59.99,
-    category: "Data Science",
-    instructor: {
-      id: "instructor-2",
-      name: "Jane Smith",
-    },
-    duration: "12 hours",
-  },
-  {
-    id: "course-3",
-    title: "Digital Marketing Masterclass",
-    description: "Learn effective digital marketing strategies for businesses of all sizes.",
-    thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500&h=300&fit=crop",
-    rating: 4.8,
-    price: 0,
-    category: "Marketing",
-    instructor: {
-      id: "instructor-3",
-      name: "Sarah Johnson",
-    },
-    duration: "8 hours",
-  },
-  {
-    id: "course-4",
-    title: "Mobile App Development with React Native",
-    description: "Build cross-platform mobile apps using React Native and JavaScript.",
-    thumbnail: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=500&h=300&fit=crop",
-    rating: 4.6,
-    price: 69.99,
-    category: "Mobile Development",
-    instructor: {
-      id: "instructor-4",
-      name: "Michael Brown",
-    },
-    duration: "15 hours",
-  },
-  {
-    id: "course-5",
-    title: "Python Programming for Beginners",
-    description: "Start your programming journey with Python, perfect for beginners.",
-    thumbnail: "https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=500&h=300&fit=crop",
-    rating: 4.7,
-    price: 44.99,
-    category: "Programming",
-    instructor: {
-      id: "instructor-1",
-      name: "John Doe",
-    },
-    duration: "8 hours",
-  },
-  {
-    id: "course-6",
-    title: "Graphic Design Fundamentals",
-    description: "Learn the principles of great design and how to use design tools effectively.",
-    thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500&h=300&fit=crop",
-    rating: 4.3,
-    price: 49.99,
-    category: "Design",
-    instructor: {
-      id: "instructor-5",
-      name: "Emily Chen",
-    },
-    duration: "9 hours",
-  },
-];
-
-// Replace the mock categories with a simplified version that includes "All Categories"
-const MOCK_CATEGORIES = [
-  { id: 0, name: "All Categories" },
-  { id: 1, name: "Web Development" },
-  { id: 2, name: "Data Science" },
-  { id: 3, name: "Business" },
-  { id: 4, name: "Design" },
-  { id: 5, name: "Marketing" },
-  { id: 6, name: "Personal Development" },
-  { id: 7, name: "Programming" },
-  { id: 8, name: "Mobile Development" },
-];
+// Backend base URL for serving static content
+const API_BASE_URL = "http://elcentre.runasp.net";
 
 export default function CoursesIndex() {
   // State for filters
@@ -130,32 +33,39 @@ export default function CoursesIndex() {
   // Use React Query for data fetching
   const { 
     data: coursesData,
-    isLoading: isCoursesLoading
+    isLoading: isCoursesLoading,
+    error: coursesError
   } = useQuery({
     queryKey: ['courses', currentPage, selectedCategory, searchTerm, priceRange],
     queryFn: async () => {
-      try {
-        // Only filter by category if not "All Categories"
-        const categoryId = selectedCategory > 0 ? selectedCategory : undefined;
-        
-        // Convert string search term to a format the API expects
-        const searchQuery = searchTerm.trim() || undefined;
-        
-        const result = await CourseService.getAllCourses(
-          currentPage, 
-          coursesPerPage, 
-          undefined, // sort parameter
-          categoryId,
-          searchQuery,
-          priceRange[0] > 0 ? priceRange[0] : undefined,
-          priceRange[1] < 1000 ? priceRange[1] : undefined
-        );
-        
-        console.log("API response for courses:", result);
-        return result || { items: [], totalCount: 0 };
-      } catch (error) {
-        console.error("Failed to fetch courses, using mock data:", error);
-        return { items: MOCK_COURSES, totalCount: MOCK_COURSES.length };
+      // Only filter by category if not "All Categories"
+      const categoryId = selectedCategory > 0 ? selectedCategory : undefined;
+      
+      // Convert string search term to a format the API expects
+      const searchQuery = searchTerm.trim() || undefined;
+      
+      // Get all courses from the API
+      const result = await CourseService.getAllCourses(
+        currentPage, 
+        coursesPerPage, 
+        undefined, // sort parameter
+        categoryId,
+        searchQuery,
+        priceRange[0] > 0 ? priceRange[0] : undefined,
+        priceRange[1] < 1000 ? priceRange[1] : undefined
+      );
+      
+      console.log("API response for courses:", result);
+      
+      // Check if the API returned valid data with items
+      if (result && result.items && Array.isArray(result.items)) {
+        return result;
+      } else if (result && result.data && Array.isArray(result.data)) {
+        // Handle alternative API response format (used in homepage)
+        return { items: result.data, totalCount: result.data.length };
+      } else {
+        // Return empty results if API returned no data
+        return { items: [], totalCount: 0 };
       }
     }
   });
@@ -166,31 +76,35 @@ export default function CoursesIndex() {
   } = useQuery({
     queryKey: ['allCategories'],
     queryFn: async () => {
-      try {
-        const result = await CategoryService.getAllCategories();
-        console.log("API response for all categories:", result);
-        return [{ id: 0, name: "All Categories" }, ...(result || [])];
-      } catch (error) {
-        console.error("Failed to fetch categories, using mock data:", error);
-        return MOCK_CATEGORIES;
+      const result = await CategoryService.getAllCategories();
+      console.log("API response for all categories:", result);
+      
+      // Add "All Categories" option at the beginning
+      if (result && Array.isArray(result)) {
+        return [{ id: 0, name: "All Categories" }, ...result];
       }
+      
+      // Return default categories array if API call fails
+      return [{ id: 0, name: "All Categories" }];
     }
   });
 
   // Prepare the course data to match the expected format for CourseCard
   const mapCourseData = (course: any) => ({
-    id: course.id.toString(),
+    id: course.id?.toString() || "",
     title: course.title || "Untitled Course",
     description: course.description || "No description available",
-    thumbnail: course.thumbnail || "/placeholder.svg",
+    thumbnail: course.thumbnail ? 
+      (course.thumbnail.startsWith('http') ? course.thumbnail : `${API_BASE_URL}/${course.thumbnail.replace(/^\//, '')}`) : 
+      "/placeholder.svg",
     rating: course.rating || 0,
     price: course.price || 0,
-    category: course.categoryName || "Uncategorized",
+    category: course.categoryName || course.category || "Uncategorized",
     instructor: {
-      id: course.instructorId || "",
-      name: course.instructorName || "Unknown Instructor",
+      id: course.instructorId || course.instructor?.id || "",
+      name: course.instructorName || course.instructor?.name || "Unknown Instructor",
     },
-    duration: `${course.durationInHours || 0} hours`,
+    duration: course.durationInHours ? `${course.durationInHours} hours` : course.duration || "0 hours",
   });
 
   // Handle search form submission
@@ -234,9 +148,18 @@ export default function CoursesIndex() {
     }
   }, [coursesData]);
 
-  // Use mock data if API fetch fails
-  const categories = categoriesData || MOCK_CATEGORIES;
+  // Reset filters and show all courses
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory(0);
+    setPriceRange([0, 1000]);
+    setCurrentPage(1);
+  };
+
+  // Use data from API responses
+  const categories = categoriesData || [{ id: 0, name: "All Categories" }];
   const isLoading = isCoursesLoading || isCategoriesLoading;
+  const hasError = !!coursesError;
 
   return (
     <MainLayout>
@@ -245,6 +168,11 @@ export default function CoursesIndex() {
           <div>
             <h1 className="text-3xl font-bold mb-2">Browse Courses</h1>
             <p className="text-muted-foreground">Discover courses to enhance your skills</p>
+            {hasError && (
+              <p className="text-sm text-red-500 mt-1">
+                Failed to fetch courses from server. Please try again later.
+              </p>
+            )}
           </div>
           
           <form onSubmit={handleSearch} className="flex space-x-2">
@@ -299,7 +227,11 @@ export default function CoursesIndex() {
               </div>
             </div>
             
-            {/* Additional filters can be added here */}
+            <div className="pt-4">
+              <Button onClick={handleResetFilters} variant="outline" className="w-full">
+                Reset Filters
+              </Button>
+            </div>
           </div>
           
           {/* Course Listings */}
@@ -328,11 +260,7 @@ export default function CoursesIndex() {
                 <p className="text-muted-foreground mb-6">
                   Try adjusting your filters or search term
                 </p>
-                <Button onClick={() => {
-                  setSearchTerm("");
-                  setSelectedCategory(0);
-                  setPriceRange([0, 1000]);
-                }}>
+                <Button onClick={handleResetFilters}>
                   Reset Filters
                 </Button>
               </div>

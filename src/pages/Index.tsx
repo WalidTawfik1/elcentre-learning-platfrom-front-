@@ -146,10 +146,10 @@ export default function Index() {
     queryKey: ['featuredCourses'],
     queryFn: async () => {
       try {
-        // Get first page of courses, sorted by rating (descending)
-        const result = await CourseService.getAllCourses(1, 4, "rating_desc");
+        // Fetch all courses using the specified endpoint with pagination
+        const result = await CourseService.getAllCourses(1, 16);
         console.log("API response for courses:", result); // Debug the response
-        return result.items || [];
+        return result?.data || [];
       } catch (error) {
         console.error("Failed to fetch courses, using mock data:", error);
         return [];

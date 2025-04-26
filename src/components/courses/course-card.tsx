@@ -1,10 +1,12 @@
-
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { StarIcon } from "lucide-react";
+
+// Backend base URL for serving static content
+const API_BASE_URL = "http://elcentre.runasp.net";
 
 interface CourseCardProps {
   id: string;
@@ -54,12 +56,17 @@ export function CourseCard({
     );
   };
 
+  // Format the thumbnail URL correctly
+  const formattedThumbnail = thumbnail ? 
+    (thumbnail.startsWith('http') ? thumbnail : `${API_BASE_URL}/${thumbnail.replace(/^\//, '')}`) : 
+    "/placeholder.svg";
+
   return (
     <Card className="overflow-hidden group hover:shadow-md transition-shadow">
       <Link to={`/courses/${id}`}>
         <div className="aspect-video relative overflow-hidden">
           <img
-            src={thumbnail}
+            src={formattedThumbnail}
             alt={title}
             className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
           />
