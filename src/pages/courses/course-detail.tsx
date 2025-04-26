@@ -404,12 +404,12 @@ export default function CourseDetail() {
             >
               Overview
             </TabsTrigger>
-            <TabsTrigger 
+            {/* <TabsTrigger 
               value="instructor"
               className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
             >
               Instructor
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger 
               value="reviews"
               className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
@@ -482,18 +482,11 @@ export default function CourseDetail() {
           <TabsContent value="overview">
             <div className="max-w-3xl">
               <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">What You'll Learn</h2>
-                {courseData.whatYouWillLearn && Array.isArray(courseData.whatYouWillLearn) && courseData.whatYouWillLearn.length > 0 ? (
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {courseData.whatYouWillLearn.map((item: string, index: number) => (
-                      <li key={index} className="flex items-start">
-                        <CheckCircle className="h-5 w-5 mr-2 text-eduBlue-500 shrink-0 mt-0.5" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+                <h2 className="text-2xl font-bold mb-4">About This Course</h2>
+                {courseData.description ? (
+                  <p className="text-muted-foreground">{courseData.description}</p>
                 ) : (
-                  <p className="text-muted-foreground">No learning outcomes have been specified for this course yet.</p>
+                  <p className="text-muted-foreground">No description has been provided for this course yet.</p>
                 )}
               </div>
               
@@ -515,7 +508,7 @@ export default function CourseDetail() {
             </div>
           </TabsContent>
           
-          <TabsContent value="instructor">
+          {/* <TabsContent value="instructor">
             <div className="max-w-3xl">
               {courseData.instructor ? (
                 <>
@@ -560,7 +553,7 @@ export default function CourseDetail() {
                 <p className="text-muted-foreground">Instructor information not available.</p>
               )}
             </div>
-          </TabsContent>
+          </TabsContent> */}
           
           <TabsContent value="reviews">
             <div className="max-w-3xl">
