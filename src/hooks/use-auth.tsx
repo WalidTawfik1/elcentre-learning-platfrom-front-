@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { AuthService } from "@/services/auth-service";
 import { UserDTO } from "@/types/api";
@@ -10,10 +9,11 @@ type AuthContextType = {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>; // Return success status
   register: (userData: any) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (userData: UserDTO) => Promise<void>;
+  refreshUser: () => Promise<void>; // Add method to refresh user data
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,15 +26,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUser = async () => {
     try {
+      console.log("Attempting to fetch user profile...");
+      // Check if we have JWT cookie before even trying
+      if (!document.cookie.includes('jwt=')) {
+        console.log("No JWT cookie found, skipping profile fetch");
+        setUser(null);
+        return;
+      }
+      
       const userData = await AuthService.getProfile();
+      console.log("Profile fetch successful:", userData);
+      
       const userWithComputedProps = {
         ...userData,
         name: `${userData.firstName} ${userData.lastName}`,
         avatar: undefined
       };
       setUser(userWithComputedProps);
+      console.log("User state updated:", userWithComputedProps);
       setError(null);
     } catch (error) {
+      console.error("Failed to fetch user profile:", error);
       setUser(null);
       setError("Failed to fetch user profile");
     } finally {
@@ -42,27 +54,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Function to refresh user data that can be called from anywhere
+  const refreshUser = async () => {
+    await fetchUser();
+  };
+
+  // Check for existing authentication on load
   useEffect(() => {
-    fetchUser();
+    console.log("Auth provider initialized, checking for JWT cookie");
+    if (document.cookie.includes('jwt=')) {
+      fetchUser();
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     try {
-      await AuthService.login({ email, password });
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-      await fetchUser();
+      console.log("Attempting login...");
+      const response = await AuthService.login({ email, password });
+      console.log("Login successful:", response);
+      
+      // Wait a moment for the cookie to be set
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Force immediate fetch of user profile
+      try {
+        await fetchUser();
+        
+        // Important fix: The state might not be updated immediately due to React's async state updates
+        // So we need to set the user directly here to ensure isAuthenticated becomes true
+        if (response.user) {
+          const userData = response.user;
+          const userWithComputedProps = {
+            ...userData,
+            name: `${userData.firstName} ${userData.lastName}`,
+            avatar: undefined
+          };
+          setUser(userWithComputedProps);
+        }
+        
+        console.log("User authentication state after login:", { user: !!user, cookieExists: document.cookie.includes('jwt=') });
+        toast({
+          title: "Login successful",
+          description: "Welcome back!",
+        });
+        return true;
+      } catch (profileError) {
+        console.error("Error fetching profile after login:", profileError);
+        toast({
+          title: "Login partial success",
+          description: "Logged in but couldn't fetch your profile. Please refresh.",
+          variant: "destructive"
+        });
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
     } catch (error: any) {
       setUser(null);
+      setIsLoading(false);
       const errorMessage = error.message || "Login failed. Please check your network connection.";
       setError(errorMessage);
-      throw error;
-    } finally {
-      setIsLoading(false);
+      toast({
+        title: "Login failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
+      return false;
     }
   };
 
@@ -88,6 +149,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       await AuthService.logout();
+      
+      // Clear both JWT and token cookies that might exist
+      document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      
       setUser(null);
       toast({
         title: "Logged out",
@@ -137,6 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         updateProfile,
+        refreshUser,
       }}
     >
       {children}

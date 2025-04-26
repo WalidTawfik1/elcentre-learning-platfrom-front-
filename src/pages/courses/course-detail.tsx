@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { MainLayout } from "@/components/layouts/main-layout";
@@ -8,13 +7,13 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { StarIcon, Play, Clock, User, Book, Video, CheckCircle } from "lucide-react";
-import { API } from "@/lib/api";
+import { CourseService } from "@/services/course-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [course, setCourse] = useState<any>(null);
   const [modules, setModules] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,18 +26,22 @@ export default function CourseDetail() {
     const fetchCourse = async () => {
       setIsLoading(true);
       try {
-        const courseData = await API.courses.getById(id);
+        console.log("Fetching course with id:", id);
+        const courseData = await CourseService.getCourseById(id);
+        console.log("Course data received:", courseData);
         setCourse(courseData);
         
         // Get modules and lessons for this course
-        const modulesData = await API.courses.getModules(id);
+        const modulesData = await CourseService.getModules(id);
+        console.log("Modules data received:", modulesData);
         
         // If we have modules, fetch lessons for each module
         if (modulesData && Array.isArray(modulesData)) {
           const modulesWithLessons = await Promise.all(
             modulesData.map(async (module) => {
               try {
-                const lessons = await API.courses.getLessons(id, module.id.toString());
+                const lessons = await CourseService.getLessons(id, module.id);
+                console.log(`Lessons for module ${module.id}:`, lessons);
                 return {
                   ...module,
                   lessons: Array.isArray(lessons) ? lessons : []
@@ -56,14 +59,10 @@ export default function CourseDetail() {
         // Check if user is enrolled
         if (isAuthenticated) {
           try {
-            const enrollments = await API.courses.getEnrollments();
-            if (Array.isArray(enrollments)) {
-              setIsEnrolled(enrollments.some(enrollment => 
-                enrollment.courseId.toString() === id
-              ));
-            }
+            const isUserEnrolled = await CourseService.isEnrolled(id);
+            setIsEnrolled(!!isUserEnrolled);
           } catch (error) {
-            console.error("Error fetching enrollments:", error);
+            console.error("Error checking enrollment:", error);
           }
         }
       } catch (error) {
@@ -84,13 +83,13 @@ export default function CourseDetail() {
   const handleEnroll = async () => {
     if (!isAuthenticated) {
       // Redirect to login
-      window.location.href = `/login?redirect=/courses/${id}`;
+      window.location.href = `/auth/login?redirect=/courses/${id}`;
       return;
     }
     
     setIsEnrolling(true);
     try {
-      await API.courses.enroll(id!);
+      await CourseService.enroll(id!);
       setIsEnrolled(true);
       toast({
         title: "Success!",
@@ -526,7 +525,6 @@ export default function CourseDetail() {
                   </div>
                   <p className="text-sm text-muted-foreground">Course Rating</p>
                 </div>
-                
                 <div className="flex-1">
                   {/* Could add rating distribution bars here */}
                 </div>

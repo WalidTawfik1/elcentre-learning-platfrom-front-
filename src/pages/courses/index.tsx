@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { CourseCard } from "@/components/courses/course-card";
@@ -6,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
-import { API } from "@/lib/api";
+import { CourseService } from "@/services/course-service";
+import { CategoryService } from "@/services/category-service";
+import { useQuery } from "@tanstack/react-query";
 
-// Mock data for development
+// Mock data for development as fallback
 const MOCK_COURSES = [
   {
     id: "course-1",
@@ -111,41 +112,70 @@ const MOCK_CATEGORIES = [
 export default function CoursesIndex() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
-  const [courses, setCourses] = useState(MOCK_COURSES);
-  const [filteredCourses, setFilteredCourses] = useState(MOCK_COURSES);
-  const [categories, setCategories] = useState(MOCK_CATEGORIES);
-  const [isLoading, setIsLoading] = useState(false);
+  const [filteredCourses, setFilteredCourses] = useState<any[]>([]);
+  
+  // Fetch courses with React Query
+  const { 
+    data: coursesData,
+    isLoading: isCoursesLoading,
+    error: coursesError
+  } = useQuery({
+    queryKey: ['allCourses'],
+    queryFn: async () => {
+      try {
+        const result = await CourseService.getAllCourses(1, 20);
+        console.log("API response for all courses:", result);
+        return result.items || [];
+      } catch (error) {
+        console.error("Failed to fetch courses, using mock data:", error);
+        return MOCK_COURSES;
+      }
+    }
+  });
 
-  // In a real app, we would fetch actual data from the API
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     setIsLoading(true);
-  //     try {
-  //       const [coursesData, categoriesData] = await Promise.all([
-  //         API.courses.getAll(),
-  //         API.categories.getAll()
-  //       ]);
-  //       
-  //       setCourses(coursesData);
-  //       setFilteredCourses(coursesData);
-  //       setCategories([{ id: "all", name: "All Categories" }, ...categoriesData]);
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-  //
-  //   fetchData();
-  // }, []);
+  // Fetch categories with React Query
+  const { 
+    data: categoriesData,
+    isLoading: isCategoriesLoading
+  } = useQuery({
+    queryKey: ['allCategories'],
+    queryFn: async () => {
+      try {
+        const result = await CategoryService.getAllCategories();
+        console.log("API response for all categories:", result);
+        return [{ id: 0, name: "All Categories" }, ...(result || [])];
+      } catch (error) {
+        console.error("Failed to fetch categories, using mock data:", error);
+        return MOCK_CATEGORIES;
+      }
+    }
+  });
+
+  // Prepare the course data to match the expected format for CourseCard
+  const mapCourseData = (course: any) => ({
+    id: course.id.toString(),
+    title: course.title || "Untitled Course",
+    description: course.description || "No description available",
+    thumbnail: course.thumbnail || "/placeholder.svg",
+    rating: course.rating || 0,
+    price: course.price || 0,
+    category: course.categoryName || "Uncategorized",
+    instructor: {
+      id: course.instructorId || "",
+      name: course.instructorName || "Unknown Instructor",
+    },
+    duration: `${course.durationInHours || 0} hours`,
+  });
 
   // Filter courses when search term or category changes
   useEffect(() => {
-    let filtered = courses;
+    if (!coursesData) return;
+
+    let filtered = [...coursesData];
     
     // Apply category filter
     if (selectedCategory !== "All Categories") {
-      filtered = filtered.filter(course => course.category === selectedCategory);
+      filtered = filtered.filter(course => course.categoryName === selectedCategory);
     }
     
     // Apply search filter
@@ -153,18 +183,29 @@ export default function CoursesIndex() {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(
         course => 
-          course.title.toLowerCase().includes(search) || 
-          course.description.toLowerCase().includes(search)
+          course.title?.toLowerCase().includes(search) || 
+          course.description?.toLowerCase().includes(search)
       );
     }
     
-    setFilteredCourses(filtered);
-  }, [searchTerm, selectedCategory, courses]);
+    setFilteredCourses(filtered.map(mapCourseData));
+  }, [searchTerm, selectedCategory, coursesData]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     // The filtering is already handled by the useEffect
   };
+
+  // Use mock data if API fetch fails
+  const categories = categoriesData || MOCK_CATEGORIES;
+  const isLoading = isCoursesLoading || isCategoriesLoading;
+
+  // Initialize filteredCourses with all courses when they first load
+  useEffect(() => {
+    if (coursesData && coursesData.length > 0) {
+      setFilteredCourses(coursesData.map(mapCourseData));
+    }
+  }, [coursesData]);
 
   return (
     <MainLayout>

@@ -1,4 +1,3 @@
-
 // API Service for interacting with the backend
 
 // Base API URL
@@ -9,14 +8,19 @@ async function apiRequest<T>(
   endpoint: string,
   method: string = "GET",
   data?: any,
-  requiresAuth: boolean = true
+  requiresAuth: boolean = true,
+  isFormData: boolean = false
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   
   const headers: HeadersInit = {
-    "Content-Type": "application/json",
     "Accept": "application/json",
   };
+
+  // Don't set content-type for FormData, let the browser set it with the boundary
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
 
   const config: RequestInit = {
     method,
@@ -25,12 +29,16 @@ async function apiRequest<T>(
     credentials: requiresAuth ? "include" : "omit", // Include cookies for auth
   };
 
-  if (data && (method === "POST" || method === "PUT" || method === "PATCH")) {
-    config.body = JSON.stringify(data);
+  if (data) {
+    if (isFormData && data instanceof FormData) {
+      config.body = data;
+    } else if (method === "POST" || method === "PUT" || method === "PATCH") {
+      config.body = JSON.stringify(data);
+    }
   }
 
   try {
-    console.log(`Making API request to: ${url}`, { method, hasData: !!data });
+    console.log(`Making API request to: ${url}`, { method, hasData: !!data, requiresAuth });
     const response = await fetch(url, config);
     
     if (!response.ok) {
@@ -58,45 +66,242 @@ async function apiRequest<T>(
   }
 }
 
+// Helper to handle file uploads and form data
+const createFormData = (data: Record<string, any>): FormData => {
+  const formData = new FormData();
+  
+  Object.entries(data).forEach(([key, value]) => {
+    // If dealing with a file
+    if (value instanceof File) {
+      formData.append(key, value);
+    } 
+    // If dealing with an array of files
+    else if (Array.isArray(value) && value[0] instanceof File) {
+      value.forEach(file => formData.append(key, file));
+    }
+    // For boolean, number, and other primitive values
+    else if (value !== undefined && value !== null) {
+      formData.append(key, String(value));
+    }
+  });
+  
+  return formData;
+};
+
 // API Functions
 export const API = {
+  // Authentication
+  auth: {
+    register: (data: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      password: string;
+      phoneNumber: string;
+      gender: string;
+      dateOfBirth: string;
+      userType: string;
+    }) => apiRequest('/Account/register', 'POST', data, false),
+    
+    login: (data: { email: string; password: string }) => 
+      apiRequest('/Account/login', 'POST', data, false),
+    
+    activeAccount: (data: { email: string; code: string }) => 
+      apiRequest('/Account/active-account', 'POST', data, false),
+    
+    sendForgetPasswordEmail: (email: string) => 
+      apiRequest(`/Account/send-email-forget-password?email=${encodeURIComponent(email)}`, 'GET', undefined, false),
+    
+    resetPassword: (data: { email: string; password: string; code: string }) => 
+      apiRequest('/Account/reset-password', 'POST', data, false),
+    
+    logout: () => 
+      apiRequest('/Account/logout', 'POST'),
+    
+    verifyOTP: (data: { email: string; code: string }) => 
+      apiRequest('/Account/verify-otp', 'POST', data, false),
+    
+    resendOTP: (data: { email: string }) => 
+      apiRequest('/Account/resend-otp', 'POST', data, false),
+  },
+  
   // Courses
   courses: {
-    getAll: (params?: { category?: string; search?: string; page?: number; limit?: number }) => 
-      apiRequest(`/Course/get-all-courses${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
+    getAll: (params?: { 
+      pagenum?: number;
+      pagesize?: number; 
+      Maxpagesize?: number;
+      sort?: string;
+      categoryId?: number;
+      search?: string;
+      minPrice?: number;
+      maxPrice?: number;
+    }) => 
+      apiRequest(`/Course/get-all-courses${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`, 'GET', undefined, false),
     
-    getFeatured: () => 
-      apiRequest("/Course/get-featured-courses"),
+    getById: (id: number) => 
+      apiRequest(`/Course/get-course/${id}`, 'GET', undefined, false),
     
-    getById: (id: string) => 
-      apiRequest(`/Course/get-course-by-id?courseId=${id}`),
+    add: (data: { 
+      Title: string; 
+      Description: string; 
+      Price: number; 
+      Thumbnail: File | File[];
+      IsActive: boolean; 
+      DurationInHours: number;
+      CategoryId: number;
+    }) => {
+      const formData = createFormData(data);
+      return apiRequest('/Course/add-course', 'POST', formData, true, true);
+    },
     
-    getModules: (courseId: string) => 
-      apiRequest(`/Module/get-course-modules?courseId=${courseId}`),
+    update: (data: { 
+      Id: number;
+      Title?: string; 
+      Description?: string; 
+      Price?: number; 
+      Thumbnail?: File | File[];
+      IsActive?: boolean; 
+      DurationInHours?: number;
+      CategoryId?: number;
+    }) => {
+      const formData = createFormData(data);
+      return apiRequest('/Course/update-course', 'PUT', formData, true, true);
+    },
     
-    getLessons: (courseId: string, moduleId: string) => 
-      apiRequest(`/Lesson/get-module-lessons?moduleId=${moduleId}`),
-    
-    enroll: (courseId: string) => 
-      apiRequest(`/Enrollment/enroll-course`, "POST", { courseId }),
-    
-    getEnrollments: () => 
-      apiRequest("/Enrollment/get-student-enrollments"),
-    
-    submitReview: (courseId: string, data: { rating: number; content: string }) => 
-      apiRequest(`/Review/add-review`, "POST", { courseId, ...data }),
+    delete: (id: number) => 
+      apiRequest(`/Course/delete-course/${id}`, 'DELETE'),
   },
   
   // Categories
   categories: {
     getAll: () => 
-      apiRequest("/Category/get-all-categories"),
+      apiRequest("/Category/get-all-categories", 'GET', undefined, false),
     
-    getBySlug: (slug: string) => 
-      apiRequest(`/Category/get-category-by-slug?slug=${slug}`),
+    getById: (id: number) => 
+      apiRequest(`/Category/get-category-by-id/${id}`, 'GET', undefined, false),
     
-    getCourses: (slug: string, params?: { page?: number; limit?: number }) => 
-      apiRequest(`/Category/get-category-courses?slug=${slug}${params ? `&${new URLSearchParams(params as any).toString()}` : ""}`),
+    add: (data: { name: string }) => 
+      apiRequest("/Category/add-category", "POST", data),
+      
+    update: (data: { id: number; name: string }) => 
+      apiRequest("/Category/update-category", "PUT", data),
+      
+    delete: (id: number) => 
+      apiRequest(`/Category/delete-category/${id}`, "DELETE"),
+  },
+  
+  // Modules
+  modules: {
+    getAll: (courseId: number) => 
+      apiRequest(`/CourseModule/get-all-course-modules?courseId=${courseId}`, 'GET', undefined, false),
+    
+    getById: (id: number, courseId: number) => 
+      apiRequest(`/CourseModule/get-course-module-by-id/${id}?courseId=${courseId}`, 'GET', undefined, false),
+    
+    add: (data: { 
+      Title: string;
+      Description: string;
+      IsPublished: boolean;
+      CourseId: number;
+    }) => {
+      const formData = createFormData(data);
+      return apiRequest('/CourseModule/add-course-module', 'POST', formData, true, true);
+    },
+    
+    update: (data: { 
+      Id: number;
+      Title?: string;
+      Description?: string;
+      IsPublished?: boolean;
+    }) => {
+      const formData = createFormData(data);
+      return apiRequest('/CourseModule/update-course-module', 'PUT', formData, true, true);
+    },
+    
+    delete: (id: number) => 
+      apiRequest(`/CourseModule/delete-course-module/${id}`, 'DELETE'),
+  },
+  
+  // Lessons
+  lessons: {
+    getByModule: (moduleId: number) => 
+      apiRequest(`/Lesson/get-module-lessons?moduleId=${moduleId}`, 'GET', undefined, false),
+    
+    getById: (id: number) => 
+      apiRequest(`/Lesson/get-lesson-by-id/${id}`, 'GET', undefined, false),
+    
+    add: (data: {
+      Title: string;
+      Content: File;
+      ContentType: string;
+      DurationInMinutes: number;
+      IsPublished: boolean;
+      ModuleId: number;
+    }) => {
+      const formData = createFormData(data);
+      return apiRequest('/Lesson/add-lesson', 'POST', formData, true, true);
+    },
+    
+    update: (data: {
+      Id: number;
+      Title?: string;
+      Content?: File;
+      ContentType?: string;
+      DurationInMinutes?: number;
+      IsPublished?: boolean;
+    }) => {
+      const formData = createFormData(data);
+      return apiRequest('/Lesson/update-lesson', 'PUT', formData, true, true);
+    },
+    
+    delete: (id: number) => 
+      apiRequest(`/Lesson/delete-lesson/${id}`, 'DELETE'),
+  },
+  
+  // Reviews
+  reviews: {
+    add: (data: { courseId: number; rating: number; reviewContent: string }) => 
+      apiRequest('/CourseReview/add-course-review', 'POST', data),
+    
+    getByCourse: (courseId: number) => 
+      apiRequest(`/CourseReview/get-course-review/${courseId}`, 'GET', undefined, false),
+    
+    update: (data: { id: number; rating: number; reviewContent: string }) => 
+      apiRequest('/CourseReview/update-course-review', 'PUT', data),
+    
+    delete: (reviewId: number) => 
+      apiRequest(`/CourseReview/delete-course-review/${reviewId}`, 'DELETE'),
+  },
+  
+  // Enrollments
+  enrollments: {
+    enroll: (courseId: number) => 
+      apiRequest(`/Enrollment/enroll?courseId=${courseId}`, 'POST'),
+    
+    isEnrolled: (courseId: number) => 
+      apiRequest(`/Enrollment/is-enrolled?courseId=${courseId}`),
+    
+    getById: (id: number) => 
+      apiRequest(`/Enrollment/get-enrollment/${id}`),
+    
+    getCoursesEnrollments: (courseId: number) => 
+      apiRequest(`/Enrollment/get-course-enrollments?courseId=${courseId}`),
+    
+    getStudentEnrollments: () => 
+      apiRequest('/Enrollment/get-student-enrollments'),
+    
+    completeLesson: (lessonId: number) => 
+      apiRequest(`/Enrollment/complete-lesson/${lessonId}`, 'POST'),
+    
+    isLessonCompleted: (lessonId: number) => 
+      apiRequest(`/Enrollment/is-lesson-completed/${lessonId}`),
+    
+    getCompletedLessons: (courseId: number) => 
+      apiRequest(`/Enrollment/completed-lessons/${courseId}`),
+    
+    recalculateProgress: (enrollmentId: number) => 
+      apiRequest(`/Enrollment/recalculate-progress/${enrollmentId}`, 'POST'),
   },
   
   // User profile
@@ -104,55 +309,19 @@ export const API = {
     get: () => 
       apiRequest("/Account/profile"),
     
-    update: (data: { name?: string; avatar?: string }) => 
+    update: (data: UserDTO) => 
       apiRequest("/Account/edit-profile", "PUT", data),
-    
-    changePassword: (data: { currentPassword: string; newPassword: string }) => 
-      apiRequest("/Account/change-password", "PUT", data),
-  },
-  
-  // Instructors
-  instructors: {
-    getAll: (params?: { page?: number; limit?: number }) => 
-      apiRequest(`/Instructor/get-all-instructors${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
-    
-    getById: (id: string) => 
-      apiRequest(`/Instructor/get-instructor-by-id?instructorId=${id}`),
-    
-    getCourses: (id: string, params?: { page?: number; limit?: number }) => 
-      apiRequest(`/Instructor/get-instructor-courses?instructorId=${id}${params ? `&${new URLSearchParams(params as any).toString()}` : ""}`),
-  },
-  
-  // Admin functions
-  admin: {
-    getUsers: (params?: { page?: number; limit?: number; userType?: string }) => 
-      apiRequest(`/Admin/get-all-users${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
-    
-    updateUser: (userId: string, data: { name?: string; isActive?: boolean; userType?: string }) => 
-      apiRequest(`/Admin/update-user`, "PUT", { userId, ...data }),
-  },
-  
-  // Instructor dashboard
-  instructor: {
-    getCourses: (params?: { published?: boolean; page?: number; limit?: number }) => 
-      apiRequest(`/Instructor/get-my-courses${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`),
-    
-    createCourse: (data: { title: string; description: string; price: number; categoryId: string; thumbnail?: string }) => 
-      apiRequest("/Instructor/create-course", "POST", data),
-    
-    updateCourse: (courseId: string, data: { title?: string; description?: string; price?: number; categoryId?: string; thumbnail?: string; isPublished?: boolean }) => 
-      apiRequest("/Instructor/update-course", "PUT", { courseId, ...data }),
-    
-    createModule: (courseId: string, data: { title: string; orderIndex: number }) => 
-      apiRequest("/Instructor/create-module", "POST", { courseId, ...data }),
-    
-    updateModule: (courseId: string, moduleId: string, data: { title?: string; orderIndex?: number }) => 
-      apiRequest("/Instructor/update-module", "PUT", { courseId, moduleId, ...data }),
-    
-    createLesson: (courseId: string, moduleId: string, data: { title: string; content: string; contentType: string; orderIndex: number; duration?: number }) => 
-      apiRequest("/Instructor/create-lesson", "POST", { courseId, moduleId, ...data }),
-    
-    updateLesson: (courseId: string, moduleId: string, lessonId: string, data: { title?: string; content?: string; contentType?: string; orderIndex?: number; duration?: number }) => 
-      apiRequest("/Instructor/update-lesson", "PUT", { courseId, moduleId, lessonId, ...data }),
   }
 };
+
+// Types based on the documentation
+interface UserDTO {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  gender?: string;
+  userType?: string;
+  dateOfBirth?: string;
+}

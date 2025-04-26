@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,8 +10,10 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/login";
 import Register from "./pages/auth/register";
+import VerifyAccount from "./pages/auth/verify-account";
 import CoursesIndex from "./pages/courses/index";
 import CourseDetail from "./pages/courses/course-detail";
+import ProfilePage from "./pages/profile";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/verify-account" element={<VerifyAccount />} />
             
             {/* Student routes */}
             <Route path="/courses" element={<CoursesIndex />} />
@@ -47,7 +49,7 @@ const App = () => (
             
             {/* Protected routes - will be implemented later */}
             <Route path="/dashboard" element={<NotFound />} /> {/* Placeholder */}
-            <Route path="/profile" element={<NotFound />} /> {/* Placeholder */}
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/my-courses" element={<NotFound />} /> {/* Placeholder */}
             <Route path="/instructor/dashboard" element={<NotFound />} /> {/* Placeholder */}
             <Route path="/admin/dashboard" element={<NotFound />} /> {/* Placeholder */}

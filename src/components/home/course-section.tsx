@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -15,19 +14,19 @@ interface CourseSectionProps {
 
 export function CourseSection({ courses, isLoading, error, mockCourses }: CourseSectionProps) {
   // Map API response to match the format expected by components
-  const mappedCourses = courses?.length ? courses.map((course: Course) => ({
+  const mappedCourses = courses?.length ? courses.map((course: any) => ({
     id: course.id.toString(),
-    title: course.title,
-    description: course.description,
+    title: course.title || "Untitled Course",
+    description: course.description || "No description available",
     thumbnail: course.thumbnail || "/placeholder.svg",
     rating: course.rating || 0,
-    price: course.price,
+    price: course.price || 0,
     category: course.categoryName || "Uncategorized",
     instructor: {
       id: course.instructorId || "",
       name: course.instructorName || "Unknown Instructor",
     },
-    duration: `${course.durationInHours} hours`,
+    duration: `${course.durationInHours || 0} hours`,
   })) : mockCourses;
 
   return (

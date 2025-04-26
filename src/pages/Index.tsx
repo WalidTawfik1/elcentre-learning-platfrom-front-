@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { HeroSection } from "@/components/home/hero-section";
@@ -117,7 +116,8 @@ export default function Index() {
       try {
         // Get first page of courses, sorted by rating (descending)
         const result = await CourseService.getAllCourses(1, 4, "rating_desc");
-        return result.items;
+        console.log("API response for courses:", result); // Debug the response
+        return result.items || [];
       } catch (error) {
         console.error("Failed to fetch courses, using mock data:", error);
         return [];
@@ -133,7 +133,9 @@ export default function Index() {
     queryKey: ['categories'],
     queryFn: async () => {
       try {
-        return await CategoryService.getAllCategories();
+        const result = await CategoryService.getAllCategories();
+        console.log("API response for categories:", result); // Debug the response
+        return result || [];
       } catch (error) {
         console.error("Failed to fetch categories, using mock data:", error);
         return [];
@@ -142,8 +144,8 @@ export default function Index() {
   });
 
   // Prepare data for components, fallback to mock data if needed
-  const categories = categoriesData?.length ? categoriesData : [];
-  const courses = coursesData?.length ? coursesData : [];
+  const categories = categoriesData?.length ? categoriesData : mockCategories;
+  const courses = coursesData?.length ? coursesData : mockCourses;
 
   return (
     <MainLayout>

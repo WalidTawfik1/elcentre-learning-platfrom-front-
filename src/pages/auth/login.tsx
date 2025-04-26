@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
@@ -16,9 +15,21 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(email, password);
-    
-    // Navigation will occur if login is successful because of the useEffect in the AuthProvider
+    try {
+      // Wait for login to complete and return success status
+      const success = await login(email, password);
+      
+      if (success) {
+        console.log("Login successful, navigating to home");
+        // Small delay to ensure state updates have propagated
+        setTimeout(() => {
+          navigate('/');
+        }, 300);
+      }
+    } catch (error) {
+      // Error is already handled in the useAuth hook
+      console.error("Login failed:", error);
+    }
   };
 
   return (

@@ -1,5 +1,4 @@
-
-import { apiRequest, apiFormRequest } from "./api";
+import { API } from "@/lib/api";
 import { Course, PaginatedResponse, CourseModule, Lesson, CourseReview } from "@/types/api";
 
 export const CourseService = {
@@ -11,58 +10,76 @@ export const CourseService = {
     search?: string,
     minPrice?: number,
     maxPrice?: number
-  ): Promise<PaginatedResponse<Course>> => {
-    let url = `/Course/get-all-courses?pagenum=${pageNum}&pagesize=${pageSize}`;
+  ): Promise<any> => {
+    const params: any = {
+      pagenum: pageNum,
+      pagesize: pageSize
+    };
     
-    if (sort) url += `&sort=${sort}`;
-    if (categoryId) url += `&categoryId=${categoryId}`;
-    if (search) url += `&search=${encodeURIComponent(search)}`;
-    if (minPrice !== undefined) url += `&minPrice=${minPrice}`;
-    if (maxPrice !== undefined) url += `&maxPrice=${maxPrice}`;
+    if (sort) params.sort = sort;
+    if (categoryId) params.categoryId = categoryId;
+    if (search) params.search = search;
+    if (minPrice !== undefined) params.minPrice = minPrice;
+    if (maxPrice !== undefined) params.maxPrice = maxPrice;
     
-    return apiRequest<PaginatedResponse<Course>>(url);
+    return API.courses.getAll(params);
   },
   
-  getCourseById: async (id: number): Promise<Course> => {
-    return apiRequest<Course>(`/Course/get-course/${id}`);
+  getCourseById: async (id: string | number): Promise<any> => {
+    return API.courses.getById(Number(id));
   },
   
   // Course modules
-  getModulesByCourseId: async (courseId: number): Promise<CourseModule[]> => {
-    return apiRequest<CourseModule[]>(`/CourseModule/get-all-course-modules?courseId=${courseId}`);
+  getModulesByCourseId: async (courseId: string | number): Promise<any> => {
+    return API.modules.getAll(Number(courseId));
+  },
+  
+  // Alias for more readable calls in components
+  getModules: async (courseId: string | number): Promise<any> => {
+    return API.modules.getAll(Number(courseId));
   },
   
   // Lessons
-  getLessonsByModuleId: async (moduleId: number): Promise<Lesson[]> => {
-    return apiRequest<Lesson[]>(`/Lesson/get-module-lessons?moduleId=${moduleId}`);
+  getLessonsByModuleId: async (moduleId: string | number): Promise<any> => {
+    return API.lessons.getByModule(Number(moduleId));
   },
   
-  getLessonById: async (id: number): Promise<Lesson> => {
-    return apiRequest<Lesson>(`/Lesson/get-lesson-by-id/${id}`);
+  // Alias for more readable calls in components
+  getLessons: async (courseId: string | number, moduleId: string | number): Promise<any> => {
+    return API.lessons.getByModule(Number(moduleId));
+  },
+  
+  getLessonById: async (id: string | number): Promise<any> => {
+    return API.lessons.getById(Number(id));
   },
   
   // Reviews
-  getCourseReviews: async (courseId: number): Promise<CourseReview[]> => {
-    return apiRequest<CourseReview[]>(`/CourseReview/get-course-review/${courseId}`);
+  getCourseReviews: async (courseId: string | number): Promise<any> => {
+    return API.reviews.getByCourse(Number(courseId));
   },
   
-  addCourseReview: async (courseId: number, rating: number, reviewContent: string): Promise<any> => {
-    return apiRequest("/CourseReview/add-course-review", {
-      method: "POST",
-      body: JSON.stringify({ courseId, rating, reviewContent }),
-    });
+  addCourseReview: async (courseId: string | number, rating: number, reviewContent: string): Promise<any> => {
+    return API.reviews.add({ courseId: Number(courseId), rating, reviewContent });
   },
   
-  updateCourseReview: async (id: number, rating: number, reviewContent: string): Promise<any> => {
-    return apiRequest("/CourseReview/update-course-review", {
-      method: "PUT",
-      body: JSON.stringify({ id, rating, reviewContent }),
-    });
+  updateCourseReview: async (id: string | number, rating: number, reviewContent: string): Promise<any> => {
+    return API.reviews.update({ id: Number(id), rating, reviewContent });
   },
   
-  deleteCourseReview: async (reviewId: number): Promise<any> => {
-    return apiRequest(`/CourseReview/delete-course-review/${reviewId}`, {
-      method: "DELETE",
-    });
+  deleteCourseReview: async (reviewId: string | number): Promise<any> => {
+    return API.reviews.delete(Number(reviewId));
   },
+
+  // Enrollments
+  getEnrollments: async (): Promise<any> => {
+    return API.enrollments.getStudentEnrollments();
+  },
+
+  enroll: async (courseId: string | number): Promise<any> => {
+    return API.enrollments.enroll(Number(courseId));
+  },
+
+  isEnrolled: async (courseId: string | number): Promise<any> => {
+    return API.enrollments.isEnrolled(Number(courseId));
+  }
 };
