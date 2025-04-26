@@ -291,6 +291,9 @@ export const API = {
     getStudentEnrollments: () => 
       apiRequest('/Enrollment/get-student-enrollments'),
     
+    getStudentsCount: (courseId: number) =>
+      apiRequest(`/Enrollment/students-count/${courseId}`),
+    
     completeLesson: (lessonId: number) => 
       apiRequest(`/Enrollment/complete-lesson/${lessonId}`, 'POST'),
     

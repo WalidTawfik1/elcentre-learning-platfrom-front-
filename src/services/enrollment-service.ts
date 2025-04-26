@@ -40,4 +40,8 @@ export const EnrollmentService = {
   getCompletedLessons: async (courseId: number): Promise<number[]> => {
     return apiRequest<number[]>(`/Enrollment/completed-lessons/${courseId}`);
   },
+  
+  getStudentsCount: async (courseId: number): Promise<number> => {
+    return apiRequest<number>(`/Enrollment/students-count/${courseId}`);
+  },
 };

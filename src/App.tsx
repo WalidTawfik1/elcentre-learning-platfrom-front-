@@ -15,6 +15,8 @@ import CoursesIndex from "./pages/courses/index";
 import CourseDetail from "./pages/courses/course-detail";
 import ProfilePage from "./pages/profile";
 import CategoriesIndex from "./pages/categories";
+import MyCourses from "./pages/my-courses";
+import CourseLearn from "./pages/my-courses/[id]/learn";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -51,7 +53,11 @@ const App = () => (
             {/* Protected routes - will be implemented later */}
             <Route path="/dashboard" element={<NotFound />} /> {/* Placeholder */}
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/my-courses" element={<NotFound />} /> {/* Placeholder */}
+            
+            {/* My Courses routes */}
+            <Route path="/my-courses" element={<MyCourses />} />
+            <Route path="/my-courses/:id/learn" element={<CourseLearn />} />
+            
             <Route path="/instructor/dashboard" element={<NotFound />} /> {/* Placeholder */}
             <Route path="/admin/dashboard" element={<NotFound />} /> {/* Placeholder */}
             
