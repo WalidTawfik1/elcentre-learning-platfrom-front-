@@ -19,6 +19,8 @@ export default function CourseDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   
   // Backend base URL for serving static content
   const API_BASE_URL = "http://elcentre.runasp.net";
@@ -82,6 +84,27 @@ export default function CourseDetail() {
     
     fetchCourse();
   }, [id, isAuthenticated]);
+
+  // Fetch course reviews when the reviews tab is clicked
+  const handleFetchReviews = async () => {
+    if (!id || reviews.length > 0) return; // Don't fetch if we already have reviews
+    
+    setIsLoadingReviews(true);
+    try {
+      const reviewsData = await CourseService.getCourseReviews(id);
+      console.log("Reviews data received:", reviewsData);
+      setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+    } catch (error) {
+      console.error("Error fetching course reviews:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load course reviews. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingReviews(false);
+    }
+  };
 
   const handleEnroll = async () => {
     if (!isAuthenticated) {
@@ -363,6 +386,7 @@ export default function CourseDetail() {
             <TabsTrigger 
               value="reviews"
               className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+              onClick={handleFetchReviews}
             >
               Reviews
             </TabsTrigger>
@@ -544,43 +568,50 @@ export default function CourseDetail() {
                 </div>
               </div>
               
-              <div className="space-y-6">
-                {courseData.reviews && Array.isArray(courseData.reviews) && courseData.reviews.length > 0 ? (
-                  courseData.reviews.map((review: any) => (
-                    <div key={review.id} className="border-b pb-6 last:border-0">
-                      <div className="flex items-start">
-                        <Avatar className="h-10 w-10 mr-3">
-                          <AvatarImage src={review.user?.avatar || ''} />
-                          <AvatarFallback>{review.userName?.charAt(0) || review.user?.name?.charAt(0) || '?'}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium">{review.userName || review.user?.name}</h4>
-                            <span className="text-sm text-muted-foreground">{review.createdAt ? new Date(review.createdAt).toLocaleDateString() : ""}</span>
+              {isLoadingReviews ? (
+                <div className="flex justify-center items-center py-10">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-eduBlue-500"></div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {reviews && reviews.length > 0 ? (
+                    reviews.map((review: any) => (
+                      <div key={review.id} className="border-b pb-6 last:border-0">
+                        <div className="flex items-start">
+                          <Avatar className="h-10 w-10 mr-3">
+                            <AvatarImage src={review.user?.avatar || ''} />
+                            <AvatarFallback>{review.studentName?.charAt(0) || '?'}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium">{review.studentName || "Anonymous Student"}</h4>
+                              <span className="text-sm text-muted-foreground">{review.createdAt ? new Date(review.createdAt).toLocaleDateString() : ""}</span>
+                            </div>
+                            <div className="flex items-center my-1">
+                              {[...Array(5)].map((_, i) => (
+                                <StarIcon
+                                  key={i}
+                                  className={`h-4 w-4 ${
+                                    i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <p className="text-muted-foreground mt-2">{review.reviewContent}</p>
                           </div>
-                          <div className="flex items-center my-1">
-                            {[...Array(5)].map((_, i) => (
-                              <StarIcon
-                                key={i}
-                                className={`h-4 w-4 ${
-                                  i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <p className="text-muted-foreground mt-2">{review.reviewContent || review.content}</p>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-6 border rounded-lg">
+                      <p className="text-muted-foreground">No reviews yet. Be the first to review this course!</p>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-6 border rounded-lg">
-                    <p className="text-muted-foreground">No reviews yet. Be the first to review this course!</p>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
           </TabsContent>
+          
         </Tabs>
       </div>
     </MainLayout>

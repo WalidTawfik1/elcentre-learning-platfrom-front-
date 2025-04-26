@@ -25,11 +25,6 @@ export function Footer() {
                   Categories
                 </Link>
               </li>
-              <li>
-                <Link to="/instructors" className="text-muted-foreground hover:text-foreground">
-                  Instructors
-                </Link>
-              </li>
             </ul>
           </div>
           <div>
