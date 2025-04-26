@@ -1,4 +1,3 @@
-
 import { CategoryList } from "@/components/home/category-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Category } from "@/types/api";
@@ -13,16 +12,15 @@ interface CategorySectionProps {
 export function CategorySection({ categories, isLoading, error, mockCategories }: CategorySectionProps) {
   // Map API response to match the format expected by components
   const mappedCategories = categories?.length ? categories.map((category: Category) => ({
-    id: `category-${category.id}`,
+    id: category.id,
     name: category.name,
     slug: category.name.toLowerCase().replace(/\s+/g, '-'),
     description: `Explore ${category.name} courses`,
-    courseCount: 0, // We don't have this info from the API
     icon: "book" as const, // Default to 'book' icon for all categories from API
   })) : mockCategories;
 
   return (
-    <section className="py-16 bg-muted/30">
+    <section className="py-16 bg-muted/30" id="browse-categories">
       <div className="container">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Browse by Category</h2>
@@ -30,7 +28,7 @@ export function CategorySection({ categories, isLoading, error, mockCategories }
             Discover courses in a variety of domains to enhance your skills and knowledge
           </p>
         </div>
-        
+
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (

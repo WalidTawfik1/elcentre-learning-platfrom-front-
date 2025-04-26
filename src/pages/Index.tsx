@@ -91,16 +91,48 @@ const mockCategories = [
     name: "Mobile Development",
     slug: "mobile-development",
     description: "Explore Mobile Development courses",
+    courseCount: 15,
+    icon: "book" as const,
+  },
+  {
+    id: "category-4",
+    name: "Business",
+    slug: "business",
+    description: "Explore Business courses",
+    courseCount: 22,
+    icon: "users" as const,
+  },
+  {
+    id: "category-5",
+    name: "Marketing",
+    slug: "marketing",
+    description: "Explore Marketing courses",
+    courseCount: 10,
+    icon: "users" as const,
+  },
+  {
+    id: "category-6",
+    name: "Design",
+    slug: "design",
+    description: "Explore Design courses",
+    courseCount: 16,
+    icon: "video" as const,
+  },
+  {
+    id: "category-7",
+    name: "Personal Development",
+    slug: "personal-development",
+    description: "Explore Personal Development courses",
     courseCount: 12,
     icon: "users" as const,
   },
   {
-    id: "category-4",
-    name: "Cloud Computing",
-    slug: "cloud-computing",
-    description: "Explore Cloud Computing courses",
-    courseCount: 15,
-    icon: "book" as const,
+    id: "category-8",
+    name: "Photography",
+    slug: "photography",
+    description: "Explore Photography courses",
+    courseCount: 8,
+    icon: "video" as const,
   },
 ];
 
@@ -133,6 +165,7 @@ export default function Index() {
     queryKey: ['categories'],
     queryFn: async () => {
       try {
+        // Fetch all categories from the Category/get-all-categories endpoint
         const result = await CategoryService.getAllCategories();
         console.log("API response for categories:", result); // Debug the response
         return result || [];

@@ -4,12 +4,15 @@ import { CourseCard } from "@/components/courses/course-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { CategoryService } from "@/services/category-service";
 import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Slider } from "@/components/ui/slider";
+import { useLocation } from "react-router-dom";
 
-// Mock data for development as fallback
+// Mock data for fallback when API is unavailable
 const MOCK_COURSES = [
   {
     id: "course-1",
@@ -97,43 +100,66 @@ const MOCK_COURSES = [
   },
 ];
 
+// Replace the mock categories with a simplified version that includes "All Categories"
 const MOCK_CATEGORIES = [
-  { id: "cat-1", name: "All Categories" },
-  { id: "cat-2", name: "Web Development" },
-  { id: "cat-3", name: "Data Science" },
-  { id: "cat-4", name: "Business" },
-  { id: "cat-5", name: "Design" },
-  { id: "cat-6", name: "Marketing" },
-  { id: "cat-7", name: "Personal Development" },
-  { id: "cat-8", name: "Programming" },
-  { id: "cat-9", name: "Mobile Development" },
+  { id: 0, name: "All Categories" },
+  { id: 1, name: "Web Development" },
+  { id: 2, name: "Data Science" },
+  { id: 3, name: "Business" },
+  { id: 4, name: "Design" },
+  { id: 5, name: "Marketing" },
+  { id: 6, name: "Personal Development" },
+  { id: 7, name: "Programming" },
+  { id: 8, name: "Mobile Development" },
 ];
 
 export default function CoursesIndex() {
+  // State for filters
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [selectedCategory, setSelectedCategory] = useState(0); // 0 is "All Categories"
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [filteredCourses, setFilteredCourses] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const coursesPerPage = 12;
   
-  // Fetch courses with React Query
+  // Get URL parameters for initial filter state
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const categoryParam = queryParams.get('category');
+
+  // Use React Query for data fetching
   const { 
     data: coursesData,
-    isLoading: isCoursesLoading,
-    error: coursesError
+    isLoading: isCoursesLoading
   } = useQuery({
-    queryKey: ['allCourses'],
+    queryKey: ['courses', currentPage, selectedCategory, searchTerm, priceRange],
     queryFn: async () => {
       try {
-        const result = await CourseService.getAllCourses(1, 20);
-        console.log("API response for all courses:", result);
-        return result.items || [];
+        // Only filter by category if not "All Categories"
+        const categoryId = selectedCategory > 0 ? selectedCategory : undefined;
+        
+        // Convert string search term to a format the API expects
+        const searchQuery = searchTerm.trim() || undefined;
+        
+        const result = await CourseService.getAllCourses(
+          currentPage, 
+          coursesPerPage, 
+          undefined, // sort parameter
+          categoryId,
+          searchQuery,
+          priceRange[0] > 0 ? priceRange[0] : undefined,
+          priceRange[1] < 1000 ? priceRange[1] : undefined
+        );
+        
+        console.log("API response for courses:", result);
+        return result || { items: [], totalCount: 0 };
       } catch (error) {
         console.error("Failed to fetch courses, using mock data:", error);
-        return MOCK_COURSES;
+        return { items: MOCK_COURSES, totalCount: MOCK_COURSES.length };
       }
     }
   });
 
-  // Fetch categories with React Query
   const { 
     data: categoriesData,
     isLoading: isCategoriesLoading
@@ -167,45 +193,50 @@ export default function CoursesIndex() {
     duration: `${course.durationInHours || 0} hours`,
   });
 
-  // Filter courses when search term or category changes
-  useEffect(() => {
-    if (!coursesData) return;
-
-    let filtered = [...coursesData];
-    
-    // Apply category filter
-    if (selectedCategory !== "All Categories") {
-      filtered = filtered.filter(course => course.categoryName === selectedCategory);
-    }
-    
-    // Apply search filter
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        course => 
-          course.title?.toLowerCase().includes(search) || 
-          course.description?.toLowerCase().includes(search)
-      );
-    }
-    
-    setFilteredCourses(filtered.map(mapCourseData));
-  }, [searchTerm, selectedCategory, coursesData]);
-
+  // Handle search form submission
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // The filtering is already handled by the useEffect
+    // Reset to first page when searching
+    setCurrentPage(1);
   };
+
+  // Handle category change
+  const handleCategoryChange = (value: string) => {
+    const categoryId = parseInt(value);
+    setSelectedCategory(categoryId);
+    setCurrentPage(1); // Reset to page 1 when changing category
+  };
+
+  // Apply price filter
+  const handlePriceChange = (range: [number, number]) => {
+    setPriceRange(range);
+    setCurrentPage(1); // Reset to page 1 when changing price
+  };
+
+  // Calculate pagination
+  const totalCourses = coursesData?.totalCount || 0;
+  const totalPages = Math.ceil(totalCourses / coursesPerPage);
+
+  // Initialize filters from URL parameters when component mounts
+  useEffect(() => {
+    if (categoryParam) {
+      const categoryId = parseInt(categoryParam);
+      if (!isNaN(categoryId)) {
+        setSelectedCategory(categoryId);
+      }
+    }
+  }, [categoryParam]);
+
+  // Update filtered courses when data changes
+  useEffect(() => {
+    if (coursesData?.items) {
+      setFilteredCourses(coursesData.items.map(mapCourseData));
+    }
+  }, [coursesData]);
 
   // Use mock data if API fetch fails
   const categories = categoriesData || MOCK_CATEGORIES;
   const isLoading = isCoursesLoading || isCategoriesLoading;
-
-  // Initialize filteredCourses with all courses when they first load
-  useEffect(() => {
-    if (coursesData && coursesData.length > 0) {
-      setFilteredCourses(coursesData.map(mapCourseData));
-    }
-  }, [coursesData]);
 
   return (
     <MainLayout>
@@ -217,73 +248,151 @@ export default function CoursesIndex() {
           </div>
           
           <form onSubmit={handleSearch} className="flex space-x-2">
-            <div className="relative w-full md:w-auto">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search courses..."
-                className="pl-8 w-full md:w-[260px]"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Select 
-              value={selectedCategory} 
-              onValueChange={setSelectedCategory}
-            >
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.name}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button type="submit">Search</Button>
+            <Input
+              type="search"
+              placeholder="Search courses..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full md:w-[200px] lg:w-[300px]"
+            />
+            <Button type="submit" variant="default">
+              Search
+            </Button>
           </form>
         </div>
-
-        {isLoading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Filters Sidebar */}
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-medium mb-4">Filter by Category</h3>
+              <Select value={selectedCategory.toString()} onValueChange={handleCategoryChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <h3 className="font-medium mb-4">Price Range</h3>
+              <div className="px-2">
+                <Slider
+                  defaultValue={[0, 1000]}
+                  min={0}
+                  max={1000}
+                  step={50}
+                  value={priceRange}
+                  onValueChange={handlePriceChange}
+                  className="mb-6"
+                />
+                <div className="flex items-center justify-between">
+                  <span>${priceRange[0]}</span>
+                  <span>${priceRange[1]}</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Additional filters can be added here */}
           </div>
-        ) : filteredCourses.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {filteredCourses.map((course) => (
-              <CourseCard
-                key={course.id}
-                id={course.id}
-                title={course.title}
-                description={course.description}
-                thumbnail={course.thumbnail}
-                rating={course.rating}
-                price={course.price}
-                category={course.category}
-                instructor={course.instructor}
-                duration={course.duration}
-              />
-            ))}
+          
+          {/* Course Listings */}
+          <div className="lg:col-span-3">
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="h-[300px] rounded border bg-card">
+                    <div className="h-[150px] bg-muted" />
+                    <div className="p-4 space-y-2">
+                      <Skeleton className="h-5 w-4/5" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/4" />
+                      <div className="flex justify-between items-center mt-4">
+                        <Skeleton className="h-4 w-1/4" />
+                        <Skeleton className="h-8 w-24" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredCourses.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="text-6xl mb-4">🔍</div>
+                <h3 className="text-2xl font-medium mb-2">No courses found</h3>
+                <p className="text-muted-foreground mb-6">
+                  Try adjusting your filters or search term
+                </p>
+                <Button onClick={() => {
+                  setSearchTerm("");
+                  setSelectedCategory(0);
+                  setPriceRange([0, 1000]);
+                }}>
+                  Reset Filters
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredCourses.map((course) => (
+                    <CourseCard key={course.id} 
+                      id={course.id}
+                      title={course.title}
+                      description={course.description}
+                      thumbnail={course.thumbnail}
+                      rating={course.rating}
+                      price={course.price}
+                      category={course.category}
+                      instructor={course.instructor}
+                      duration={course.duration}
+                    />
+                  ))}
+                </div>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center mt-8">
+                    <div className="flex space-x-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="icon"
+                          onClick={() => setCurrentPage(page)}
+                        >
+                          {page}
+                        </Button>
+                      ))}
+                      
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
-        ) : (
-          <div className="text-center py-20">
-            <h3 className="text-xl font-medium mb-2">No courses found</h3>
-            <p className="text-muted-foreground mb-8">
-              We couldn't find any courses matching your search criteria.
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSearchTerm("");
-                setSelectedCategory("All Categories");
-              }}
-            >
-              Clear filters
-            </Button>
-          </div>
-        )}
+        </div>
       </div>
     </MainLayout>
   );

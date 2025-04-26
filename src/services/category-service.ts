@@ -4,8 +4,10 @@ import { Category } from "@/types/api";
 export const CategoryService = {
   getAllCategories: async (): Promise<Category[]> => {
     try {
+      // This endpoint is already defined in API.categories.getAll() which points to /Category/get-all-categories
       const result = await API.categories.getAll();
-      return result || [];
+      console.log("Categories fetched from API:", result);
+      return Array.isArray(result) ? result : [];
     } catch (error) {
       console.error("Error fetching categories:", error);
       return [];
@@ -14,7 +16,11 @@ export const CategoryService = {
   
   getCategoryById: async (id: string | number): Promise<Category | null> => {
     try {
-      return await API.categories.getById(Number(id));
+      const result = await API.categories.getById(Number(id));
+      if (result && typeof result === 'object' && result !== null && 'id' in result && 'name' in result) {
+        return result as Category;
+      }
+      return null;
     } catch (error) {
       console.error(`Error fetching category with id ${id}:`, error);
       return null;
@@ -23,7 +29,8 @@ export const CategoryService = {
   
   addCategory: async (name: string): Promise<Category | null> => {
     try {
-      return await API.categories.add({ name });
+      const result = await API.categories.add({ name });
+      return result as Category;
     } catch (error) {
       console.error("Error adding category:", error);
       return null;
@@ -32,7 +39,8 @@ export const CategoryService = {
   
   updateCategory: async (id: number, name: string): Promise<Category | null> => {
     try {
-      return await API.categories.update({ id, name });
+      const result = await API.categories.update({ id, name });
+      return result as Category;
     } catch (error) {
       console.error(`Error updating category with id ${id}:`, error);
       return null;
