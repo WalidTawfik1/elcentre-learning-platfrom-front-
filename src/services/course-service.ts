@@ -88,5 +88,17 @@ export const CourseService = {
   isEnrolled: async (courseId: string | number): Promise<any> => {
     // Use EnrollmentService directly for consistency
     return EnrollmentService.isEnrolled(Number(courseId));
+  },
+
+  // Get enrollment count for a course
+  getEnrollmentCount: async (courseId: string | number): Promise<any> => {
+   return API.enrollments.getStudentsCount(Number(courseId));
+  },
+
+  // Get course reviews with count information
+  getCourseReviewsWithCount: async (courseId: string | number): Promise<number> => {
+    const reviews = await API.reviews.getByCourse(Number(courseId)) as { studentId: string, studentName: string, id: number, rating: number, reviewContent: string, createdAt: string, count: number }[];
+    const reviewCount = reviews[0]?.count || 0;  // Assuming reviews is an array and you're interested in the first one
+    return reviewCount;
   }
 };

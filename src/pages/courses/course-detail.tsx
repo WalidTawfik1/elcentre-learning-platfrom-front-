@@ -21,6 +21,8 @@ export default function CourseDetail() {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [enrollmentCount, setEnrollmentCount] = useState<number>(0);
+  const [reviewCount, setReviewCount] = useState<number>(0);
   
   // Backend base URL for serving static content
   const API_BASE_URL = "http://elcentre.runasp.net";
@@ -60,6 +62,28 @@ export default function CourseDetail() {
           
           setModules(modulesWithLessons);
         }
+        
+        // Fetch enrollment count
+        try {
+          const count = await CourseService.getEnrollmentCount(id);
+          console.log("Enrollment count:", count);
+          setEnrollmentCount(count);
+        } catch (error) {
+          console.error("Error fetching enrollment count:", error);
+        }
+        
+        // Fetch reviews with count
+        try {
+          const reviewsWithCount = await CourseService.getCourseReviewsWithCount(id);
+          console.log("Reviews with count:", reviewsWithCount);
+          
+          // Directly set the review count, defaulting to 0 if it's undefined
+          setReviewCount(reviewsWithCount || 0);
+      } catch (error) {
+          console.error("Error fetching reviews with count:", error);
+          setReviewCount(0);  // Optional: set to 0 if there’s an error fetching
+      }
+      
         
         // Check if user is enrolled - with better debugging
         if (isAuthenticated) {
@@ -232,7 +256,7 @@ export default function CourseDetail() {
                 </Badge>
                 <div className="flex items-center text-sm text-muted-foreground">
                   <StarIcon className="h-4 w-4 text-yellow-400 fill-yellow-400 mr-1" />
-                  <span>{courseData.rating || 0} ({courseData.reviewCount || 0} reviews)</span>
+                  <span>{courseData.rating || 0} ({reviewCount || 0} reviews)</span>
                 </div>
               </div>
               <h1 className="text-3xl md:text-4xl font-bold mb-4">{courseData.title}</h1>
@@ -260,7 +284,7 @@ export default function CourseDetail() {
                 </div>
                 <div className="flex items-center">
                   <User className="h-4 w-4 mr-1" />
-                  <span>{courseData.enrollmentCount?.toLocaleString() || courseData.studentsCount?.toLocaleString() || 0} students</span>
+                  <span>{enrollmentCount?.toLocaleString() || courseData.studentsCount?.toLocaleString() || 0} students</span>
                 </div>
               </div>
               
@@ -280,9 +304,6 @@ export default function CourseDetail() {
                   <div className="flex gap-4">
                     <Button onClick={handleEnroll} disabled={isEnrolling} className="bg-eduBlue-500 hover:bg-eduBlue-600">
                       {isEnrolling ? "Enrolling..." : courseData.price === 0 ? "Enroll for Free" : `Enroll for ${courseData.price} LE`}
-                    </Button>
-                    <Button variant="outline" className="border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50">
-                      Add to Wishlist
                     </Button>
                   </div>
                 )}
@@ -328,7 +349,7 @@ export default function CourseDetail() {
                       <User className="h-5 w-5 text-muted-foreground shrink-0" />
                       <div>
                         <p className="font-medium">Students Enrolled</p>
-                        <p className="text-sm text-muted-foreground">{courseData.enrollmentCount?.toLocaleString() || courseData.studentsCount?.toLocaleString() || 0} students</p>
+                        <p className="text-sm text-muted-foreground">{enrollmentCount?.toLocaleString() || courseData.studentsCount?.toLocaleString() || 0} students</p>
                       </div>
                     </div>
                   </div>
@@ -394,7 +415,7 @@ export default function CourseDetail() {
               className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
               onClick={handleFetchReviews}
             >
-              Reviews
+              Reviews ({reviewCount} reviews)
             </TabsTrigger>
           </TabsList>
           
