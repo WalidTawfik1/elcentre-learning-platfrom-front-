@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -8,9 +7,9 @@ export function HeroSection() {
       <div className="container relative z-10">
         <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
           <img
-            src="/lovable-uploads/9b447436-da1d-48da-a60f-33c2518e8e50.png"
+            src="/ELCentreLogo21.png"
             alt="ElCentre Logo"
-            className="h-16 w-auto mb-3"
+            className="h-20 w-auto mb-6"
             draggable={false}
           />
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">

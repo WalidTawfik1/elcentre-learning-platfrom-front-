@@ -35,14 +35,13 @@ export function NavBar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
-        <div className="mr-4 hidden md:flex">
-          <Link to="/" className="mr-6 flex items-center space-x-2">
+        <div className="mr-4 hidden md:flex items-center">
+          <Link to="/" className="mr-6 flex items-center self-center">
             <img
-              src="/lovable-uploads/9b447436-da1d-48da-a60f-33c2518e8e50.png"
+              src="/ELCentreLogo21.png"
               alt="ElCentre Logo"
-              className="h-10 w-auto"
+              className="h-8 w-auto my-auto -mt-2.5"
             />
-            <span className="hidden font-bold sm:inline-block text-eduBlue-500 text-xl">ElCentre</span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <Link to="/courses" className="transition-colors hover:text-foreground/80">
@@ -67,14 +66,13 @@ export function NavBar() {
           </nav>
         </div>
 
-        <div className="flex-1 md:hidden">
-          <Link to="/" className="flex items-center space-x-2">
+        <div className="md:hidden">
+          <Link to="/">
             <img
-              src="/lovable-uploads/9b447436-da1d-48da-a60f-33c2518e8e50.png"
+              src="/ELCentreLogo21.png"
               alt="ElCentre Logo"
-              className="h-8 w-auto"
+              className="h-100"
             />
-            <span className="font-bold text-eduBlue-500 text-xl">ElCentre</span>
           </Link>
         </div>
 
