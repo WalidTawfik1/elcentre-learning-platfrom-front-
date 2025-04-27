@@ -1,16 +1,41 @@
 import { Course } from "@/types/api";
 import { toast } from "@/components/ui/use-toast";
 
-// Key for storing wishlist data in localStorage
-const WISHLIST_STORAGE_KEY = "elcentre_wishlist";
+// Base key for storing wishlist data in localStorage
+const WISHLIST_STORAGE_BASE_KEY = "elcentre_wishlist";
 
 export const WishlistService = {
+  /**
+   * Get the user-specific wishlist storage key
+   * If userId is provided, it creates a user-specific key
+   * Otherwise, falls back to anonymous wishlist
+   */
+  getStorageKey: (): string => {
+    // Try to get current user ID from localStorage 
+    // (where it should be stored during login)
+    const userData = localStorage.getItem("elcentre_user");
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        if (user && user.id) {
+          return `${WISHLIST_STORAGE_BASE_KEY}_${user.id}`;
+        }
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+    
+    // Fallback to anonymous wishlist
+    return WISHLIST_STORAGE_BASE_KEY;
+  },
+
   /**
    * Get all courses in the wishlist
    */
   getWishlist: (): Course[] => {
     try {
-      const wishlistData = localStorage.getItem(WISHLIST_STORAGE_KEY);
+      const storageKey = WishlistService.getStorageKey();
+      const wishlistData = localStorage.getItem(storageKey);
       return wishlistData ? JSON.parse(wishlistData) : [];
     } catch (error) {
       console.error("Error loading wishlist from localStorage:", error);
@@ -33,7 +58,8 @@ export const WishlistService = {
       
       // Add course to wishlist
       const updatedWishlist = [...currentWishlist, course];
-      localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(updatedWishlist));
+      const storageKey = WishlistService.getStorageKey();
+      localStorage.setItem(storageKey, JSON.stringify(updatedWishlist));
       
       // Show success notification
       toast({
@@ -64,7 +90,8 @@ export const WishlistService = {
       
       // Remove course from wishlist
       const updatedWishlist = currentWishlist.filter(item => item.id !== courseId);
-      localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(updatedWishlist));
+      const storageKey = WishlistService.getStorageKey();
+      localStorage.setItem(storageKey, JSON.stringify(updatedWishlist));
       
       // Show success notification
       toast({
@@ -102,7 +129,8 @@ export const WishlistService = {
    * Clear the entire wishlist
    */
   clearWishlist: (): void => {
-    localStorage.removeItem(WISHLIST_STORAGE_KEY);
+    const storageKey = WishlistService.getStorageKey();
+    localStorage.removeItem(storageKey);
     toast({
       title: "Wishlist cleared",
       description: "All courses have been removed from your wishlist.",

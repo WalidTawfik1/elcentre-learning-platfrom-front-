@@ -18,6 +18,9 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Key for storing user data in localStorage
+const USER_STORAGE_KEY = "elcentre_user";
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserDTO | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +31,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isFetchingRef = useRef(false);
   const lastFetchTimeRef = useRef<number>(0);
   const minimumFetchInterval = 5000; // 5 seconds minimum between fetches
+  
+  // Helper function to store user in localStorage
+  const storeUserInLocalStorage = (userData: UserDTO | null) => {
+    if (userData) {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+    } else {
+      localStorage.removeItem(USER_STORAGE_KEY);
+    }
+  };
   
   // Use useCallback to memoize the fetchUser function
   const fetchUser = useCallback(async (force = false) => {
@@ -46,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!document.cookie.includes('jwt=')) {
       console.log("No JWT cookie found, skipping profile fetch");
       setUser(null);
+      storeUserInLocalStorage(null); // Clear user data from localStorage
       setIsLoading(false);
       return;
     }
@@ -64,11 +77,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         avatar: undefined
       };
       setUser(userWithComputedProps);
+      storeUserInLocalStorage(userWithComputedProps); // Store user in localStorage
       console.log("User state updated:", userWithComputedProps);
       setError(null);
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
       setUser(null);
+      storeUserInLocalStorage(null); // Clear user data from localStorage
       setError("Failed to fetch user profile");
     } finally {
       setIsLoading(false);
@@ -112,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             avatar: undefined
           };
           setUser(userWithComputedProps);
+          storeUserInLocalStorage(userWithComputedProps); // Store user in localStorage
         }
         
         console.log("User authentication state after login:", { user: !!user, cookieExists: document.cookie.includes('jwt=') });
@@ -133,6 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error: any) {
       setUser(null);
+      storeUserInLocalStorage(null); // Clear user data from localStorage
       setIsLoading(false);
       const errorMessage = error.message || "Login failed. Please check your network connection.";
       setError(errorMessage);
@@ -173,6 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       
       setUser(null);
+      storeUserInLocalStorage(null); // Clear user data from localStorage
       toast({
         title: "Logged out",
         description: "You have been logged out successfully.",
@@ -194,6 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await AuthService.updateProfile(userData);
       setUser(userData);
+      storeUserInLocalStorage(userData); // Update user in localStorage
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
