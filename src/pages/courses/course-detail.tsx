@@ -6,8 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { StarIcon, Play, Clock, User, Book, Video, CheckCircle, Edit, Trash2 } from "lucide-react";
+import { StarIcon, Play, Clock, User, Book, Video, CheckCircle, Edit, Trash2, Heart } from "lucide-react";
 import { CourseService } from "@/services/course-service";
+import { WishlistService } from "@/services/wishlist-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -34,6 +35,7 @@ export default function CourseDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [isInWishlist, setIsInWishlist] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [enrollmentCount, setEnrollmentCount] = useState<number>(0);
@@ -193,6 +195,17 @@ export default function CourseDetail() {
     }
   };
 
+  // Handle toggling wishlist
+  const handleToggleWishlist = () => {
+    if (!course) return;
+    
+    const success = WishlistService.toggleWishlist(course);
+    if (success) {
+      // Update local state to reflect the change
+      setIsInWishlist(!isInWishlist);
+    }
+  };
+
   // Backend base URL for serving static content
   const API_BASE_URL = "http://elcentre.runasp.net";
   
@@ -206,6 +219,12 @@ export default function CourseDetail() {
         const courseData = await CourseService.getCourseById(id);
         console.log("Course data received:", courseData);
         setCourse(courseData);
+        
+        // Check if course is in wishlist
+        if (courseData) {
+          const inWishlist = WishlistService.isInWishlist(courseData.id);
+          setIsInWishlist(inWishlist);
+        }
         
         // Get modules and lessons for this course
         const modulesData = await CourseService.getModules(id);
@@ -250,7 +269,7 @@ export default function CourseDetail() {
           setReviewCount(reviewsWithCount || 0);
       } catch (error) {
           console.error("Error fetching reviews with count:", error);
-          setReviewCount(0);  // Optional: set to 0 if there’s an error fetching
+          setReviewCount(0);  // Optional: set to 0 if there's an error fetching
       }
       
         
@@ -465,11 +484,27 @@ export default function CourseDetail() {
                         Continue Learning
                       </Link>
                     </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleToggleWishlist}
+                      className={isInWishlist ? "bg-red-50 border-red-200 text-red-500 hover:bg-red-100" : ""}
+                    >
+                      <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
+                      {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                    </Button>
                   </div>
                 ) : (
                   <div className="flex gap-4">
                     <Button onClick={handleEnroll} disabled={isEnrolling} className="bg-eduBlue-500 hover:bg-eduBlue-600">
                       {isEnrolling ? "Enrolling..." : courseData.price === 0 ? "Enroll for Free" : `Enroll for ${courseData.price} LE`}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleToggleWishlist}
+                      className={isInWishlist ? "bg-red-50 border-red-200 text-red-500 hover:bg-red-100" : ""}
+                    >
+                      <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
+                      {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
                     </Button>
                   </div>
                 )}
@@ -528,14 +563,27 @@ export default function CourseDetail() {
                             Continue Learning
                           </Link>
                         </Button>
-                        <Button variant="outline" className="w-full border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50">
-                          View Course Materials
+                        <Button 
+                          variant="outline" 
+                          className="w-full"
+                          onClick={handleToggleWishlist}
+                        >
+                          <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
+                          {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
                         </Button>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-2">
                         <Button onClick={handleEnroll} disabled={isEnrolling} className="w-full bg-eduBlue-500 hover:bg-eduBlue-600">
                           {isEnrolling ? "Enrolling..." : courseData.price === 0 ? "Enroll for Free" : `Enroll for ${courseData.price} LE`}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="w-full"
+                          onClick={handleToggleWishlist}
+                        >
+                          <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
+                          {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
                         </Button>
                       </div>
                     )}

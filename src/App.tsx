@@ -18,6 +18,7 @@ import ProfilePage from "./pages/profile";
 import CategoriesIndex from "./pages/categories";
 import MyCourses from "./pages/my-courses";
 import CourseLearn from "./pages/my-courses/[id]/learn";
+import StudentDashboard from "./pages/dashboard";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -52,8 +53,8 @@ const App = () => (
             <Route path="/categories/:slug" element={<NotFound />} /> {/* Placeholder */}
             <Route path="/instructors" element={<NotFound />} /> {/* Placeholder */}
             
-            {/* Protected routes - will be implemented later */}
-            <Route path="/dashboard" element={<NotFound />} /> {/* Placeholder */}
+            {/* Protected routes */}
+            <Route path="/dashboard" element={<StudentDashboard />} />
             <Route path="/profile" element={<ProfilePage />} />
             
             {/* My Courses routes */}
