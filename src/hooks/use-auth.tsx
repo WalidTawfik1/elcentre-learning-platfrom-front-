@@ -48,15 +48,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const timeSinceLastFetch = currentTime - lastFetchTimeRef.current;
     
     if (!force && (isFetchingRef.current || (timeSinceLastFetch < minimumFetchInterval && lastFetchTimeRef.current !== 0))) {
-      console.log(
-        `Profile fetch skipped: ${isFetchingRef.current ? 'Already fetching' : 'Too soon'} (${Math.round(timeSinceLastFetch / 1000)}s since last fetch)`
-      );
       return;
     }
     
     // Check if we have JWT cookie before even trying
     if (!document.cookie.includes('jwt=')) {
-      console.log("No JWT cookie found, skipping profile fetch");
       setUser(null);
       storeUserInLocalStorage(null); // Clear user data from localStorage
       setIsLoading(false);
@@ -66,11 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       isFetchingRef.current = true;
       lastFetchTimeRef.current = currentTime;
-      console.log("Attempting to fetch user profile...");
       
-      const userData = await AuthService.getProfile();
-      console.log("Profile fetch successful:", userData);
-      
+      const userData = await AuthService.getProfile();      
       const userWithComputedProps = {
         ...userData,
         name: `${userData.firstName} ${userData.lastName}`,
@@ -78,7 +71,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       setUser(userWithComputedProps);
       storeUserInLocalStorage(userWithComputedProps); // Store user in localStorage
-      console.log("User state updated:", userWithComputedProps);
       setError(null);
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
@@ -98,7 +90,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Check for existing authentication on load - only once when component mounts
   useEffect(() => {
-    console.log("Auth provider initialized, checking for JWT cookie");
     fetchUser();
   }, [fetchUser]);
 
@@ -106,9 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      console.log("Attempting login...");
       const response = await AuthService.login({ email, password });
-      console.log("Login successful:", response);
       
       // Wait a moment for the cookie to be set
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -130,7 +119,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           storeUserInLocalStorage(userWithComputedProps); // Store user in localStorage
         }
         
-        console.log("User authentication state after login:", { user: !!user, cookieExists: document.cookie.includes('jwt=') });
         toast({
           title: "Login successful",
           description: "Welcome back!",

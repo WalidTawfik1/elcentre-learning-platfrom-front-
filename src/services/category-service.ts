@@ -6,7 +6,6 @@ export const CategoryService = {
     try {
       // This endpoint is already defined in API.categories.getAll() which points to /Category/get-all-categories
       const result = await API.categories.getAll();
-      console.log("Categories fetched from API:", result);
       return Array.isArray(result) ? result : [];
     } catch (error) {
       console.error("Error fetching categories:", error);

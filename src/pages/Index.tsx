@@ -148,7 +148,6 @@ export default function Index() {
       try {
         // Fetch all courses using the specified endpoint with pagination
         const result = await CourseService.getAllCourses(1, 16);
-        console.log("API response for courses:", result); // Debug the response
         return result?.data || [];
       } catch (error) {
         console.error("Failed to fetch courses, using mock data:", error);
@@ -167,7 +166,6 @@ export default function Index() {
       try {
         // Fetch all categories from the Category/get-all-categories endpoint
         const result = await CategoryService.getAllCategories();
-        console.log("API response for categories:", result); // Debug the response
         return result || [];
       } catch (error) {
         console.error("Failed to fetch categories, using mock data:", error);

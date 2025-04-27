@@ -36,7 +36,6 @@ export const AuthService = {
       const token = response.message || response.token || response.accessToken || response.jwt;
       
       if (token) {
-        console.log("Token received from server, setting cookie manually");
         // Remove any existing token cookie that might be present
         document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         // Set only the JWT as a cookie that expires in 7 days

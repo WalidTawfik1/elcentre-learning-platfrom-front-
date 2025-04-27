@@ -15,15 +15,40 @@ const getCookie = (name: string): string | null => {
   return null;
 };
 
+// Special silent fetch function for endpoints that might 404 in development
+// This prevents the browser from logging 404 errors to the console
+async function silentFetch(url: string, config: RequestInit): Promise<Response> {
+  // Use a try-catch to swallow errors if needed
+  try {
+    return await fetch(url, config);
+  } catch (error) {
+    // Create a mock Response object for 404
+    return new Response(JSON.stringify([]), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
 // Helper function for making API requests
 async function apiRequest<T>(
   endpoint: string,
   method: string = "GET",
   data?: any,
   requiresAuth: boolean = true,
-  isFormData: boolean = false
+  isFormData: boolean = false,
+  silentMode: boolean = false
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
+  
+  // For logging purposes, extract endpoint path without query params
+  const endpointPath = endpoint.split('?')[0];
+  
+  // Detect if this is a lesson module request, which might result in 404s during development
+  const isLessonModuleRequest = endpointPath.includes('/Lesson/get-module-lessons');
+  
+  // Always use silent mode for lesson module requests
+  silentMode = silentMode || isLessonModuleRequest;
   
   const headers: HeadersInit = {
     "Accept": "application/json",
@@ -39,9 +64,11 @@ async function apiRequest<T>(
     const token = getCookie('jwt');
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
-      console.log(`Adding JWT token to request: Bearer ${token.substring(0, 10)}...`);
     } else {
-      console.warn('No JWT token found in cookies for authenticated request');
+      // Don't log this warning for silent mode requests
+      if (!silentMode) {
+        console.warn('No JWT token found in cookies for authenticated request');
+      }
     }
   }
 
@@ -57,34 +84,24 @@ async function apiRequest<T>(
       config.body = data;
     } else if (method === "POST" || method === "PUT" || method === "PATCH") {
       config.body = JSON.stringify(data);
-      console.log(`Request payload for ${url}:`, JSON.stringify(data));
     }
   }
 
   try {
-    console.log(`Making API request to: ${url}`, { method, hasData: !!data, requiresAuth });
-    const response = await fetch(url, config);
+    // Use the appropriate fetch function based on silent mode
+    const response = silentMode 
+      ? await silentFetch(url, config)
+      : await fetch(url, config);
     
-    // Log full response for debugging
-    console.log(`Response status for ${endpoint}:`, response.status);
-    console.log(`Response status text:`, response.statusText);
+    // For silent mode requests that return 404, return empty array/object
+    if (silentMode && response.status === 404) {
+      return ([] as unknown) as T;
+    }
     
-    // Clone response for logging and actual usage
-    const responseClone = response.clone();
-    
-    try {
-      const responseText = await responseClone.text();
-      console.log(`Response body for ${endpoint}:`, responseText);
-      
-      // Try to parse as JSON for debugging
-      try {
-        const responseData = JSON.parse(responseText);
-        console.log(`Parsed response data:`, responseData);
-      } catch (parseError) {
-        console.log(`Response is not valid JSON:`, responseText);
-      }
-    } catch (textError) {
-      console.log(`Couldn't read response as text:`, textError);
+    // Only log for non-silent requests
+    if (!silentMode) {
+      // Log reduced information without full URLs
+      console.log(`API ${method} to ${endpointPath} - Status: ${response.status}`);
     }
     
     if (!response.ok) {
@@ -93,9 +110,21 @@ async function apiRequest<T>(
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || `API Error: ${response.status}`;
-        console.error(`API error details:`, errorData);
+        
+        // Only log errors for non-silent requests
+        if (!silentMode) {
+          console.error(`API Error (${method} ${endpointPath}):`, {
+            status: response.status,
+            message: errorData.message || "Unknown error"
+          });
+        }
       } catch (e) {
         errorMessage = `API Error: ${response.status}`;
+      }
+      
+      // For silent mode, just return empty data instead of throwing
+      if (silentMode) {
+        return ([] as unknown) as T;
       }
       
       throw new Error(errorMessage);
@@ -110,11 +139,20 @@ async function apiRequest<T>(
     try {
       return await response.json();
     } catch (jsonError) {
-      console.warn(`Could not parse response as JSON:`, jsonError);
+      // Only log warnings for non-silent requests
+      if (!silentMode) {
+        console.warn(`Could not parse response as JSON for ${endpointPath}`);
+      }
       return {} as T;
     }
   } catch (error) {
-    console.error("API request failed:", error);
+    // For silent mode, just return empty data instead of throwing
+    if (silentMode) {
+      return ([] as unknown) as T;
+    }
+    
+    // For other errors, log with limited info
+    console.error(`API request failed (${method} ${endpointPath}):`, error instanceof Error ? error.message : "Unknown error");
     throw error;
   }
 }
@@ -279,7 +317,8 @@ export const API = {
   // Lessons
   lessons: {
     getByModule: (moduleId: number) => 
-      apiRequest(`/Lesson/get-module-lessons?moduleId=${moduleId}`, 'GET', undefined, false),
+      // Use silent mode (true as last parameter) to prevent console errors
+      apiRequest(`/Lesson/get-module-lessons?moduleId=${moduleId}`, 'GET', undefined, false, false, true),
     
     getById: (id: number) => 
       apiRequest(`/Lesson/get-lesson-by-id/${id}`, 'GET', undefined, false),
@@ -315,8 +354,6 @@ export const API = {
   // Reviews
   reviews: {
     add: (data: { CourseId: number; Rating: number; ReviewContent: string }) => {
-      // Log the request payload for debugging
-      console.log('Sending review data:', data);
       // Explicitly set requiresAuth to true to ensure cookies are included
       return apiRequest('/CourseReview/add-course-review', 'POST', data, true);
     },

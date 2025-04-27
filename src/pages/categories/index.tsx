@@ -109,7 +109,6 @@ export default function CategoriesIndex() {
     queryFn: async () => {
       try {
         const result = await CategoryService.getAllCategories();
-        console.log("API response for all categories:", result);
         return result || [];
       } catch (error) {
         console.error("Failed to fetch categories, using mock data:", error);

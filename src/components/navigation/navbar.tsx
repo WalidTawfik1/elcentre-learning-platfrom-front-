@@ -29,12 +29,6 @@ export function NavBar() {
       document.body.classList.remove('is-authenticated')
     }
     
-    // Debug auth state
-    console.log("Auth state updated:", { 
-      isAuthenticated, 
-      userPresent: !!user,
-      userDetails: user ? `${user.firstName} ${user.lastName} (${user.userType})` : null,
-    })
   }, [isAuthenticated, user])
 
   // Handle search form submission

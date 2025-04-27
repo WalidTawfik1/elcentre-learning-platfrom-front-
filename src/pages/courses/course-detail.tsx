@@ -215,9 +215,7 @@ export default function CourseDetail() {
     const fetchCourse = async () => {
       setIsLoading(true);
       try {
-        console.log("Fetching course with id:", id);
         const courseData = await CourseService.getCourseById(id);
-        console.log("Course data received:", courseData);
         setCourse(courseData);
         
         // Check if course is in wishlist
@@ -227,22 +225,18 @@ export default function CourseDetail() {
         }
         
         // Get modules and lessons for this course
-        const modulesData = await CourseService.getModules(id);
-        console.log("Modules data received:", modulesData);
-        
+        const modulesData = await CourseService.getModules(id);        
         // If we have modules, fetch lessons for each module
         if (modulesData && Array.isArray(modulesData)) {
           const modulesWithLessons = await Promise.all(
             modulesData.map(async (module) => {
               try {
                 const lessons = await CourseService.getLessons(id, module.id);
-                console.log(`Lessons for module ${module.id}:`, lessons);
                 return {
                   ...module,
                   lessons: Array.isArray(lessons) ? lessons : []
                 };
               } catch (error) {
-                console.error(`Error fetching lessons for module ${module.id}:`, error);
                 return { ...module, lessons: [] };
               }
             })
@@ -254,7 +248,6 @@ export default function CourseDetail() {
         // Fetch enrollment count
         try {
           const count = await CourseService.getEnrollmentCount(id);
-          console.log("Enrollment count:", count);
           setEnrollmentCount(count);
         } catch (error) {
           console.error("Error fetching enrollment count:", error);
@@ -263,7 +256,6 @@ export default function CourseDetail() {
         // Fetch reviews with count
         try {
           const reviewsWithCount = await CourseService.getCourseReviewsWithCount(id);
-          console.log("Reviews with count:", reviewsWithCount);
           
           // Directly set the review count, defaulting to 0 if it's undefined
           setReviewCount(reviewsWithCount || 0);
@@ -276,9 +268,7 @@ export default function CourseDetail() {
         // Check if user is enrolled - with better debugging
         if (isAuthenticated) {
           try {
-            console.log("Checking enrollment status for course:", id);
             const isUserEnrolled = await CourseService.isEnrolled(id);
-            console.log("Enrollment check result:", isUserEnrolled);
             setIsEnrolled(!!isUserEnrolled);
           } catch (error) {
             console.error("Error checking enrollment status:", error);
@@ -309,7 +299,6 @@ export default function CourseDetail() {
     setIsLoadingReviews(true);
     try {
       const reviewsData = await CourseService.getCourseReviews(id);
-      console.log("Reviews data received:", reviewsData);
       setReviews(Array.isArray(reviewsData) ? reviewsData : []);
     } catch (error) {
       console.error("Error fetching course reviews:", error);
@@ -880,7 +869,6 @@ export default function CourseDetail() {
                             }`}
                             onClick={() => {
                               field.onChange(i + 1);
-                              console.log("Setting rating to:", i + 1);
                             }}
                           />
                         ))}

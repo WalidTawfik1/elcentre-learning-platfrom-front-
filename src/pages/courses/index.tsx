@@ -55,7 +55,6 @@ export default function CoursesIndex() {
         priceRange[1] < 1000 ? priceRange[1] : undefined
       );
       
-      console.log("API response for courses:", result);
       
       // Check if the API returned valid data with items
       if (result && result.items && Array.isArray(result.items)) {
@@ -76,9 +75,7 @@ export default function CoursesIndex() {
   } = useQuery({
     queryKey: ['allCategories'],
     queryFn: async () => {
-      const result = await CategoryService.getAllCategories();
-      console.log("API response for all categories:", result);
-      
+      const result = await CategoryService.getAllCategories();      
       // Add "All Categories" option at the beginning
       if (result && Array.isArray(result)) {
         return [{ id: 0, name: "All Categories" }, ...result];

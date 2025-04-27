@@ -34,8 +34,7 @@ export default function MyCourses() {
       setIsLoading(true);
       try {
         const enrollmentsData = await EnrollmentService.getStudentEnrollments();
-        console.log("Enrollments data:", enrollmentsData);
-        
+                
         if (Array.isArray(enrollmentsData) && enrollmentsData.length > 0) {
           setEnrollments(enrollmentsData);
           

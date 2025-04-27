@@ -42,14 +42,14 @@ const motivationalQuotes = [
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [currentCourses, setCurrentCourses] = useState<any[]>([]);
   const [suggestedCourses, setSuggestedCourses] = useState<any[]>([]);
   const [wishlistCourses, setWishlistCourses] = useState<any[]>([]);
   const [greeting, setGreeting] = useState<string>("");
   const [quote, setQuote] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
   
   // Get time-based greeting
   useEffect(() => {
@@ -78,113 +78,116 @@ export default function StudentDashboard() {
   }, [user]);
   
   useEffect(() => {
-    // Redirect to login if not authenticated
-    if (!isAuthenticated) {
+    // Only redirect if authentication loading is complete AND user is not authenticated
+    if (!isLoading && !isAuthenticated) {
       navigate("/login?redirect=/dashboard", { replace: true });
       return;
     }
     
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch student enrollments
-        const enrollmentsData = await EnrollmentService.getStudentEnrollments();
-        
-        if (Array.isArray(enrollmentsData) && enrollmentsData.length > 0) {
-          setEnrollments(enrollmentsData);
+    // Only fetch dashboard data if authentication is confirmed
+    if (isAuthenticated) {
+      const fetchDashboardData = async () => {
+        setIsLoadingDashboard(true);
+        try {
+          // Fetch student enrollments
+          const enrollmentsData = await EnrollmentService.getStudentEnrollments();
           
-          // Fetch detailed course data for current enrollments
-          const coursesDetailedData = await Promise.all(
-            enrollmentsData.map(async (enrollment) => {
-              try {
-                const courseData = await CourseService.getCourseById(enrollment.courseId);
-                return {
-                  ...courseData,
-                  enrollmentId: enrollment.id,
-                  enrollmentStatus: enrollment.status,
-                  progress: enrollment.progress || 0
-                };
-              } catch (error) {
-                console.error(`Error fetching course ${enrollment.courseId}:`, error);
-                return {
-                  id: enrollment.courseId,
-                  title: enrollment.courseName || "Unknown Course",
-                  description: "Course details could not be loaded.",
-                  thumbnail: "/placeholder.svg",
-                  enrollmentId: enrollment.id,
-                  enrollmentStatus: enrollment.status,
-                  progress: enrollment.progress || 0
-                };
-              }
-            })
-          );
-          
-          setCurrentCourses(coursesDetailedData);
-          
-          // Use the first enrollment's category to get suggested courses
-          if (coursesDetailedData.length > 0) {
-            const primaryCourse = coursesDetailedData[0];
-            const primaryCategoryId = primaryCourse.categoryId;
+          if (Array.isArray(enrollmentsData) && enrollmentsData.length > 0) {
+            setEnrollments(enrollmentsData);
             
-            // Fetch suggested courses based on category
-            try {
-              const suggestedCoursesData = await CourseService.getAllCourses(
-                1, // page number
-                4, // page size
-                undefined, // sort
-                primaryCategoryId // categoryId
-              );
-              
-              // Filter out courses the student is already enrolled in
-              const filteredSuggestions = Array.isArray(suggestedCoursesData.items) 
-                ? suggestedCoursesData.items.filter((course: any) => 
-                    !enrollmentsData.some(enrollment => enrollment.courseId === course.id)
-                  ).slice(0, 3) // Limit to 3 suggestions
-                : [];
-                
-              setSuggestedCourses(filteredSuggestions);
-            } catch (error) {
-              console.error("Error fetching suggested courses:", error);
-            }
-          }
-        } else {
-          setEnrollments([]);
-          setCurrentCourses([]);
-          
-          // If no enrollments, get popular courses as suggestions
-          try {
-            const popularCoursesData = await CourseService.getAllCourses(
-              1, // page number
-              4, // page size
-              "popular" // sort by popularity
+            // Fetch detailed course data for current enrollments
+            const coursesDetailedData = await Promise.all(
+              enrollmentsData.map(async (enrollment) => {
+                try {
+                  const courseData = await CourseService.getCourseById(enrollment.courseId);
+                  return {
+                    ...courseData,
+                    enrollmentId: enrollment.id,
+                    enrollmentStatus: enrollment.status,
+                    progress: enrollment.progress || 0
+                  };
+                } catch (error) {
+                  console.error(`Error fetching course ${enrollment.courseId}:`, error);
+                  return {
+                    id: enrollment.courseId,
+                    title: enrollment.courseName || "Unknown Course",
+                    description: "Course details could not be loaded.",
+                    thumbnail: "/placeholder.svg",
+                    enrollmentId: enrollment.id,
+                    enrollmentStatus: enrollment.status,
+                    progress: enrollment.progress || 0
+                  };
+                }
+              })
             );
             
-            if (Array.isArray(popularCoursesData.items)) {
-              setSuggestedCourses(popularCoursesData.items.slice(0, 3));
+            setCurrentCourses(coursesDetailedData);
+            
+            // Use the first enrollment's category to get suggested courses
+            if (coursesDetailedData.length > 0) {
+              const primaryCourse = coursesDetailedData[0];
+              const primaryCategoryId = primaryCourse.categoryId;
+              
+              // Fetch suggested courses based on category
+              try {
+                const suggestedCoursesData = await CourseService.getAllCourses(
+                  1, // page number
+                  4, // page size
+                  undefined, // sort
+                  primaryCategoryId // categoryId
+                );
+                
+                // Filter out courses the student is already enrolled in
+                const filteredSuggestions = Array.isArray(suggestedCoursesData.items) 
+                  ? suggestedCoursesData.items.filter((course: any) => 
+                      !enrollmentsData.some(enrollment => enrollment.courseId === course.id)
+                    ).slice(0, 3) // Limit to 3 suggestions
+                  : [];
+                  
+                setSuggestedCourses(filteredSuggestions);
+              } catch (error) {
+                console.error("Error fetching suggested courses:", error);
+              }
             }
-          } catch (error) {
-            console.error("Error fetching popular courses:", error);
+          } else {
+            setEnrollments([]);
+            setCurrentCourses([]);
+            
+            // If no enrollments, get popular courses as suggestions
+            try {
+              const popularCoursesData = await CourseService.getAllCourses(
+                1, // page number
+                4, // page size
+                "popular" // sort by popularity
+              );
+              
+              if (Array.isArray(popularCoursesData.items)) {
+                setSuggestedCourses(popularCoursesData.items.slice(0, 3));
+              }
+            } catch (error) {
+              console.error("Error fetching popular courses:", error);
+            }
           }
+          
+          // Get wishlist data from local storage
+          const wishlistData = WishlistService.getWishlist();
+          setWishlistCourses(wishlistData);
+          
+        } catch (error) {
+          console.error("Error fetching dashboard data:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load your dashboard. Please try again.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoadingDashboard(false);
         }
-        
-        // Get wishlist data from local storage
-        const wishlistData = WishlistService.getWishlist();
-        setWishlistCourses(wishlistData);
-        
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load your dashboard. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchDashboardData();
-  }, [isAuthenticated, navigate]);
+      };
+      
+      fetchDashboardData();
+    }
+  }, [isAuthenticated, navigate, isLoading]);
   
   // Format the thumbnail URL properly
   const formatThumbnailUrl = (thumbnail: string | undefined): string => {
@@ -217,7 +220,7 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {isLoading ? (
+        {isLoading || isLoadingDashboard ? (
           <div className="space-y-8">
             {/* Skeleton loaders for all sections */}
             <div className="space-y-4">

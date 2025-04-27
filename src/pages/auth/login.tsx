@@ -24,7 +24,7 @@ export default function Login() {
         console.log("Login successful, navigating to home");
         // Small delay to ensure state updates have propagated
         setTimeout(() => {
-          navigate('/');
+          navigate('/dashboard');
         }, 300);
       }
       // Check for verification error and redirect if needed
