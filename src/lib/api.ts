@@ -232,6 +232,9 @@ export const API = {
     
     getById: (id: number) => 
       apiRequest(`/Course/get-course/${id}`, 'GET', undefined, false),
+
+    getInstructorCourses: () =>
+      apiRequest(`/Course/get-instructor-courses/}`, 'GET', undefined, false),
     
     add: (data: { 
       Title: string; 

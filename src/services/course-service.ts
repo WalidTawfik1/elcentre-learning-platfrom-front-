@@ -108,5 +108,11 @@ export const CourseService = {
     const reviews = await API.reviews.getByCourse(Number(courseId)) as { studentId: string, studentName: string, id: number, rating: number, reviewContent: string, createdAt: string, count: number }[];
     const reviewCount = reviews[0]?.count || 0;  // Assuming reviews is an array and you're interested in the first one
     return reviewCount;
-  }
+  },
+
+  getInstructorCourses: async (): Promise<any> => {
+    return API.courses.getInstructorCourses();
+  },
+
+  
 };

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/hooks/use-auth"
 import { Link, useNavigate } from "react-router-dom"
-import { UserCircle, LogOut, BookOpen, Gauge, User } from "lucide-react"
+import { UserCircle, LogOut, BookOpen, Gauge, User, GraduationCap } from "lucide-react"
 
 export function UserNav() {
   const { user, logout } = useAuth()
@@ -111,12 +111,20 @@ export function UserNav() {
               <span>My Profile</span>
             </Link>
           </DropdownMenuItem>
+          {user?.userType === "Instructor" && (
+              <DropdownMenuItem asChild>
+              <Link to="/instructor/courses" className="flex items-center">
+                <BookOpen className="w-4 h-4 mr-2" />
+                <span>My Courses</span>
+              </Link>
+            </DropdownMenuItem>
+            )}
           <DropdownMenuItem asChild>
-            <Link to="/my-courses" className="flex items-center">
-              <BookOpen className="w-4 h-4 mr-2" />
-              <span>My Courses</span>
-            </Link>
-          </DropdownMenuItem>
+              <Link to="/my-courses" className="flex items-center">
+                <GraduationCap className="w-4 h-4 mr-2" />
+                <span>My Enrollments</span>
+              </Link>
+            </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem 
