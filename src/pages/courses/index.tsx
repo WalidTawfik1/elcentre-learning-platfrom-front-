@@ -29,6 +29,7 @@ export default function CoursesIndex() {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const categoryParam = queryParams.get('category');
+  const searchParam = queryParams.get('search');
 
   // Use React Query for data fetching
   const { 
@@ -136,7 +137,10 @@ export default function CoursesIndex() {
         setSelectedCategory(categoryId);
       }
     }
-  }, [categoryParam]);
+    if (searchParam) {
+      setSearchTerm(decodeURIComponent(searchParam));
+    }
+  }, [categoryParam, searchParam]);
 
   // Update filtered courses when data changes
   useEffect(() => {
