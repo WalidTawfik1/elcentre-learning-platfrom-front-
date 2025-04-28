@@ -242,7 +242,6 @@ export const API = {
       Price: number; 
       Thumbnail: File | File[];
       IsActive: boolean; 
-      DurationInHours: number;
       CategoryId: number;
     }) => {
       const formData = createFormData(data);

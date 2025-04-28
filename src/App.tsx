@@ -20,7 +20,7 @@ import MyCourses from "./pages/my-courses";
 import CourseLearn from "./pages/my-courses/[id]/learn";
 import StudentDashboard from "./pages/dashboard";
 import InstructorCourses from "./pages/dashboard/instructor/courses";
-
+import AddCourse from "@/pages/dashboard/instructor/add-course";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -66,6 +66,7 @@ const App = () => (
             <Route path="/instructor/dashboard" element={<NotFound />} /> {/* Placeholder */}
             <Route path="/admin/dashboard" element={<NotFound />} /> {/* Placeholder */}
             <Route path="/instructor/courses" element={<InstructorCourses/>} />
+            <Route path="/dashboard/instructor/courses/new" element={<AddCourse />} />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

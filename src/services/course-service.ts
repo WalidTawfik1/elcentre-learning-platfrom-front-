@@ -114,5 +114,24 @@ export const CourseService = {
     return API.courses.getInstructorCourses();
   },
 
-  
+  addCourse: async (courseData: {
+    title: string;
+    description: string;
+    price: number;
+    thumbnail: File;
+    isActive: boolean;
+    categoryId: number;
+  }): Promise<any> => {
+    // Transform the data to match API expectations (PascalCase)
+    const formattedData = {
+      Title: courseData.title,
+      Description: courseData.description,
+      Price: courseData.price,
+      Thumbnail: courseData.thumbnail,
+      IsActive: courseData.isActive,
+      CategoryId: courseData.categoryId
+    };
+
+    return API.courses.add(formattedData);
+  }
 };
