@@ -157,5 +157,15 @@ export const CourseService = {
     };
 
     return API.courses.update(formattedData);
+  },
+
+  deleteCourse: async (courseId: number): Promise<any> => {
+    try {
+      await API.courses.delete(courseId);
+      return true;
+    } catch (error) {
+      console.error("Error deleting course:", error);
+      throw error; // Re-throw to handle in component
+    }
   }
 };

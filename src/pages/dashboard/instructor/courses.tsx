@@ -10,6 +10,18 @@ import { Plus, BookOpen, Users, DollarSign } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 // Backend base URL for serving static content
 const API_BASE_URL = "http://elcentre.runasp.net";
@@ -52,6 +64,24 @@ export default function InstructorCourses() {
     if (!thumbnail) return "/placeholder.svg";
     if (thumbnail.startsWith('http')) return thumbnail;
     return `${API_BASE_URL}/${thumbnail.replace(/^\//, '')}`;
+  };
+
+  const handleDeleteCourse = async (courseId: number) => {
+    try {
+      await CourseService.deleteCourse(courseId);
+      setCourses(prevCourses => prevCourses.filter(course => course.id !== courseId));
+      toast({
+        title: "Course Deleted",
+        description: "Your course has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error("Error deleting course:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete course. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -132,11 +162,38 @@ export default function InstructorCourses() {
                 </CardContent>
                 <CardFooter className="p-4 border-t">
                   <div className="w-full flex justify-between items-center">
-                    <Button variant="outline" asChild>
-                      <Link to={`/dashboard/instructor/courses/${course.id}/edit`}>
-                        Edit Course
-                      </Link>
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" asChild>
+                        <Link to={`/dashboard/instructor/courses/${course.id}/edit`}>
+                          Edit Course
+                        </Link>
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="icon">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete your
+                              course and remove all related data.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteCourse(course.id)}
+                              className="bg-red-500 hover:bg-red-600"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                     <Button variant="ghost" asChild>
                       <Link to={`/courses/${course.id}`}>Preview</Link>
                     </Button>
