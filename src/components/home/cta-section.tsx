@@ -11,14 +11,25 @@ export function CTASection() {
         <div className="flex flex-col md:flex-row md:items-center justify-between">
           <div className="mb-6 md:mb-0 md:mr-6">
             {isAuthenticated ? (
-              <>
-                <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                  Continue your learning journey, {user?.firstName}
-                </h2>
-                <p className="text-eduBlue-100 md:text-lg max-w-2xl">
-                  Jump back into your courses or explore new learning opportunities to enhance your skills.
-                </p>
-              </>
+              user?.userType === "Instructor" ? (
+                <>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                    Share your expertise, {user?.firstName}
+                  </h2>
+                  <p className="text-eduBlue-100 md:text-lg max-w-2xl">
+                    Create engaging courses, grow your student base, and make an impact in the educational community.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                    Continue your learning journey, {user?.firstName}
+                  </h2>
+                  <p className="text-eduBlue-100 md:text-lg max-w-2xl">
+                    Jump back into your courses or explore new learning opportunities to enhance your skills.
+                  </p>
+                </>
+              )
             ) : (
               <>
                 <h2 className="text-2xl md:text-3xl font-bold mb-4">
@@ -38,7 +49,11 @@ export function CTASection() {
             asChild
           >
             {isAuthenticated ? (
-              <Link to="/my-courses">Continue Learning</Link>
+              user?.userType === "Instructor" ? (
+                <Link to="/instructor/courses">Manage Courses</Link>
+              ) : (
+                <Link to="/my-courses">Continue Learning</Link>
+              )
             ) : (
               <Link to="/register">Get Started</Link>
             )}

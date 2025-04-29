@@ -425,6 +425,11 @@ export default function CourseDetail() {
     reviews: [],
   } : course;
 
+  // Add a function to check if user is an instructor
+  const isInstructor = () => {
+    return user?.userType === "Instructor";
+  };
+
   // Add a function to check if user owns the course
   const isInstructorCourse = () => {
     return user?.userType === "Instructor" && user?.id === courseData.instructorId;
@@ -491,14 +496,16 @@ export default function CourseDetail() {
                         Continue Learning
                       </Link>
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={handleToggleWishlist}
-                      className={isInWishlist ? "bg-red-50 border-red-200 text-red-500 hover:bg-red-100" : ""}
-                    >
-                      <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
-                      {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-                    </Button>
+                    {!isInstructor() && (
+                      <Button 
+                        variant="outline" 
+                        onClick={handleToggleWishlist}
+                        className={isInWishlist ? "bg-red-50 border-red-200 text-red-500 hover:bg-red-100" : ""}
+                      >
+                        <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
+                        {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="flex gap-4">
@@ -525,14 +532,16 @@ export default function CourseDetail() {
                          `Enroll for ${courseData.price} LE`}
                       </Button>
                     )}
-                    <Button 
-                      variant="outline" 
-                      onClick={handleToggleWishlist}
-                      className={isInWishlist ? "bg-red-50 border-red-200 text-red-500 hover:bg-red-100" : ""}
-                    >
-                      <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
-                      {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-                    </Button>
+                    {!isInstructor() && (
+                      <Button 
+                        variant="outline" 
+                        onClick={handleToggleWishlist}
+                        className={isInWishlist ? "bg-red-50 border-red-200 text-red-500 hover:bg-red-100" : ""}
+                      >
+                        <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
+                        {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -590,14 +599,16 @@ export default function CourseDetail() {
                             Continue Learning
                           </Link>
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          className="w-full"
-                          onClick={handleToggleWishlist}
-                        >
-                          <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
-                          {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-                        </Button>
+                        {!isInstructor() && (
+                          <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={handleToggleWishlist}
+                          >
+                            <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
+                            {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                          </Button>
+                        )}
                       </div>
                     ) : (
                       <div className="flex flex-col gap-2">
@@ -624,14 +635,16 @@ export default function CourseDetail() {
                              `Enroll for ${courseData.price} LE`}
                           </Button>
                         )}
-                        <Button 
-                          variant="outline" 
-                          className="w-full"
-                          onClick={handleToggleWishlist}
-                        >
-                          <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
-                          {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-                        </Button>
+                        {!isInstructor() && (
+                          <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={handleToggleWishlist}
+                          >
+                            <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
+                            {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
