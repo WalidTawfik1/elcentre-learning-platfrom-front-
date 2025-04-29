@@ -225,26 +225,34 @@ export default function CourseDetail() {
         }
         
         // Get modules and lessons for this course
-        const modulesData = await CourseService.getModules(id);        
-        // If we have modules, fetch lessons for each module
-        if (modulesData && Array.isArray(modulesData)) {
-          const modulesWithLessons = await Promise.all(
-            modulesData.map(async (module) => {
-              try {
-                const lessons = await CourseService.getLessons(id, module.id);
-                return {
-                  ...module,
-                  lessons: Array.isArray(lessons) ? lessons : []
-                };
-              } catch (error) {
-                return { ...module, lessons: [] };
-              }
-            })
-          );
-          
-          setModules(modulesWithLessons);
+        try {
+          const modulesData = await CourseService.getModules(id);
+          // Handle case where modulesData is null or undefined
+          if (modulesData) {
+            const modulesWithLessons = await Promise.all(
+              (Array.isArray(modulesData) ? modulesData : []).map(async (module) => {
+                try {
+                  const lessons = await CourseService.getLessons(id, module.id);
+                  return {
+                    ...module,
+                    lessons: Array.isArray(lessons) ? lessons : []
+                  };
+                } catch (error) {
+                  console.log("Error fetching lessons for module:", error);
+                  return { ...module, lessons: [] };
+                }
+              })
+            );
+            setModules(modulesWithLessons);
+          } else {
+            // If no modules, set empty array instead of treating it as an error
+            setModules([]);
+          }
+        } catch (moduleError) {
+          console.log("Error fetching modules:", moduleError);
+          setModules([]); // Set empty array instead of letting it fail
         }
-        
+
         // Fetch enrollment count
         try {
           const count = await CourseService.getEnrollmentCount(id);
@@ -346,7 +354,7 @@ export default function CourseDetail() {
     
     let totalMinutes = 0;
     
-    modules.forEach(module => {
+    modules?.forEach(module => {
       if (module.lessons && Array.isArray(module.lessons)) {
         module.lessons.forEach(lesson => {
           if (lesson.durationInMinutes) {
@@ -417,9 +425,14 @@ export default function CourseDetail() {
     reviews: [],
   } : course;
 
+  // Add a function to check if user owns the course
+  const isInstructorCourse = () => {
+    return user?.userType === "Instructor" && user?.id === courseData.instructorId;
+  };
+
   // Add a function to check if user can enroll
   const canEnroll = () => {
-    return user?.userType === "Student";
+    return user?.userType === "Student" && !isInstructorCourse();
   };
 
   return (
@@ -489,17 +502,29 @@ export default function CourseDetail() {
                   </div>
                 ) : (
                   <div className="flex gap-4">
-                    <Button 
-                      onClick={handleEnroll} 
-                      disabled={isEnrolling || !canEnroll()} 
-                      className="bg-eduBlue-500 hover:bg-eduBlue-600"
-                      title={!canEnroll() ? "Only students can enroll in courses" : ""}
-                    >
-                      {isEnrolling ? "Enrolling..." : 
-                       !canEnroll() ? "Students Only" :
-                       courseData.price === 0 ? "Enroll for Free" : 
-                       `Enroll for ${courseData.price} LE`}
-                    </Button>
+                    {isInstructorCourse() ? (
+                      <Button 
+                        asChild
+                        className="bg-eduBlue-500 hover:bg-eduBlue-600"
+                      >
+                        <Link to={`/dashboard/instructor/courses/${courseData.id}/edit`}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Course
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={handleEnroll} 
+                        disabled={isEnrolling || !canEnroll()} 
+                        className="bg-eduBlue-500 hover:bg-eduBlue-600"
+                        title={!canEnroll() ? "Only students can enroll in courses" : ""}
+                      >
+                        {isEnrolling ? "Enrolling..." : 
+                         !canEnroll() ? "Students Only" :
+                         courseData.price === 0 ? "Enroll for Free" : 
+                         `Enroll for ${courseData.price} LE`}
+                      </Button>
+                    )}
                     <Button 
                       variant="outline" 
                       onClick={handleToggleWishlist}
@@ -576,17 +601,29 @@ export default function CourseDetail() {
                       </div>
                     ) : (
                       <div className="flex flex-col gap-2">
-                        <Button 
-                          onClick={handleEnroll} 
-                          disabled={isEnrolling || !canEnroll()} 
-                          className="w-full bg-eduBlue-500 hover:bg-eduBlue-600"
-                          title={!canEnroll() ? "Only students can enroll in courses" : ""}
-                        >
-                          {isEnrolling ? "Enrolling..." : 
-                           !canEnroll() ? "Students Only" :
-                           courseData.price === 0 ? "Enroll for Free" : 
-                           `Enroll for ${courseData.price} LE`}
-                        </Button>
+                        {isInstructorCourse() ? (
+                          <Button 
+                            asChild
+                            className="w-full bg-eduBlue-500 hover:bg-eduBlue-600"
+                          >
+                            <Link to={`/dashboard/instructor/courses/${courseData.id}/edit`}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Course
+                            </Link>
+                          </Button>
+                        ) : (
+                          <Button 
+                            onClick={handleEnroll} 
+                            disabled={isEnrolling || !canEnroll()} 
+                            className="w-full bg-eduBlue-500 hover:bg-eduBlue-600"
+                            title={!canEnroll() ? "Only students can enroll in courses" : ""}
+                          >
+                            {isEnrolling ? "Enrolling..." : 
+                             !canEnroll() ? "Students Only" :
+                             courseData.price === 0 ? "Enroll for Free" : 
+                             `Enroll for ${courseData.price} LE`}
+                          </Button>
+                        )}
                         <Button 
                           variant="outline" 
                           className="w-full"
