@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CategoryService } from "@/services/category-service";
 import { CourseService } from "@/services/course-service";
 import { toast } from "@/components/ui/use-toast";
+import { Switch } from "@/components/ui/switch";
 
 export default function AddCourse() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export default function AddCourse() {
     isActive: true,
     categoryId: 0
   });
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
   // Fetch categories
   const { data: categories } = useQuery({
@@ -38,10 +40,16 @@ export default function AddCourse() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      // Cleanup old preview if exists
+      if (thumbnailPreview) {
+        URL.revokeObjectURL(thumbnailPreview);
+      }
+      const file = e.target.files[0];
       setFormData(prev => ({
         ...prev,
-        thumbnail: e.target.files![0]
+        thumbnail: file
       }));
+      setThumbnailPreview(URL.createObjectURL(file));
     }
   };
 
@@ -75,6 +83,15 @@ export default function AddCourse() {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    // Cleanup thumbnail preview URL when component unmounts
+    return () => {
+      if (thumbnailPreview) {
+        URL.revokeObjectURL(thumbnailPreview);
+      }
+    };
+  }, [thumbnailPreview]);
 
   return (
     <MainLayout>
@@ -137,14 +154,33 @@ export default function AddCourse() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Thumbnail</label>
+            <div className="space-y-4">
+              <label className="block text-sm font-medium">Thumbnail</label>
+              {thumbnailPreview && (
+                <div className="relative w-40 h-40 rounded-lg overflow-hidden border">
+                  <img 
+                    src={thumbnailPreview} 
+                    alt="Thumbnail preview" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
               <Input
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
                 required
               />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={formData.isActive}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+              />
+              <label className="text-sm font-medium">
+                {formData.isActive ? 'Published' : 'Draft'}
+              </label>
             </div>
 
             <div className="flex justify-end gap-4">
