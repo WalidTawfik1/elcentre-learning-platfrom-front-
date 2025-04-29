@@ -21,25 +21,39 @@ export default function Login() {
       const success = await login(email, password);
       
       if (success) {
-        console.log("Login successful, navigating to home");
-        // Small delay to ensure state updates have propagated
+        console.log("Login successful, determining dashboard route");
+        
+        // Get the user type from the auth context and redirect to the appropriate dashboard
         setTimeout(() => {
-          navigate('/dashboard');
+          // Access the user from the auth context
+          const userType = localStorage.getItem('userType');
+          
+          // Navigate based on user type
+          if (userType === 'Instructor') {
+            console.log("Redirecting to instructor dashboard");
+            navigate('/instructor/dashboard');
+          } else if (userType === 'Admin') {
+            console.log("Redirecting to admin dashboard");
+            navigate('/admin/dashboard');
+          } else {
+            // Default is student dashboard
+            console.log("Redirecting to student dashboard");
+            navigate('/dashboard');
+          }
         }, 300);
       }
       // Check for verification error and redirect if needed
-    if (error?.includes("verify your email")) {
-      console.log("Email verification required, redirecting to verification page");
-      // Save the email in localStorage for the verification page
-      localStorage.setItem("registrationEmail", email);
-      // Redirect to verify account page
-      navigate('/verify-account');
-    }
+      if (error?.includes("verify your email")) {
+        console.log("Email verification required, redirecting to verification page");
+        // Save the email in localStorage for the verification page
+        localStorage.setItem("registrationEmail", email);
+        // Redirect to verify account page
+        navigate('/verify-account');
+      }
     } catch (error) {
       // Error is already handled in the useAuth hook
       console.error("Login failed:", error);
     }
-    
   };
 
   return (

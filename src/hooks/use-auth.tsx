@@ -36,8 +36,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const storeUserInLocalStorage = (userData: UserDTO | null) => {
     if (userData) {
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+      // Also store userType separately for easy access during login redirects
+      if (userData.userType) {
+        localStorage.setItem('userType', userData.userType);
+      }
     } else {
       localStorage.removeItem(USER_STORAGE_KEY);
+      localStorage.removeItem('userType');
     }
   };
   

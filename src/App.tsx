@@ -20,6 +20,7 @@ import MyCourses from "./pages/my-courses";
 import CourseLearn from "./pages/my-courses/[id]/learn";
 import StudentDashboard from "./pages/dashboard";
 import InstructorCourses from "./pages/dashboard/instructor/courses";
+import InstructorDashboard from "./pages/dashboard/instructor/index";
 import AddCourse from "@/pages/dashboard/instructor/add-course";
 import EditCourse from "@/pages/dashboard/instructor/edit-course";
 
@@ -64,7 +65,8 @@ const App = () => (
             <Route path="/my-courses" element={<MyCourses />} />
             <Route path="/my-courses/:id/learn" element={<CourseLearn />} />
             
-            <Route path="/instructor/dashboard" element={<NotFound />} /> {/* Placeholder */}
+            {/* Instructor routes */}
+            <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
             <Route path="/admin/dashboard" element={<NotFound />} /> {/* Placeholder */}
             <Route path="/instructor/courses" element={<InstructorCourses/>} />
             <Route path="/dashboard/instructor/courses/new" element={<AddCourse />} />

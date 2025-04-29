@@ -44,7 +44,7 @@ export default function EditCourse() {
       try {
         // First check authentication
         if (!isAuthenticated) {
-          navigate("/auth/login", { 
+          navigate("/login", { 
             replace: true,
             state: { from: `/dashboard/instructor/courses/${id}/edit` }
           });

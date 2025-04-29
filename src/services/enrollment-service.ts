@@ -27,6 +27,10 @@ export const EnrollmentService = {
     return apiRequest<Enrollment[]>("/Enrollment/get-student-enrollments");
   },
   
+  getCourseEnrollments: async (courseId: number): Promise<any[]> => {
+    return apiRequest<any[]>(`/Enrollment/get-course-enrollments?courseId=${courseId}`);
+  },
+  
   completeLesson: async (lessonId: number): Promise<any> => {
     return apiRequest(`/Enrollment/complete-lesson/${lessonId}`, {
       method: "POST",

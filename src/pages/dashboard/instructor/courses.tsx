@@ -35,7 +35,7 @@ export default function InstructorCourses() {
   useEffect(() => {
     // Redirect if not authenticated or not an instructor
     if (!isAuthenticated || user?.userType !== "Instructor") {
-        navigate("/auth/login", { replace: true });
+        navigate("/login", { replace: true });
         return;
     }
 
