@@ -1,7 +1,14 @@
 // API Service for interacting with the backend
 
-// Base API URL - Use environment variable with fallback
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net";
+// Determine if we're in production
+const isProduction = import.meta.env.PROD;
+
+// Base API URL with environment-specific handling
+const API_BASE_URL = isProduction 
+  ? "https://cors-anywhere.herokuapp.com/http://elcentre.runasp.net"  // Use CORS proxy in production
+  : (import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net");
+
+console.log("Using API URL:", API_BASE_URL); // Debug the URL being used
 
 // Configuration for rate limiting and retries
 const API_CONFIG = {
