@@ -11,9 +11,7 @@ import { EnrollmentService } from "@/services/enrollment-service";
 import { CourseService } from "@/services/course-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
-
-// Backend base URL for serving static content
-const API_BASE_URL = "http://elcentre.runasp.net";
+import { API_BASE_URL } from "@/config/api-config";
 
 export default function MyCourses() {
   const navigate = useNavigate();

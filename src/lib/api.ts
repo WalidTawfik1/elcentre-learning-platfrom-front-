@@ -1,7 +1,7 @@
 // API Service for interacting with the backend
 
-// Base API URL
-const API_BASE_URL = "http://elcentre.runasp.net";
+// Base API URL - Use environment variable with fallback
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net";
 
 // Configuration for rate limiting and retries
 const API_CONFIG = {

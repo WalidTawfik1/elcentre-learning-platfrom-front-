@@ -10,6 +10,7 @@ import { Plus, BookOpen, Users, DollarSign } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
+import { API_BASE_URL } from "@/config/api-config";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -22,9 +23,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Trash2 } from "lucide-react";
-
-// Backend base URL for serving static content
-const API_BASE_URL = "http://elcentre.runasp.net";
 
 export default function InstructorCourses() {
   const navigate = useNavigate();

@@ -4,9 +4,7 @@ import { Button } from "@/components/ui/button";
 import { FeaturedCourses } from "@/components/home/featured-courses";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Course } from "@/types/api";
-
-// Backend base URL for serving static content
-const API_BASE_URL = "http://elcentre.runasp.net";
+import { API_BASE_URL } from "@/config/api-config";
 
 interface CourseSectionProps {
   courses: any[];

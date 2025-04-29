@@ -4,9 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { StarIcon } from "lucide-react";
-
-// Backend base URL for serving static content
-const API_BASE_URL = "http://elcentre.runasp.net";
+import { API_BASE_URL } from "@/config/api-config";
 
 interface Course {
   id: string;
