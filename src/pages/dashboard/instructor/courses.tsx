@@ -158,8 +158,21 @@ export default function InstructorCourses() {
                     alt={course.title}
                     className="object-cover w-full h-full"
                   />
-                  <Badge className="absolute top-2 right-2">
-                    {course.isPublished ? "Published" : "Draft"}
+                  <Badge 
+                    variant={course.isActive ? "default" : "secondary"}
+                    className="absolute top-2 right-2"
+                  >
+                    {course.isActive ? (
+                      <>
+                        <div className="h-1.5 w-1.5 rounded-full bg-green-500 mr-1.5" />
+                        Published
+                      </>
+                    ) : (
+                      <>
+                        <div className="h-1.5 w-1.5 rounded-full bg-gray-400 mr-1.5" />
+                        Draft
+                      </>
+                    )}
                   </Badge>
                 </div>
                 <CardHeader className="p-4 pb-2">
