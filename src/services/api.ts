@@ -10,6 +10,14 @@ const API_CONFIG = {
   retryStatusCodes: [429]    // Status codes that should trigger a retry
 };
 
+// Helper function to set a cookie with expiration
+const setCookie = (name: string, value: string, days = 7) => {
+  const date = new Date();
+  date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+  const expires = "; expires=" + date.toUTCString();
+  document.cookie = name + "=" + value + expires + "; path=/; SameSite=Lax";
+};
+
 // Helper function to get a cookie value
 const getCookie = (name: string): string | null => {
   const nameEQ = name + "=";
@@ -73,6 +81,15 @@ export async function apiRequest<T>(
       "Authorization": `Bearer ${jwtToken}`,
     };
   }
+  
+  // Debug logging for auth requests
+  if (endpoint.includes("/Account/") || requiresAuth) {
+    console.log(`API Request to ${endpoint}`, { 
+      hasToken: !!jwtToken,
+      requiresAuth,
+      method: options.method || 'GET'
+    });
+  }
 
   const mergedOptions = { ...defaultOptions, ...options };
   
@@ -88,16 +105,6 @@ export async function apiRequest<T>(
         const backoffMs = calculateBackoff(retryCount - 1);
         console.log(`Rate limited (429). Retry ${retryCount}/${API_CONFIG.maxRetries} after ${backoffMs}ms delay`);
         await sleep(backoffMs);
-      }
-      
-      // Debug output for authentication tracking (first attempt only)
-      if (retryCount === 0) {
-        console.log(`API Request: ${endpoint}`, { 
-          requiresAuth,
-          hasJwtCookie: hasJwtCookie(),
-          hasToken: !!jwtToken,
-          method: mergedOptions.method || 'GET'
-        });
       }
       
       const response = await fetch(url, mergedOptions);
@@ -151,7 +158,26 @@ export async function apiRequest<T>(
         return {} as T;
       }
       
-      return await response.json();
+      const data = await response.json();
+      
+      // If this is an auth response that contains a token, save it
+      if ((endpoint.includes("/Account/login") || endpoint.includes("/Account/register")) && 
+          typeof data === 'object' && data !== null) {
+        
+        // Check for token in various formats
+        const token = data.message || 
+                     data.token || 
+                     data.accessToken || 
+                     data.jwt ||
+                     data.access_token;
+                     
+        if (token && typeof token === 'string') {
+          setCookie('jwt', token, 7);
+          console.log("Set JWT cookie from response data");
+        }
+      }
+      
+      return data;
     } catch (error) {
       lastError = error;
       

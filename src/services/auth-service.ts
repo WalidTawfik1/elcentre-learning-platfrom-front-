@@ -27,6 +27,8 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
   // Construct the full URL with the direct API URL
   const url = `${DIRECT_API_URL}${endpoint}`;
   
+  console.log(`Making direct API request to: ${url}`); // Debugging
+
   // Set default headers
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -53,12 +55,30 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
   };
 
   try {
+    console.log('Direct API request options:', JSON.stringify({
+      url,
+      method: requestOptions.method || 'GET',
+      hasAuthHeader: !!headers["Authorization"]?.length,
+      credentials: requestOptions.credentials,
+      mode: requestOptions.mode
+    }));
+    
     const response = await fetch(url, requestOptions);
+    console.log(`Auth API response status: ${response.status}`);
+    
+    // Extract JWT token from response headers if available
+    const authHeader = response.headers.get('Authorization') || response.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const tokenFromHeader = authHeader.substring(7);
+      console.log('Found JWT in response headers');
+      setCookie('jwt', tokenFromHeader, 7);
+    }
     
     if (!response.ok) {
       // Try to parse error response
       try {
         const errorData = await response.json();
+        console.error('Auth API error:', errorData);
         throw new Error(errorData.message || `API Error: ${response.status}`);
       } catch (e) {
         throw new Error(`API Error: ${response.status}`);
@@ -70,7 +90,9 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
       return {} as T;
     }
     
-    return await response.json();
+    const data = await response.json();
+    console.log('Auth API response data structure:', Object.keys(data));
+    return data;
   } catch (error) {
     console.error("API request failed:", error);
     throw error;
@@ -87,14 +109,38 @@ export const AuthService = {
     
     // Check for token in response and manually set it as a cookie if needed
     if (response) {
-      // Extract token from various possible locations, primarily from message field
-      const token = response.message || response.token || response.accessToken || response.jwt;
+      console.log("Login response structure:", Object.keys(response)); 
+      
+      // Try to extract token from multiple possible locations in the response
+      let token = null;
+      
+      // Check common locations where the token might be
+      if (typeof response === 'string') {
+        // Sometimes backend returns the token directly as a string
+        token = response;
+      } else {
+        // Look in various possible properties
+        token = response.message || 
+                response.token || 
+                response.accessToken || 
+                response.jwt ||
+                response.access_token ||
+                (response.data && (
+                  response.data.token || 
+                  response.data.accessToken ||
+                  response.data.jwt
+                ));
+      }
       
       if (token) {
+        console.log("JWT token found in response, setting cookie");
         // Remove any existing token cookie that might be present
+        document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        // Set only the JWT as a cookie that expires in 7 days
+        // Set the JWT as a cookie that expires in 7 days
         setCookie('jwt', token, 7);
+      } else {
+        console.warn("No JWT token found in login response");
       }
     }
     

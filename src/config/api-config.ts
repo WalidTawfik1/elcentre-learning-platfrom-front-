@@ -3,13 +3,19 @@
 // Determine if we're running in a production environment (like Vercel)
 const isProduction = import.meta.env.PROD;
 
+// The original API URL that should be used for direct connections
+const ORIGIN_API_URL = "http://elcentre.runasp.net";
+
 // Base API URL with environment-specific handling for API requests
 export const API_BASE_URL = isProduction 
   ? "/api" // Use Vercel rewrite proxy in production
-  : (import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net");
+  : (import.meta.env.VITE_API_BASE_URL || ORIGIN_API_URL);
 
 // Direct API URL for images and auth operations that need to bypass the proxy
-export const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net";
+// In production, this must be the actual server URL, not the proxy
+export const DIRECT_API_URL = isProduction
+  ? ORIGIN_API_URL
+  : (import.meta.env.VITE_API_BASE_URL || ORIGIN_API_URL);
 
 // For image URLs, need direct access in both environments
 export const getImageUrl = (path: string | undefined): string => {
