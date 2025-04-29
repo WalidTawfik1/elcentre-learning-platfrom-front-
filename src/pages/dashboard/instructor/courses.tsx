@@ -133,8 +133,8 @@ export default function InstructorCourses() {
                 <CardFooter className="p-4 border-t">
                   <div className="w-full flex justify-between items-center">
                     <Button variant="outline" asChild>
-                      <Link to={`/dashboard/instructor/courses/${course.id}`}>
-                        Manage Course
+                      <Link to={`/dashboard/instructor/courses/${course.id}/edit`}>
+                        Edit Course
                       </Link>
                     </Button>
                     <Button variant="ghost" asChild>

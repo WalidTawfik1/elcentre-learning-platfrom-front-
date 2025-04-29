@@ -255,7 +255,6 @@ export const API = {
       Price?: number; 
       Thumbnail?: File | File[];
       IsActive?: boolean; 
-      DurationInHours?: number;
       CategoryId?: number;
     }) => {
       const formData = createFormData(data);
@@ -278,7 +277,7 @@ export const API = {
       apiRequest("/Category/add-category", "POST", data),
       
     update: (data: { id: number; name: string }) => 
-      apiRequest("/Category/update-category", "PUT", data),
+      apiRequest("/Category/update-category", "PUT", data,),
       
     delete: (id: number) => 
       apiRequest(`/Category/delete-category/${id}`, "DELETE"),

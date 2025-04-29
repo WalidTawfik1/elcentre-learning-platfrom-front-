@@ -2,6 +2,7 @@ import { API } from "@/lib/api";
 import { Course, PaginatedResponse, CourseModule, Lesson, CourseReview } from "@/types/api";
 import { EnrollmentService } from "./enrollment-service";
 
+
 export const CourseService = {
   getAllCourses: async (
     pageNum: number = 1, 
@@ -133,5 +134,28 @@ export const CourseService = {
     };
 
     return API.courses.add(formattedData);
+  },
+
+  updateCourse: async (courseData: {
+    id: number;
+    title?: string;
+    description?: string;
+    price?: number;
+    thumbnail?: File;
+    isActive?: boolean;
+    categoryId?: number;
+  }): Promise<any> => {
+    // Transform the data to match API expectations (PascalCase)
+    const formattedData = {
+      Id: courseData.id,
+      Title: courseData.title,
+      Description: courseData.description,
+      Price: courseData.price,
+      Thumbnail: courseData.thumbnail,
+      IsActive: courseData.isActive,
+      CategoryId: courseData.categoryId,
+    };
+
+    return API.courses.update(formattedData);
   }
 };
