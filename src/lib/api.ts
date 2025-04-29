@@ -8,7 +8,7 @@ const API_BASE_URL = isProduction
   ? "/api" // Use Vercel rewrite proxy in production
   : (import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net");
 
-// Original direct API URL (needed for some requests like auth)
+// Original direct API URL (needed for auth operations)
 const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net";
 
 console.log("Using API URL:", API_BASE_URL); // Debug the URL being used

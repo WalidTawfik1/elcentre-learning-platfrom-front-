@@ -10,15 +10,20 @@ export const API_BASE_URL = isProduction
   ? "/api" 
   : baseApiUrl;
 
-// For image URLs, we need to always use the direct URL, not the proxy
-// Images need to use the original server URL even in production
+// For image URLs, we need special handling in production vs development
 export const getImageUrl = (path: string | undefined): string => {
   if (!path) return "/placeholder.svg";
   
   // If it's already a full URL, use it as is
   if (path.startsWith('http')) return path;
   
-  // Otherwise, prefix with API base URL and ensure no double slashes
+  // For production environment, route images through the proxy too
+  if (isProduction) {
+    // Replace any leading slash and use the proxy path
+    return `/api/${path.replace(/^\//, '')}`;
+  }
+  
+  // For development, use the direct API URL
   return `${baseApiUrl}/${path.replace(/^\//, '')}`;
 };
 
