@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { StarIcon } from "lucide-react";
-import { API_BASE_URL } from "@/config/api-config";
+import { getImageUrl } from "@/config/api-config";
 
 interface CourseCardProps {
   id: string;
@@ -55,9 +55,7 @@ export function CourseCard({
   };
 
   // Format the thumbnail URL correctly
-  const formattedThumbnail = thumbnail ? 
-    (thumbnail.startsWith('http') ? thumbnail : `${API_BASE_URL}/${thumbnail.replace(/^\//, '')}`) : 
-    "/placeholder.svg";
+  const formattedThumbnail = getImageUrl(thumbnail);
 
   return (
     <Card className="overflow-hidden group hover:shadow-md transition-shadow">

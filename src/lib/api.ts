@@ -8,6 +8,9 @@ const API_BASE_URL = isProduction
   ? "/api" // Use Vercel rewrite proxy in production
   : (import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net");
 
+// Original direct API URL (needed for some requests like auth)
+const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net";
+
 console.log("Using API URL:", API_BASE_URL); // Debug the URL being used
 
 // Configuration for rate limiting and retries
@@ -288,10 +291,49 @@ export const API = {
       gender: string;
       dateOfBirth: string;
       userType: string;
-    }) => apiRequest('/Account/register', 'POST', data, false),
+    }) => {
+      // Use direct API URL for auth endpoints to ensure cookies are set correctly
+      const url = `${DIRECT_API_URL}/Account/register`;
+      return fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(data),
+        credentials: 'include',
+        mode: 'cors'
+      }).then(response => {
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.message || 'Registration failed');
+          });
+        }
+        return response.json();
+      });
+    },
     
-    login: (data: { email: string; password: string }) => 
-      apiRequest('/Account/login', 'POST', data, false),
+    login: (data: { email: string; password: string }) => {
+      // Use direct API URL for auth endpoints to ensure cookies are set correctly
+      const url = `${DIRECT_API_URL}/Account/login`;
+      return fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(data),
+        credentials: 'include',
+        mode: 'cors'
+      }).then(response => {
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.message || 'Login failed');
+          });
+        }
+        return response.json();
+      });
+    },
     
     activeAccount: (data: { email: string; code: string }) => 
       apiRequest('/Account/active-account', 'POST', data, false),

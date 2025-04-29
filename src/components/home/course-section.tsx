@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { FeaturedCourses } from "@/components/home/featured-courses";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Course } from "@/types/api";
-import { API_BASE_URL } from "@/config/api-config";
+import { getImageUrl } from "@/config/api-config";
 
 interface CourseSectionProps {
   courses: any[];
@@ -20,7 +20,7 @@ export function CourseSection({ courses, isLoading, error, mockCourses }: Course
     title: course.title || "Untitled Course",
     description: course.description || "No description available",
     thumbnail: course.thumbnail ? 
-      (course.thumbnail.startsWith('http') ? course.thumbnail : `${API_BASE_URL}/${course.thumbnail.replace(/^\//, '')}`) : 
+      (course.thumbnail.startsWith('http') ? course.thumbnail : getImageUrl(course.thumbnail)) : 
       "/placeholder.svg",
     rating: course.rating || 0,
     price: course.price || 0,

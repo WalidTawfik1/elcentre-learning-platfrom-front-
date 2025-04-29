@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { StarIcon } from "lucide-react";
-import { API_BASE_URL } from "@/config/api-config";
+import { getImageUrl } from "@/config/api-config";
 
 interface Course {
   id: string;
