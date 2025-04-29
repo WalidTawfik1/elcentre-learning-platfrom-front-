@@ -417,6 +417,11 @@ export default function CourseDetail() {
     reviews: [],
   } : course;
 
+  // Add a function to check if user can enroll
+  const canEnroll = () => {
+    return user?.userType === "Student";
+  };
+
   return (
     <MainLayout>
       {/* Course Header */}
@@ -484,8 +489,16 @@ export default function CourseDetail() {
                   </div>
                 ) : (
                   <div className="flex gap-4">
-                    <Button onClick={handleEnroll} disabled={isEnrolling} className="bg-eduBlue-500 hover:bg-eduBlue-600">
-                      {isEnrolling ? "Enrolling..." : courseData.price === 0 ? "Enroll for Free" : `Enroll for ${courseData.price} LE`}
+                    <Button 
+                      onClick={handleEnroll} 
+                      disabled={isEnrolling || !canEnroll()} 
+                      className="bg-eduBlue-500 hover:bg-eduBlue-600"
+                      title={!canEnroll() ? "Only students can enroll in courses" : ""}
+                    >
+                      {isEnrolling ? "Enrolling..." : 
+                       !canEnroll() ? "Students Only" :
+                       courseData.price === 0 ? "Enroll for Free" : 
+                       `Enroll for ${courseData.price} LE`}
                     </Button>
                     <Button 
                       variant="outline" 
@@ -563,8 +576,16 @@ export default function CourseDetail() {
                       </div>
                     ) : (
                       <div className="flex flex-col gap-2">
-                        <Button onClick={handleEnroll} disabled={isEnrolling} className="w-full bg-eduBlue-500 hover:bg-eduBlue-600">
-                          {isEnrolling ? "Enrolling..." : courseData.price === 0 ? "Enroll for Free" : `Enroll for ${courseData.price} LE`}
+                        <Button 
+                          onClick={handleEnroll} 
+                          disabled={isEnrolling || !canEnroll()} 
+                          className="w-full bg-eduBlue-500 hover:bg-eduBlue-600"
+                          title={!canEnroll() ? "Only students can enroll in courses" : ""}
+                        >
+                          {isEnrolling ? "Enrolling..." : 
+                           !canEnroll() ? "Students Only" :
+                           courseData.price === 0 ? "Enroll for Free" : 
+                           `Enroll for ${courseData.price} LE`}
                         </Button>
                         <Button 
                           variant="outline" 

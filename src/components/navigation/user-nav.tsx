@@ -119,12 +119,14 @@ export function UserNav() {
               </Link>
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem asChild>
+          {user?.userType === "Student" && (
+            <DropdownMenuItem asChild>
             <Link to="/my-courses" className="flex items-center w-full text-gray-600 hover:bg-blue-500/10 hover:text-gray-900 focus:bg-blue-500/10 focus:text-gray-900">
               <GraduationCap className="w-4 h-4 mr-2" />
               <span>My Enrollments</span>
             </Link>
           </DropdownMenuItem>
+          )}          
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem 
