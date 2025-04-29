@@ -1,12 +1,14 @@
 // API Configuration - Centralized API URL settings
 
-// Access the environment variable or use fallback
-// Using explicit check for undefined to handle empty string cases properly
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL !== undefined 
-  ? import.meta.env.VITE_API_BASE_URL 
-  : "http://elcentre.runasp.net";
+// Determine if we're running in a production environment (like Vercel)
+const isProduction = import.meta.env.PROD;
+const baseApiUrl = import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net";
 
-export const API_BASE_URL = apiBaseUrl;
+// In production (Vercel), use our API proxy to avoid CORS issues with HTTP endpoints
+// In development, use the direct API URL
+export const API_BASE_URL = isProduction 
+  ? `/api/proxy?url=${encodeURIComponent(baseApiUrl)}`
+  : baseApiUrl;
 
 // Helper function to check if the API is reachable 
 export const checkApiConnection = async (): Promise<boolean> => {
