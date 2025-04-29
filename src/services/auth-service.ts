@@ -1,5 +1,6 @@
 import { apiRequest } from "./api";
 import { LoginDTO, RegisterDTO, UserDTO } from "@/types/api";
+import { DIRECT_API_URL } from "@/config/api-config";
 
 // Helper function to set a cookie with expiration
 const setCookie = (name: string, value: string, days = 7) => {
@@ -21,13 +22,67 @@ const getCookie = (name: string): string | null => {
   return null;
 };
 
+// Direct API fetch function for auth operations
+const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, requiresAuth = false): Promise<T> => {
+  // Construct the full URL with the direct API URL
+  const url = `${DIRECT_API_URL}${endpoint}`;
+  
+  // Set default headers
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  };
+
+  // Add authorization header if required and token exists
+  if (requiresAuth) {
+    const token = getCookie('jwt');
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+
+  // Merge provided options with defaults
+  const requestOptions: RequestInit = {
+    ...options,
+    headers: {
+      ...headers,
+      ...(options.headers || {})
+    },
+    credentials: 'include', // Always include credentials for auth operations
+    mode: 'cors'
+  };
+
+  try {
+    const response = await fetch(url, requestOptions);
+    
+    if (!response.ok) {
+      // Try to parse error response
+      try {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `API Error: ${response.status}`);
+      } catch (e) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+    }
+    
+    // For 204 No Content responses
+    if (response.status === 204) {
+      return {} as T;
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("API request failed:", error);
+    throw error;
+  }
+};
+
 export const AuthService = {
   login: async (credentials: LoginDTO): Promise<any> => {
-    // Login doesn't need authentication, but we want credentials included for cookies
-    const response = await apiRequest<any>("/Account/login", {
+    // Use direct API connection for login to ensure cookies are set properly
+    const response = await directApiRequest<any>("/Account/login", {
       method: "POST",
-      body: JSON.stringify(credentials),
-      credentials: "include" // Ensure cookies are stored
+      body: JSON.stringify(credentials)
     }, false);
     
     // Check for token in response and manually set it as a cookie if needed
@@ -54,9 +109,10 @@ export const AuthService = {
   },
   
   register: async (userData: RegisterDTO): Promise<any> => {
-    return apiRequest<any>("/Account/register", {
+    // Use direct API connection for registration
+    return directApiRequest<any>("/Account/register", {
       method: "POST",
-      body: JSON.stringify(userData),
+      body: JSON.stringify(userData)
     }, false);
   },
   

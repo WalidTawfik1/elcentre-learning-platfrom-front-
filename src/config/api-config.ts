@@ -2,29 +2,24 @@
 
 // Determine if we're running in a production environment (like Vercel)
 const isProduction = import.meta.env.PROD;
-const baseApiUrl = import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net";
 
-// In production (Vercel), use our API proxy to avoid CORS issues with HTTP endpoints
-// In development, use the direct API URL
+// Base API URL with environment-specific handling for API requests
 export const API_BASE_URL = isProduction 
-  ? "/api" 
-  : baseApiUrl;
+  ? "/api" // Use Vercel rewrite proxy in production
+  : (import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net");
 
-// For image URLs, we need special handling in production vs development
+// Direct API URL for images and auth operations that need to bypass the proxy
+export const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net";
+
+// For image URLs, need direct access in both environments
 export const getImageUrl = (path: string | undefined): string => {
   if (!path) return "/placeholder.svg";
   
   // If it's already a full URL, use it as is
   if (path.startsWith('http')) return path;
   
-  // For production environment, route images through the proxy too
-  if (isProduction) {
-    // Replace any leading slash and use the proxy path
-    return `/api/${path.replace(/^\//, '')}`;
-  }
-  
-  // For development, use the direct API URL
-  return `${baseApiUrl}/${path.replace(/^\//, '')}`;
+  // Always use direct URL for images to avoid CORS issues
+  return `${DIRECT_API_URL}/${path.replace(/^\//, '')}`;
 };
 
 // Helper function to check if the API is reachable 

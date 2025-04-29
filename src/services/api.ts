@@ -1,7 +1,5 @@
 import { toast } from "@/components/ui/use-toast";
-
-// API URL with HTTP protocol
-const API_BASE_URL = "http://elcentre.runasp.net";
+import { API_BASE_URL } from "@/config/api-config";
 
 // Configuration for rate limiting and retries
 const API_CONFIG = {
