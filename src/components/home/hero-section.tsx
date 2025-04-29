@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 
 export function HeroSection() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   
   return (
     <section className="relative py-20 md:py-32 overflow-hidden bg-gradient-to-b from-eduBlue-50 to-transparent">
@@ -29,9 +29,11 @@ export function HeroSection() {
             </Button>
             
             {isAuthenticated ? (
-              <Button size="lg" variant="outline" className="border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50" asChild>
-                <Link to="/my-courses">My Courses</Link>
-              </Button>
+              user?.userType !== "Admin" && (
+                <Button size="lg" variant="outline" className="border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50" asChild>
+                  <Link to={user?.userType === "Instructor" ? "/instructor/courses" : "/my-courses"}>My Courses</Link>
+                </Button>
+              )
             ) : (
               <Button size="lg" variant="outline" className="border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50" asChild>
                 <Link to="/register">Join for Free</Link>

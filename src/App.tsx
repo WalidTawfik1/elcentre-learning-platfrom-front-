@@ -24,6 +24,7 @@ import InstructorDashboard from "./pages/dashboard/instructor/index";
 import AddCourse from "@/pages/dashboard/instructor/add-course";
 import EditCourse from "@/pages/dashboard/instructor/edit-course";
 import CourseContentManagement from "@/pages/dashboard/instructor/courses/[id]/content";
+import MyCoursesRedirect from "@/components/navigation/my-courses-redirect";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -61,6 +62,9 @@ const App = () => (
             {/* Protected routes */}
             <Route path="/dashboard" element={<StudentDashboard />} />
             <Route path="/profile" element={<ProfilePage />} />
+            
+            {/* Dynamic My Courses redirection based on user role */}
+            <Route path="/courses-redirect" element={<MyCoursesRedirect />} />
             
             {/* My Courses routes */}
             <Route path="/my-courses" element={<MyCourses />} />

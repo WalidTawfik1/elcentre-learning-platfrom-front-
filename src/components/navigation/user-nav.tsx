@@ -97,6 +97,14 @@ export function UserNav() {
               </Link>
             </DropdownMenuItem>
           )}
+          {user?.userType === "Admin" && (
+            <DropdownMenuItem asChild>
+              <Link to="/admin/dashboard" className="flex items-center w-full text-gray-600 hover:bg-blue-500/10 hover:text-gray-900 focus:bg-blue-500/10 focus:text-gray-900">
+                <Gauge className="w-4 h-4 mr-2" />
+                <span>Admin Dashboard</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
           {user?.userType === "Student" && (
             <DropdownMenuItem asChild>
               <Link to="/dashboard" className="flex items-center w-full text-gray-600 hover:bg-blue-500/10 hover:text-gray-900 focus:bg-blue-500/10 focus:text-gray-900">
@@ -111,6 +119,14 @@ export function UserNav() {
               <span>My Profile</span>
             </Link>
           </DropdownMenuItem>
+          {user?.userType === "Student" && (
+            <DropdownMenuItem asChild>
+              <Link to="/my-courses" className="flex items-center w-full text-gray-600 hover:bg-blue-500/10 hover:text-gray-900 focus:bg-blue-500/10 focus:text-gray-900">
+                <BookOpen className="w-4 h-4 mr-2" />
+                <span>My Courses</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
           {user?.userType === "Instructor" && (
             <DropdownMenuItem asChild>
               <Link to="/instructor/courses" className="flex items-center w-full text-gray-600 hover:bg-blue-500/10 hover:text-gray-900 focus:bg-blue-500/10 focus:text-gray-900">
@@ -118,14 +134,6 @@ export function UserNav() {
                 <span>My Courses</span>
               </Link>
             </DropdownMenuItem>
-          )}
-          {user?.userType === "Student" && (
-            <DropdownMenuItem asChild>
-            <Link to="/my-courses" className="flex items-center w-full text-gray-600 hover:bg-blue-500/10 hover:text-gray-900 focus:bg-blue-500/10 focus:text-gray-900">
-              <GraduationCap className="w-4 h-4 mr-2" />
-              <span>My Enrollments</span>
-            </Link>
-          </DropdownMenuItem>
           )}          
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

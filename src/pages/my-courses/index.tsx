@@ -25,7 +25,7 @@ export default function MyCourses() {
   useEffect(() => {
     // Redirect to login if not authenticated
     if (!isAuthenticated) {
-      navigate("/auth/login?redirect=/my-courses", { replace: true });
+      navigate("/login?redirect=/my-courses", { replace: true });
       return;
     }
     

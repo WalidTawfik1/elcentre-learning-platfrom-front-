@@ -65,6 +65,16 @@ export function NavBar() {
             <Link to="/categories" className="transition-colors hover:text-foreground/80">
               Categories
             </Link>
+            {isAuthenticated && user?.userType === "Student" && (
+              <Link to="/my-courses" className="transition-colors hover:text-foreground/80">
+                My Courses
+              </Link>
+            )}
+            {isAuthenticated && user?.userType === "Instructor" && (
+              <Link to="/instructor/courses" className="transition-colors hover:text-foreground/80">
+                My Courses
+              </Link>
+            )}
             {isAuthenticated && user?.userType === "Instructor" && (
               <Link to="/instructor/dashboard" className="transition-colors hover:text-foreground/80">
                 Instructor Dashboard
@@ -209,6 +219,24 @@ export function NavBar() {
             >
               Categories
             </Link>
+            {isAuthenticated && user?.userType === "Student" && (
+              <Link 
+                to="/my-courses" 
+                className="px-4 py-2 hover:bg-accent rounded-md" 
+                onClick={handleMobileNavClick}
+              >
+                My Courses
+              </Link>
+            )}
+            {isAuthenticated && user?.userType === "Instructor" && (
+              <Link 
+                to="/instructor/courses" 
+                className="px-4 py-2 hover:bg-accent rounded-md" 
+                onClick={handleMobileNavClick}
+              >
+                My Courses
+              </Link>
+            )}
             {isAuthenticated && user?.userType === "Instructor" && (
               <Link 
                 to="/instructor/dashboard" 
