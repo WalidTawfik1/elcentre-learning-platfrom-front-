@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { CategoryService } from "@/services/category-service";
 import { CourseService } from "@/services/course-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
+import { BookOpen, BookText } from "lucide-react";
 
 // Backend base URL for serving static content
 const API_BASE_URL = "http://elcentre.runasp.net";
@@ -319,6 +320,13 @@ export default function EditCourse() {
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Updating..." : "Update Course"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => navigate(`/dashboard/instructor/courses/${id}/content`)}
+              >
+                <BookOpen className="mr-2 h-4 w-4" /> Manage Content
               </Button>
             </div>
           </form>

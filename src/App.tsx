@@ -23,6 +23,7 @@ import InstructorCourses from "./pages/dashboard/instructor/courses";
 import InstructorDashboard from "./pages/dashboard/instructor/index";
 import AddCourse from "@/pages/dashboard/instructor/add-course";
 import EditCourse from "@/pages/dashboard/instructor/edit-course";
+import CourseContentManagement from "@/pages/dashboard/instructor/courses/[id]/content";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/instructor/courses" element={<InstructorCourses/>} />
             <Route path="/dashboard/instructor/courses/new" element={<AddCourse />} />
             <Route path="/dashboard/instructor/courses/:id/edit" element={<EditCourse />} />
+            <Route path="/dashboard/instructor/courses/:id/content" element={<CourseContentManagement />} />
 
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

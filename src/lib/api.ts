@@ -3,6 +3,15 @@
 // Base API URL
 const API_BASE_URL = "http://elcentre.runasp.net";
 
+// Configuration for rate limiting and retries
+const API_CONFIG = {
+  maxRetries: 3,             // Maximum number of retry attempts
+  initialBackoffMs: 1000,    // Start with 1 second delay
+  maxBackoffMs: 10000,       // Maximum delay of 10 seconds
+  backoffFactor: 2,          // Double the delay on each retry
+  retryStatusCodes: [429]    // Status codes that should trigger a retry
+};
+
 // Helper function to get a cookie value
 const getCookie = (name: string): string | null => {
   const nameEQ = name + "=";
@@ -13,6 +22,20 @@ const getCookie = (name: string): string | null => {
     if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
   }
   return null;
+};
+
+// Helper function to sleep for a specified number of milliseconds
+const sleep = (ms: number): Promise<void> => 
+  new Promise(resolve => setTimeout(resolve, ms));
+
+// Calculate backoff time using exponential backoff algorithm
+const calculateBackoff = (attempt: number): number => {
+  const backoff = Math.min(
+    API_CONFIG.maxBackoffMs,
+    API_CONFIG.initialBackoffMs * Math.pow(API_CONFIG.backoffFactor, attempt)
+  );
+  // Add some randomness (jitter) to prevent synchronized retries
+  return Math.floor(backoff * (0.8 + Math.random() * 0.4));
 };
 
 // Special silent fetch function for endpoints that might 404 in development
@@ -30,7 +53,7 @@ async function silentFetch(url: string, config: RequestInit): Promise<Response> 
   }
 }
 
-// Helper function for making API requests
+// Helper function for making API requests with retry mechanism
 async function apiRequest<T>(
   endpoint: string,
   method: string = "GET",
@@ -87,74 +110,140 @@ async function apiRequest<T>(
     }
   }
 
-  try {
-    // Use the appropriate fetch function based on silent mode
-    const response = silentMode 
-      ? await silentFetch(url, config)
-      : await fetch(url, config);
-    
-    // For silent mode requests that return 404, return empty array/object
-    if (silentMode && response.status === 404) {
-      return ([] as unknown) as T;
-    }
-    
-    // Only log for non-silent requests
-    if (!silentMode) {
-      // Log reduced information without full URLs
-      console.log(`API ${method} to ${endpointPath} - Status: ${response.status}`);
-    }
-    
-    if (!response.ok) {
-      // Try to get error message from response
-      let errorMessage;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || `API Error: ${response.status}`;
-        
-        // Only log errors for non-silent requests
+  // Initialize retry counter
+  let retryCount = 0;
+  let lastResponse: Response | null = null;
+  let lastError: any = null;
+
+  // Keep trying while we have retries left
+  while (retryCount <= API_CONFIG.maxRetries) {
+    try {
+      // If this is a retry, add a delay with exponential backoff
+      if (retryCount > 0) {
+        const backoffMs = calculateBackoff(retryCount - 1);
         if (!silentMode) {
-          console.error(`API Error (${method} ${endpointPath}):`, {
-            status: response.status,
-            message: errorData.message || "Unknown error"
-          });
+          console.log(`Rate limited (429). Retry ${retryCount}/${API_CONFIG.maxRetries} after ${backoffMs}ms delay`);
         }
-      } catch (e) {
-        errorMessage = `API Error: ${response.status}`;
+        await sleep(backoffMs);
       }
+
+      // Use the appropriate fetch function based on silent mode
+      const response = silentMode 
+        ? await silentFetch(url, config)
+        : await fetch(url, config);
       
-      // For silent mode, just return empty data instead of throwing
-      if (silentMode) {
+      lastResponse = response;
+      
+      // For silent mode requests that return 404, return empty array/object
+      if (silentMode && response.status === 404) {
         return ([] as unknown) as T;
       }
       
-      throw new Error(errorMessage);
-    }
-    
-    // For 204 No Content responses
-    if (response.status === 204) {
-      return {} as T;
-    }
-    
-    // Try to parse JSON or return empty object
-    try {
-      return await response.json();
-    } catch (jsonError) {
-      // Only log warnings for non-silent requests
+      // Only log for non-silent requests
       if (!silentMode) {
-        console.warn(`Could not parse response as JSON for ${endpointPath}`);
+        // Log reduced information without full URLs
+        console.log(`API ${method} to ${endpointPath} - Status: ${response.status}`);
       }
-      return {} as T;
+      
+      // Check if we got a rate limit error and should retry
+      if (API_CONFIG.retryStatusCodes.includes(response.status) && retryCount < API_CONFIG.maxRetries) {
+        retryCount++;
+        continue;
+      }
+      
+      // For other non-OK responses
+      if (!response.ok) {
+        // Try to get error message from response
+        let errorMessage;
+        try {
+          const errorData = await response.json();
+          
+          // Special handling for 400 errors - they often contain validation details
+          if (response.status === 400) {
+            // Check for various error formats
+            if (errorData.errors) {
+              // Handle ASP.NET validation errors object
+              const errorDetails = Object.entries(errorData.errors)
+                .map(([key, messages]) => `${key}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+                .join('; ');
+              errorMessage = `Validation error: ${errorDetails}`;
+            } else if (errorData.detail) {
+              // Some APIs use 'detail' field for error messages
+              errorMessage = errorData.detail;
+            } else if (errorData.message) {
+              // Standard message field
+              errorMessage = errorData.message;
+            } else if (typeof errorData === 'string') {
+              // Plain string error
+              errorMessage = errorData;
+            } else {
+              // Fallback to stringify the entire error object
+              errorMessage = `Bad Request: ${JSON.stringify(errorData)}`;
+            }
+          } else {
+            // Standard error format for other status codes
+            errorMessage = errorData.message || `API Error: ${response.status}`;
+          }
+          
+          // Only log errors for non-silent requests
+          if (!silentMode) {
+            console.error(`API Error (${method} ${endpointPath}):`, {
+              status: response.status,
+              message: errorMessage,
+              data: errorData
+            });
+          }
+        } catch (e) {
+          errorMessage = `API Error: ${response.status}`;
+        }
+        
+        // For silent mode, just return empty data instead of throwing
+        if (silentMode) {
+          return ([] as unknown) as T;
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      // For 204 No Content responses
+      if (response.status === 204) {
+        return {} as T;
+      }
+      
+      // Try to parse JSON or return empty object
+      try {
+        return await response.json();
+      } catch (jsonError) {
+        // Only log warnings for non-silent requests
+        if (!silentMode) {
+          console.warn(`Could not parse response as JSON for ${endpointPath}`);
+        }
+        return {} as T;
+      }
+    } catch (error) {
+      lastError = error;
+      
+      // Only retry network errors, not application errors
+      if (!(error instanceof TypeError) || retryCount >= API_CONFIG.maxRetries) {
+        break;
+      }
+      
+      retryCount++;
     }
-  } catch (error) {
-    // For silent mode, just return empty data instead of throwing
-    if (silentMode) {
-      return ([] as unknown) as T;
-    }
-    
-    // For other errors, log with limited info
-    console.error(`API request failed (${method} ${endpointPath}):`, error instanceof Error ? error.message : "Unknown error");
-    throw error;
   }
+  
+  // If we get here, all retries have failed or we got an error that wasn't retryable
+  
+  // For silent mode, just return empty data instead of throwing
+  if (silentMode) {
+    return ([] as unknown) as T;
+  }
+  
+  // For other errors, log with limited info
+  console.error(`API request failed after ${retryCount} retries (${method} ${endpointPath}):`, 
+    lastError instanceof Error ? lastError.message : "Unknown error");
+  
+  throw lastError || new Error(`Request failed after ${retryCount} retries`);
 }
 
 // Helper to handle file uploads and form data
@@ -318,8 +407,8 @@ export const API = {
   // Lessons
   lessons: {
     getByModule: (moduleId: number) => 
-      // Use silent mode (true as last parameter) to prevent console errors
-      apiRequest(`/Lesson/get-module-lessons?moduleId=${moduleId}`, 'GET', undefined, false, false, true),
+      // Remove silent mode and handle retries properly for lesson fetching
+      apiRequest(`/Lesson/get-module-lessons?moduleId=${moduleId}`, 'GET', undefined, false, false, false),
     
     getById: (id: number) => 
       apiRequest(`/Lesson/get-lesson-by-id/${id}`, 'GET', undefined, false),
@@ -343,8 +432,15 @@ export const API = {
       ContentType?: string;
       DurationInMinutes?: number;
       IsPublished?: boolean;
+      KeepExistingContent?: boolean;
     }) => {
       const formData = createFormData(data);
+      
+      // If KeepExistingContent is true, add a special field to inform the backend
+      if (data.KeepExistingContent) {
+        formData.append("KeepExistingContent", "true");
+      }
+      
       return apiRequest('/Lesson/update-lesson', 'PUT', formData, true, true);
     },
     
