@@ -5,7 +5,7 @@ const isProduction = import.meta.env.PROD;
 
 // Base API URL with environment-specific handling
 const API_BASE_URL = isProduction 
-  ? "https://cors-anywhere.herokuapp.com/http://elcentre.runasp.net"  // Use CORS proxy in production
+  ? "/api" // Use Vercel rewrite proxy in production
   : (import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net");
 
 console.log("Using API URL:", API_BASE_URL); // Debug the URL being used
