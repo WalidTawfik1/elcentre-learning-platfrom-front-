@@ -648,10 +648,6 @@ export default function CourseDetail() {
                       </div>
                     )}
                   </div>
-                  
-                  <p className="text-center text-sm text-muted-foreground">
-                    30-Day Money-Back Guarantee
-                  </p>
                 </div>
               </div>
             </div>

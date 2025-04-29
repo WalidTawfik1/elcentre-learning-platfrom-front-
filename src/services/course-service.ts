@@ -122,6 +122,7 @@ export const CourseService = {
     thumbnail: File;
     isActive: boolean;
     categoryId: number;
+    durationInHours: number;
   }): Promise<any> => {
     // Transform the data to match API expectations (PascalCase)
     const formattedData = {
@@ -130,7 +131,8 @@ export const CourseService = {
       Price: courseData.price,
       Thumbnail: courseData.thumbnail,
       IsActive: courseData.isActive,
-      CategoryId: courseData.categoryId
+      CategoryId: courseData.categoryId,
+      DurationInHours: courseData.durationInHours
     };
 
     return API.courses.add(formattedData);
@@ -144,6 +146,7 @@ export const CourseService = {
     thumbnail?: File;
     isActive?: boolean;
     categoryId?: number;
+    durationInHours?: number;
   }): Promise<any> => {
     // Transform the data to match API expectations (PascalCase)
     const formattedData = {
@@ -154,6 +157,7 @@ export const CourseService = {
       Thumbnail: courseData.thumbnail,
       IsActive: courseData.isActive,
       CategoryId: courseData.categoryId,
+      DurationInHours: courseData.durationInHours
     };
 
     return API.courses.update(formattedData);

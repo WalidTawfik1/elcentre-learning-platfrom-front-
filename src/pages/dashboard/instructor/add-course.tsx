@@ -20,7 +20,8 @@ export default function AddCourse() {
     price: 0,
     thumbnail: null as File | null,
     isActive: true,
-    categoryId: 0
+    categoryId: 0,
+    durationInHours: 0
   });
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
@@ -148,6 +149,18 @@ export default function AddCourse() {
                 type="number"
                 name="price"
                 value={formData.price}
+                onChange={handleInputChange}
+                min="0"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Duration (hours)</label>
+              <Input
+                type="number"
+                name="durationInHours"
+                value={formData.durationInHours}
                 onChange={handleInputChange}
                 min="0"
                 required

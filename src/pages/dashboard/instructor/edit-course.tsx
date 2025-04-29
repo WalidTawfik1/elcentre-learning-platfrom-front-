@@ -28,6 +28,7 @@ export default function EditCourse() {
     originalThumbnail: "", // Add this field to store original thumbnail URL
     isActive: true,
     categoryId: 0,
+    durationInHours: 0
   });
   const [isLoading, setIsLoading] = useState(true); // Add loading state
 
@@ -85,6 +86,7 @@ export default function EditCourse() {
           originalThumbnail: courseData.thumbnail, // Store the original thumbnail URL
           isActive: courseData.isActive,
           categoryId: courseData.categoryId,
+          durationInHours: courseData.durationInHours || 0
         });
       } catch (error) {
         console.error("Error fetching course:", error);
@@ -257,6 +259,18 @@ export default function EditCourse() {
                 type="number"
                 name="price"
                 value={formData.price}
+                onChange={handleInputChange}
+                min="0"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Duration (hours)</label>
+              <Input
+                type="number"
+                name="durationInHours"
+                value={formData.durationInHours}
                 onChange={handleInputChange}
                 min="0"
                 required
