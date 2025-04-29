@@ -91,7 +91,7 @@ export function UserNav() {
         <DropdownMenuGroup>
           {user?.userType === "Instructor" && (
             <DropdownMenuItem asChild>
-              <Link to="/instructor/dashboard" className="flex items-center">
+              <Link to="/instructor/dashboard" className="flex items-center w-full text-gray-600 hover:bg-blue-500/10 hover:text-gray-900 focus:bg-blue-500/10 focus:text-gray-900">
                 <Gauge className="w-4 h-4 mr-2" />
                 <span>Instructor Dashboard</span>
               </Link>
@@ -99,37 +99,36 @@ export function UserNav() {
           )}
           {user?.userType === "Student" && (
             <DropdownMenuItem asChild>
-              <Link to="/dashboard" className="flex items-center">
+              <Link to="/dashboard" className="flex items-center w-full text-gray-600 hover:bg-blue-500/10 hover:text-gray-900 focus:bg-blue-500/10 focus:text-gray-900">
                 <Gauge className="w-4 h-4 mr-2" />
                 <span>Dashboard</span>
               </Link>
             </DropdownMenuItem>
           )}
           <DropdownMenuItem asChild>
-            <Link to="/profile" className="flex items-center">
+            <Link to="/profile" className="flex items-center w-full text-gray-600 hover:bg-blue-500/10 hover:text-gray-900 focus:bg-blue-500/10 focus:text-gray-900">
               <User className="w-4 h-4 mr-2" />
               <span>My Profile</span>
             </Link>
           </DropdownMenuItem>
           {user?.userType === "Instructor" && (
-              <DropdownMenuItem asChild>
-              <Link to="/instructor/courses" className="flex items-center">
+            <DropdownMenuItem asChild>
+              <Link to="/instructor/courses" className="flex items-center w-full text-gray-600 hover:bg-blue-500/10 hover:text-gray-900 focus:bg-blue-500/10 focus:text-gray-900">
                 <BookOpen className="w-4 h-4 mr-2" />
                 <span>My Courses</span>
               </Link>
             </DropdownMenuItem>
-            )}
+          )}
           <DropdownMenuItem asChild>
-              <Link to="/my-courses" className="flex items-center">
-                <GraduationCap className="w-4 h-4 mr-2" />
-                <span>My Enrollments</span>
-              </Link>
-            </DropdownMenuItem>
+            <Link to="/my-courses" className="flex items-center w-full text-gray-600 hover:bg-blue-500/10 hover:text-gray-900 focus:bg-blue-500/10 focus:text-gray-900">
+              <GraduationCap className="w-4 h-4 mr-2" />
+              <span>My Enrollments</span>
+            </Link>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem 
-          onClick={handleLogout} 
-          className="cursor-pointer text-red-500 focus:text-red-500"
+          onClick={handleLogout}           
         >
           <LogOut className="w-4 h-4 mr-2" />
           <span>Log out</span>

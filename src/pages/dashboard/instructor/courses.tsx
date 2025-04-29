@@ -37,13 +37,33 @@ export default function InstructorCourses() {
     if (!isAuthenticated || user?.userType !== "Instructor") {
         navigate("/auth/login", { replace: true });
         return;
- }
+    }
 
     const fetchCourses = async () => {
       setIsLoading(true);
       try {
         const coursesData = await CourseService.getInstructorCourses();
-        setCourses(Array.isArray(coursesData) ? coursesData : []);
+        
+        // Fetch enrollment counts for each course
+        const coursesWithEnrollments = await Promise.all(
+          coursesData.map(async (course: any) => {
+            try {
+              const enrollmentCount = await CourseService.getEnrollmentCount(course.id);
+              return {
+                ...course,
+                studentsCount: enrollmentCount
+              };
+            } catch (error) {
+              console.error(`Error fetching enrollment count for course ${course.id}:`, error);
+              return {
+                ...course,
+                studentsCount: 0
+              };
+            }
+          })
+        );
+
+        setCourses(Array.isArray(coursesWithEnrollments) ? coursesWithEnrollments : []);
       } catch (error) {
         console.error("Error fetching instructor courses:", error);
         toast({
@@ -65,6 +85,8 @@ export default function InstructorCourses() {
     if (thumbnail.startsWith('http')) return thumbnail;
     return `${API_BASE_URL}/${thumbnail.replace(/^\//, '')}`;
   };
+
+
 
   const handleDeleteCourse = async (courseId: number) => {
     try {
@@ -152,7 +174,7 @@ export default function InstructorCourses() {
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="flex items-center">
                       <Users className="h-4 w-4 mr-1 text-muted-foreground" />
-                      <span>{course.enrollmentsCount || 0} students</span>
+                      <span>{course.studentsCount?.toLocaleString() || 0} students</span>
                     </div>
                     <div className="flex items-center">
                       <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" />
@@ -163,7 +185,11 @@ export default function InstructorCourses() {
                 <CardFooter className="p-4 border-t">
                   <div className="w-full flex justify-between items-center">
                     <div className="flex gap-2">
-                      <Button variant="outline" asChild>
+                      <Button 
+                        variant="outline" 
+                        className="hover:bg-green-100 hover:text-green-600 hover:border-green-200" 
+                        asChild
+                      >
                         <Link to={`/dashboard/instructor/courses/${course.id}/edit`}>
                           Edit Course
                         </Link>
@@ -194,7 +220,11 @@ export default function InstructorCourses() {
                         </AlertDialogContent>
                       </AlertDialog>
                     </div>
-                    <Button variant="ghost" asChild>
+                    <Button 
+                      variant="ghost" 
+                      className="hover:bg-blue-100 hover:text-blue-600" 
+                      asChild
+                    >
                       <Link to={`/courses/${course.id}`}>Preview</Link>
                     </Button>
                   </div>
