@@ -72,7 +72,7 @@ export default function EditCourse() {
             description: "You can only edit your own courses",
             variant: "destructive"
           });
-          navigate("/dashboard/instructor/courses", { replace: true });
+          navigate("/instructor/courses", { replace: true });
           return;
         }
 
@@ -93,7 +93,7 @@ export default function EditCourse() {
           description: "Failed to load course data. Please try again.",
           variant: "destructive"
         });
-        navigate("/dashboard/instructor/courses");
+        navigate("/instructor/courses");
       } finally {
         setIsLoading(false);
       }
@@ -163,7 +163,7 @@ export default function EditCourse() {
         title: "Success",
         description: "Course updated successfully"
       });
-      navigate("/dashboard/instructor/courses");
+      navigate("/instructor/courses");
     } catch (error) {
       console.error("Error updating course:", error);
       toast({
@@ -299,7 +299,7 @@ export default function EditCourse() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate("/dashboard/instructor/courses")}
+                onClick={() => navigate("/instructor/courses")}
               >
                 Cancel
               </Button>

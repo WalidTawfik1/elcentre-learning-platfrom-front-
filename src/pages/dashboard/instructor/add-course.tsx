@@ -71,7 +71,7 @@ export default function AddCourse() {
         title: "Success",
         description: "Course created successfully"
       });
-      navigate("/dashboard/instructor/courses");
+      navigate("/instructor/courses");
     } catch (error) {
       console.error("Error creating course:", error);
       toast({
@@ -187,7 +187,7 @@ export default function AddCourse() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate("/dashboard/instructor/courses")}
+                onClick={() => navigate("/instructor/courses")}
               >
                 Cancel
               </Button>
