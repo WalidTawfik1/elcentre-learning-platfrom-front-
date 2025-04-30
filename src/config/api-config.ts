@@ -3,14 +3,18 @@
 // Determine if we're running in a production environment
 const isProduction = import.meta.env.PROD;
 
-// The original API URL that should be used for direct connections
+// The original API URL that should be used for direct connections when in development
 const ORIGIN_API_URL = "http://elcentre.runasp.net";
 
-// Base API URL with environment-specific handling for API requests
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ORIGIN_API_URL;
+// Use relative URL in production (for Vercel proxy) and direct URL in development
+export const API_BASE_URL = isProduction 
+  ? "/api" 
+  : (import.meta.env.VITE_API_BASE_URL || ORIGIN_API_URL);
 
-// Direct API URL for images and auth operations that need to bypass the proxy
-export const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || ORIGIN_API_URL;
+// Direct API URL for images and auth operations that might need direct access
+export const DIRECT_API_URL = isProduction
+  ? "/api"
+  : (import.meta.env.VITE_API_BASE_URL || ORIGIN_API_URL);
 
 // For image URLs, need direct access in both environments
 export const getImageUrl = (path: string | undefined): string => {
@@ -19,7 +23,7 @@ export const getImageUrl = (path: string | undefined): string => {
   // If it's already a full URL, use it as is
   if (path.startsWith('http')) return path;
   
-  // Always use direct URL for images to avoid CORS issues
+  // Use the appropriate URL based on environment
   return `${DIRECT_API_URL}/${path.replace(/^\//, '')}`;
 };
 
@@ -42,5 +46,5 @@ export const checkApiConnection = async (): Promise<boolean> => {
   }
 };
 
-// Note: Using HTTP as required by the server configuration
+// Note: Using the API proxy in production to avoid mixed content issues
 // Other API settings can be added here as needed

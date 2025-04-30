@@ -4,8 +4,8 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "http://elcentre.runasp.net/:path*"
+      "source": "/api/:match*",
+      "destination": "http://elcentre.runasp.net/:match*"
     },
     {
       "source": "/(.*)",
