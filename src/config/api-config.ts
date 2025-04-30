@@ -28,7 +28,7 @@ export const getImageUrl = (path: string | undefined): string => {
   
   // In production, use a single /api/ prefix (don't double it up)
   if (isProduction) {
-    return `/api/${cleanPath}`;
+    return `/${cleanPath}`;
   } else {
     return `${DIRECT_API_URL}/${cleanPath}`;
   }
