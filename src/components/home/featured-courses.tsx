@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { StarIcon } from "lucide-react";
-import { getImageUrl } from "@/config/api-config";
+import { getImageUrl, API_BASE_URL } from "@/config/api-config";
 
 interface Course {
   id: string;
@@ -48,6 +48,17 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
     );
   };
 
+  // Format the thumbnail URL correctly
+  const formatThumbnailUrl = (thumbnailPath: string): string => {
+    if (!thumbnailPath) return "/placeholder.svg";
+    
+    // If it's already a full URL, use it as is
+    if (thumbnailPath.startsWith('http')) return thumbnailPath;
+    
+    // Otherwise, use API_BASE_URL to ensure proper proxy handling
+    return `${API_BASE_URL}/${thumbnailPath.replace(/^\//, '')}`;
+  };
+
   return (
     <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
       {courses.map((course) => (
@@ -55,7 +66,7 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
           <Link to={`/courses/${course.id}`}>
             <div className="aspect-video relative overflow-hidden">
               <img
-                src={course.thumbnail}
+                src={formatThumbnailUrl(course.thumbnail)}
                 alt={course.title}
                 className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
               />
