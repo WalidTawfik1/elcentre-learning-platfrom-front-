@@ -3,14 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, BookOpen, Users, DollarSign, Eye } from "lucide-react";
+import { Plus, BookOpen, Users, DollarSign, Eye, Clock, AlertCircle, CheckCircle2 } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
-import { API_BASE_URL } from "@/config/api-config";
+import { getImageUrl } from "@/config/api-config";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Trash2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function InstructorCourses() {
   const navigate = useNavigate();
@@ -77,14 +77,10 @@ export default function InstructorCourses() {
     fetchCourses();
   }, [isAuthenticated, user, navigate]);
 
-  // Format the thumbnail URL properly
+  // Format the thumbnail URL properly using getImageUrl function
   const formatThumbnailUrl = (thumbnail: string | undefined): string => {
-    if (!thumbnail) return "/placeholder.svg";
-    if (thumbnail.startsWith('http')) return thumbnail;
-    return `${API_BASE_URL}/${thumbnail.replace(/^\//, '')}`;
+    return getImageUrl(thumbnail);
   };
-
-
 
   const handleDeleteCourse = async (courseId: number) => {
     try {

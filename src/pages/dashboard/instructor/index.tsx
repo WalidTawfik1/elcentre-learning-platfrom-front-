@@ -25,9 +25,7 @@ import { EnrollmentService } from "@/services/enrollment-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
-
-// Backend base URL for serving static content
-const API_BASE_URL = "http://elcentre.runasp.net";
+import { getImageUrl } from "@/config/api-config";
 
 // Teaching tips for instructors
 const instructorTips = [
@@ -174,11 +172,9 @@ export default function InstructorDashboard() {
     }
   };
   
-  // Format the thumbnail URL properly
+  // Format the thumbnail URL properly using getImageUrl function
   const formatThumbnailUrl = (thumbnail: string | undefined): string => {
-    if (!thumbnail) return "/placeholder.svg";
-    if (thumbnail.startsWith('http')) return thumbnail;
-    return `${API_BASE_URL}/${thumbnail.replace(/^\//, '')}`;
+    return getImageUrl(thumbnail);
   };
 
   // Calculate total students across all courses

@@ -22,9 +22,7 @@ import { CourseService } from "@/services/course-service";
 import { WishlistService } from "@/services/wishlist-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
-
-// Backend base URL for serving static content
-const API_BASE_URL = "http://elcentre.runasp.net";
+import { getImageUrl } from "@/config/api-config";
 
 // Learning quotes and tips
 const motivationalQuotes = [
@@ -189,15 +187,9 @@ export default function StudentDashboard() {
     }
   }, [isAuthenticated, navigate, isLoading]);
   
-  // Format the thumbnail URL properly
+  // Format the thumbnail URL properly using getImageUrl function
   const formatThumbnailUrl = (thumbnail: string | undefined): string => {
-    if (!thumbnail) return "/placeholder.svg";
-    
-    // If it's already a full URL, use it as is
-    if (thumbnail.startsWith('http')) return thumbnail;
-    
-    // Otherwise, prefix with API base URL and ensure no double slashes
-    return `${API_BASE_URL}/${thumbnail.replace(/^\//, '')}`;
+    return getImageUrl(thumbnail);
   };
 
   // Toggle course in wishlist
