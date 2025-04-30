@@ -26,7 +26,6 @@ export const getImageUrl = (path: string | undefined): string => {
   // Clean the path - remove any leading slashes
   const cleanPath = path.replace(/^\//, '');
   
-  // In production, use a single /api/ prefix (don't double it up)
   if (isProduction) {
     return `/${cleanPath}`;
   } else {

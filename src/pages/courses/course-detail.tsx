@@ -18,6 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { CourseReview } from "@/types/api";
+import { getImageUrl } from "@/config/api-config";
 
 // Define the review form schema
 const reviewFormSchema = z.object({
@@ -562,7 +563,7 @@ export default function CourseDetail() {
               <div className="rounded-lg border overflow-hidden bg-card">
                 <div className="aspect-video">
                   <img 
-                    src={formatThumbnailUrl(courseData.thumbnail)} 
+                    src={getImageUrl(courseData.thumbnail)} 
                     alt={courseData.title} 
                     className="w-full h-full object-cover"
                   />

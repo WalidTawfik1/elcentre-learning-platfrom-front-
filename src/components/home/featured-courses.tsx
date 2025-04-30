@@ -55,7 +55,7 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
           <Link to={`/courses/${course.id}`}>
             <div className="aspect-video relative overflow-hidden">
               <img
-                src={course.thumbnail}
+                src={getImageUrl(course.thumbnail)}
                 alt={course.title}
                 className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
               />

@@ -11,7 +11,7 @@ import { EnrollmentService } from "@/services/enrollment-service";
 import { CourseService } from "@/services/course-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
-import { API_BASE_URL } from "@/config/api-config";
+import { getImageUrl } from "@/config/api-config";
 
 export default function MyCourses() {
   const navigate = useNavigate();
@@ -83,17 +83,6 @@ export default function MyCourses() {
     
     fetchEnrollments();
   }, [isAuthenticated, navigate]);
-  
-  // Format the thumbnail URL properly
-  const formatThumbnailUrl = (thumbnail: string | undefined): string => {
-    if (!thumbnail) return "/placeholder.svg";
-    
-    // If it's already a full URL, use it as is
-    if (thumbnail.startsWith('http')) return thumbnail;
-    
-    // Otherwise, prefix with API base URL and ensure no double slashes
-    return `${API_BASE_URL}/${thumbnail.replace(/^\//, '')}`;
-  };
 
   return (
     <MainLayout>
@@ -146,7 +135,7 @@ export default function MyCourses() {
               <Card key={course.id} className="overflow-hidden flex flex-col">
                 <div className="aspect-video relative overflow-hidden">
                   <img
-                    src={formatThumbnailUrl(course.thumbnail)}
+                    src={getImageUrl(course.thumbnail)}
                     alt={course.title}
                     className="object-cover w-full h-full"
                   />

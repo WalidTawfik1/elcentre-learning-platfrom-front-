@@ -12,6 +12,7 @@ import { CourseService } from "@/services/course-service";
 import { EnrollmentService } from "@/services/enrollment-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
+import { getImageUrl } from "@/config/api-config";
 
 // Backend base URL for serving static content
 const API_BASE_URL = "http://elcentre.runasp.net";
@@ -196,17 +197,6 @@ export default function CourseLearn() {
     }, 0);
   };
 
-  // Format the thumbnail URL properly
-  const formatThumbnailUrl = (thumbnail: string | undefined): string => {
-    if (!thumbnail) return "/placeholder.svg";
-    
-    // If it's already a full URL, use it as is
-    if (thumbnail.startsWith('http')) return thumbnail;
-    
-    // Otherwise, prefix with API base URL and ensure no double slashes
-    return `${API_BASE_URL}/${thumbnail.replace(/^\//, '')}`;
-  };
-  
   // Determine lesson content based on type
   const renderLessonContent = (lesson: any) => {
     if (!lesson) return <div className="text-center py-8">No lesson selected</div>;
