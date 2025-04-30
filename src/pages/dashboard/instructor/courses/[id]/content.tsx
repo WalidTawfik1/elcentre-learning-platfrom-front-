@@ -507,9 +507,9 @@ export default function CourseContentManagement() {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => navigate(`/dashboard/instructor/courses/${id}/edit`)}
+            onClick={() => navigate(`/courses/${id}`)}
           >
-            <ChevronLeft className="h-4 w-4 mr-1" /> Back to Edit Course
+            <ChevronLeft className="h-4 w-4 mr-1" /> Back to Course Preview
           </Button>
           <h1 className="text-3xl font-bold">{course?.title || "Course"}: Content Management</h1>
         </div>

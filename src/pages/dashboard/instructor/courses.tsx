@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, BookOpen, Users, DollarSign } from "lucide-react";
+import { Plus, BookOpen, Users, DollarSign, Eye } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
@@ -196,15 +196,6 @@ export default function InstructorCourses() {
                 <CardFooter className="p-4 border-t">
                   <div className="w-full flex justify-between items-center">
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        className="hover:bg-green-100 hover:text-green-600 hover:border-green-200" 
-                        asChild
-                      >
-                        <Link to={`/dashboard/instructor/courses/${course.id}/edit`}>
-                          Edit Course
-                        </Link>
-                      </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="destructive" size="icon">
@@ -232,11 +223,14 @@ export default function InstructorCourses() {
                       </AlertDialog>
                     </div>
                     <Button 
-                      variant="ghost" 
+                      variant="outline" 
                       className="hover:bg-blue-100 hover:text-blue-600" 
                       asChild
                     >
-                      <Link to={`/courses/${course.id}`}>Preview</Link>
+                      <Link to={`/courses/${course.id}`}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        Preview & Manage
+                      </Link>
                     </Button>
                   </div>
                 </CardFooter>

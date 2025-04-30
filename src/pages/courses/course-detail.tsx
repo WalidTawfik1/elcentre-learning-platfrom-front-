@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { StarIcon, Play, Clock, User, Book, Video, CheckCircle, Edit, Trash2, Heart } from "lucide-react";
+import { StarIcon, Play, Clock, User, Book, Video, CheckCircle, Edit, Trash2, Heart, BookOpen } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { WishlistService } from "@/services/wishlist-service";
 import { useAuth } from "@/hooks/use-auth";
@@ -510,15 +510,26 @@ export default function CourseDetail() {
                 ) : (
                   <div className="flex gap-4">
                     {isInstructorCourse() ? (
-                      <Button 
-                        asChild
-                        className="bg-eduBlue-500 hover:bg-eduBlue-600"
-                      >
-                        <Link to={`/dashboard/instructor/courses/${courseData.id}/edit`}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Course
-                        </Link>
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          asChild
+                          className="bg-eduBlue-500 hover:bg-eduBlue-600"
+                        >
+                          <Link to={`/dashboard/instructor/courses/${courseData.id}/edit`}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Course Info
+                          </Link>
+                        </Button>
+                        <Button 
+                          asChild
+                          variant="secondary"
+                        >
+                          <Link to={`/dashboard/instructor/courses/${courseData.id}/content`}>
+                            <BookOpen className="h-4 w-4 mr-2" />
+                            Manage Content
+                          </Link>
+                        </Button>
+                      </div>
                     ) : (
                       <Button 
                         onClick={handleEnroll} 
@@ -613,15 +624,27 @@ export default function CourseDetail() {
                     ) : (
                       <div className="flex flex-col gap-2">
                         {isInstructorCourse() ? (
-                          <Button 
-                            asChild
-                            className="w-full bg-eduBlue-500 hover:bg-eduBlue-600"
-                          >
-                            <Link to={`/dashboard/instructor/courses/${courseData.id}/edit`}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Course
-                            </Link>
-                          </Button>
+                          <div className="flex flex-col gap-2">
+                            <Button 
+                              asChild
+                              className="w-full bg-eduBlue-500 hover:bg-eduBlue-600"
+                            >
+                              <Link to={`/dashboard/instructor/courses/${courseData.id}/edit`}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Course Info
+                              </Link>
+                            </Button>
+                            <Button 
+                              asChild
+                              variant="secondary"
+                              className="w-full"
+                            >
+                              <Link to={`/dashboard/instructor/courses/${courseData.id}/content`}>
+                                <BookOpen className="h-4 w-4 mr-2" />
+                                Manage Content
+                              </Link>
+                            </Button>
+                          </div>
                         ) : (
                           <Button 
                             onClick={handleEnroll} 
