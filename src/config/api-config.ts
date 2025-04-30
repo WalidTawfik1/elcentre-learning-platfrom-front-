@@ -16,15 +16,20 @@ export const DIRECT_API_URL = isProduction
   ? "/api"
   : (import.meta.env.VITE_API_BASE_URL || ORIGIN_API_URL);
 
-// For image URLs, need direct access in both environments
+// For image URLs, we need to handle them differently in production vs development
 export const getImageUrl = (path: string | undefined): string => {
   if (!path) return "/placeholder.svg";
   
   // If it's already a full URL, use it as is
   if (path.startsWith('http')) return path;
   
-  // Use the appropriate URL based on environment
-  return `${DIRECT_API_URL}/${path.replace(/^\//, '')}`;
+  // In production, prepend with /api/images/ to ensure proper proxy handling
+  // In development, use the direct API URL
+  if (isProduction) {
+    return `/api/${path.replace(/^\//, '')}`;
+  } else {
+    return `${DIRECT_API_URL}/${path.replace(/^\//, '')}`;
+  }
 };
 
 // Helper function to check if the API is reachable 
