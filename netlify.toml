@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Handle SPA routing - redirect 404s to index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
