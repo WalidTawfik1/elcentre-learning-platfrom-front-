@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { StarIcon } from "lucide-react";
-import { getImageUrl, API_BASE_URL } from "@/config/api-config";
+import { getImageUrl } from "@/config/api-config";
 
 interface CourseCardProps {
   id: string;
@@ -54,19 +54,8 @@ export function CourseCard({
     );
   };
 
-  // Format the thumbnail URL correctly - ensure consistent formatting
-  const formatThumbnailUrl = (thumbnailPath: string): string => {
-    if (!thumbnailPath) return "/placeholder.svg";
-    
-    // If it's already a full URL, use it as is
-    if (thumbnailPath.startsWith('http')) return thumbnailPath;
-    
-    // Otherwise, in production use the API proxy route, in development use direct URL
-    return `${API_BASE_URL}/${thumbnailPath.replace(/^\//, '')}`;
-  };
-
-  // Use the consistent formatting function
-  const formattedThumbnail = formatThumbnailUrl(thumbnail);
+  // Format the thumbnail URL correctly
+  const formattedThumbnail = getImageUrl(thumbnail);
 
   return (
     <Card className="overflow-hidden group hover:shadow-md transition-shadow">
@@ -95,7 +84,7 @@ export function CourseCard({
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-0">
-        <p className="text-sm text-muted-foreground h-10 line-clamp-2 mb-2">{description}</p>
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{description}</p>
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>{duration}</span>
           {renderRating(rating)}
