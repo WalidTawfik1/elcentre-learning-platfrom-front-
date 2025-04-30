@@ -23,12 +23,14 @@ export const getImageUrl = (path: string | undefined): string => {
   // If it's already a full URL, use it as is
   if (path.startsWith('http')) return path;
   
-  // In production, prepend with /api/images/ to ensure proper proxy handling
-  // In development, use the direct API URL
+  // Clean the path - remove any leading slashes
+  const cleanPath = path.replace(/^\//, '');
+  
+  // In production, use a single /api/ prefix (don't double it up)
   if (isProduction) {
-    return `/api/${path.replace(/^\//, '')}`;
+    return `/api/${cleanPath}`;
   } else {
-    return `${DIRECT_API_URL}/${path.replace(/^\//, '')}`;
+    return `${DIRECT_API_URL}/${cleanPath}`;
   }
 };
 
