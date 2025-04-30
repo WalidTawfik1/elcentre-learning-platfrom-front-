@@ -20,16 +20,24 @@ export const DIRECT_API_URL = isProduction
 export const getImageUrl = (path: string | undefined): string => {
   if (!path) return "/placeholder.svg";
   
-  // If it's already a full URL, use it as is
-  if (path.startsWith('http')) return path;
+  // If it's already a full URL, ensure it uses HTTP instead of HTTPS for elcentre.runasp.net
+  if (path.startsWith('http')) {
+    // Convert HTTPS to HTTP for elcentre.runasp.net domain to avoid connection reset
+    if (path.includes('elcentre.runasp.net')) {
+      return path.replace('https://', 'http://');
+    }
+    return path;
+  }
   
   // Clean the path - remove any leading slashes
   const cleanPath = path.replace(/^\//, '');
   
+  // In production, use relative paths to go through the proxy
   if (isProduction) {
-    return `/${cleanPath}`;
+    return `/api/${cleanPath}`;
   } else {
-    return `${DIRECT_API_URL}/${cleanPath}`;
+    // In development, explicitly use HTTP
+    return `${ORIGIN_API_URL}/${cleanPath}`;
   }
 };
 
