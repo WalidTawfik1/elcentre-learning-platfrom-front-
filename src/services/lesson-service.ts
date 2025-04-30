@@ -60,7 +60,6 @@ export const LessonService = {
   getLessonsByModuleId: async (moduleId: string | number): Promise<Lesson[]> => {
     try {
       const lessons = await API.lessons.getByModule(Number(moduleId));
-      console.log(`Fetched lessons for module ${moduleId}:`, lessons);
       return Array.isArray(lessons) ? lessons : [];
     } catch (error) {
       console.error(`Error fetching lessons for module ${moduleId}:`, error);
@@ -124,7 +123,6 @@ export const LessonService = {
       };
 
       const result = await API.lessons.add(formattedData);
-      console.log("Lesson added successfully:", result);
       return result;
     } catch (error) {
       console.error("Error adding lesson:", error);
@@ -189,7 +187,6 @@ export const LessonService = {
       });
       
       const result = await API.lessons.update(formattedData);
-      console.log("Lesson updated successfully:", result);
       return result;
     } catch (error) {
       console.error("Error updating lesson:", error);
@@ -203,7 +200,6 @@ export const LessonService = {
   deleteLesson: async (lessonId: number): Promise<boolean> => {
     try {
       await API.lessons.delete(lessonId);
-      console.log(`Lesson ${lessonId} deleted successfully`);
       return true;
     } catch (error) {
       console.error("Error deleting lesson:", error);

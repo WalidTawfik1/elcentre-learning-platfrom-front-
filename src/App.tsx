@@ -6,10 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/use-auth";
 import { API_BASE_URL } from "./config/api-config";
 
-// Add this console log near the top of your file, just to verify
-console.log("API URL from env:", import.meta.env.VITE_API_BASE_URL);
-console.log("API URL from config:", API_BASE_URL);
-
 // Pages
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";

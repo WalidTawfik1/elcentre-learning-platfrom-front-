@@ -11,8 +11,6 @@ const API_BASE_URL = isProduction
 // Original direct API URL (needed for auth operations)
 const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net";
 
-console.log("Using API URL:", API_BASE_URL); // Debug the URL being used
-
 // Configuration for rate limiting and retries
 const API_CONFIG = {
   maxRetries: 3,             // Maximum number of retry attempts

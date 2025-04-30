@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { useLocation } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
-import { API_BASE_URL } from "@/config/api-config";
+import { getImageUrl } from "@/config/api-config";
 
 export default function CoursesIndex() {
   // State for filters
@@ -90,9 +90,7 @@ export default function CoursesIndex() {
     id: course.id?.toString() || "",
     title: course.title || "Untitled Course",
     description: course.description || "No description available",
-    thumbnail: course.thumbnail ? 
-      (course.thumbnail.startsWith('http') ? course.thumbnail : `${API_BASE_URL}/${course.thumbnail.replace(/^\//, '')}`) : 
-      "/placeholder.svg",
+    thumbnail: course.thumbnail ? getImageUrl(course.thumbnail) : "/placeholder.svg",
     rating: course.rating || 0,
     price: course.price || 0,
     category: course.categoryName || course.category || "Uncategorized",

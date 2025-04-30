@@ -91,9 +91,7 @@ export default function CourseDetail() {
     
     setIsSubmittingReview(true);
     
-    try {
-      console.log("Submitting review:", values);
-      
+    try {      
       // Format request with PascalCase property names as required by the API
       const courseId = typeof id === 'string' ? parseInt(id, 10) : id;
       
@@ -239,7 +237,6 @@ export default function CourseDetail() {
                     lessons: Array.isArray(lessons) ? lessons : []
                   };
                 } catch (error) {
-                  console.log("Error fetching lessons for module:", error);
                   return { ...module, lessons: [] };
                 }
               })
@@ -250,7 +247,6 @@ export default function CourseDetail() {
             setModules([]);
           }
         } catch (moduleError) {
-          console.log("Error fetching modules:", moduleError);
           setModules([]); // Set empty array instead of letting it fail
         }
 

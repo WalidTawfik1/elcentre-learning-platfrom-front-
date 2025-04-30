@@ -6,6 +6,9 @@ const isProduction = import.meta.env.PROD;
 // The original API URL that should be used for direct connections when in development
 const ORIGIN_API_URL = "http://elcentre.runasp.net";
 
+// Production Vercel deployment URL for images
+const PRODUCTION_URL = "https://elcentre.vercel.app";
+
 // Use relative URL in production (for Vercel proxy) and direct URL in development
 export const API_BASE_URL = isProduction 
   ? "/api" 
@@ -20,23 +23,24 @@ export const DIRECT_API_URL = isProduction
 export const getImageUrl = (path: string | undefined): string => {
   if (!path) return "/placeholder.svg";
   
-  // If it's already a full URL, ensure it uses HTTP instead of HTTPS for elcentre.runasp.net
+  // If it's a complete URL, return it directly
   if (path.startsWith('http')) {
-    // Convert HTTPS to HTTP for elcentre.runasp.net domain to avoid connection reset
-    if (path.includes('elcentre.runasp.net')) {
-      return path.replace('https://', 'http://');
-    }
+    return path;
+  }
+  
+  // If it already contains our API URL, don't double-prefix it
+  if (path.includes(ORIGIN_API_URL)) {
     return path;
   }
   
   // Clean the path - remove any leading slashes
   const cleanPath = path.replace(/^\//, '');
   
-  // In production, use relative paths to go through the proxy
   if (isProduction) {
-    return `/api/${cleanPath}`;
+    // In production, all images go through the Vercel proxy
+    return `${PRODUCTION_URL}/api/${cleanPath}`;
   } else {
-    // In development, explicitly use HTTP
+    // In local development, use the direct API URL
     return `${ORIGIN_API_URL}/${cleanPath}`;
   }
 };
