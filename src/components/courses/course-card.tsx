@@ -84,7 +84,7 @@ export function CourseCard({
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-0">
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{description}</p>
+        <p className="text-sm text-muted-foreground h-10 line-clamp-2 mb-2">{description}</p>
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>{duration}</span>
           {renderRating(rating)}
