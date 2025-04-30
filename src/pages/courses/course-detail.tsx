@@ -493,16 +493,7 @@ export default function CourseDetail() {
                         Continue Learning
                       </Link>
                     </Button>
-                    {!isInstructor() && (
-                      <Button 
-                        variant="outline" 
-                        onClick={handleToggleWishlist}
-                        className={isInWishlist ? "bg-red-50 border-red-200 text-red-500 hover:bg-red-100" : ""}
-                      >
-                        <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
-                        {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-                      </Button>
-                    )}
+                    {/* Don't show wishlist button if enrolled */}
                   </div>
                 ) : (
                   <div className="flex gap-4">
@@ -607,16 +598,7 @@ export default function CourseDetail() {
                             Continue Learning
                           </Link>
                         </Button>
-                        {!isInstructor() && (
-                          <Button 
-                            variant="outline" 
-                            className="w-full"
-                            onClick={handleToggleWishlist}
-                          >
-                            <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
-                            {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-                          </Button>
-                        )}
+                        {/* Don't show wishlist button if enrolled */}
                       </div>
                     ) : (
                       <div className="flex flex-col gap-2">
