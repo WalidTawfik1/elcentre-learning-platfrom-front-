@@ -11,7 +11,16 @@ export function CTASection() {
         <div className="flex flex-col md:flex-row md:items-center justify-between">
           <div className="mb-6 md:mb-0 md:mr-6">
             {isAuthenticated ? (
-              user?.userType === "Instructor" ? (
+              user?.userType === "Admin" ? (
+                <>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                    Platform Management, {user?.firstName}
+                  </h2>
+                  <p className="text-eduBlue-100 md:text-lg max-w-2xl">
+                    Oversee the platform's operations, manage content, and ensure a quality learning experience for all users.
+                  </p>
+                </>
+              ) : user?.userType === "Instructor" ? (
                 <>
                   <h2 className="text-2xl md:text-3xl font-bold mb-4">
                     Share your expertise, {user?.firstName}
@@ -49,7 +58,9 @@ export function CTASection() {
             asChild
           >
             {isAuthenticated ? (
-              user?.userType === "Instructor" ? (
+              user?.userType === "Admin" ? (
+                <Link to="/admin/dashboard">Admin Dashboard</Link>
+              ) : user?.userType === "Instructor" ? (
                 <Link to="/instructor/courses">Manage Courses</Link>
               ) : (
                 <Link to="/my-courses">Continue Learning</Link>

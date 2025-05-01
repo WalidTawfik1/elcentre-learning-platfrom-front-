@@ -4,10 +4,12 @@ import { HeroSection } from "@/components/home/hero-section";
 import { CourseSection } from "@/components/home/course-section";
 import { CategorySection } from "@/components/home/category-section";
 import { CTASection } from "@/components/home/cta-section";
+import { AdminQuickActions } from "@/components/admin/admin-quick-actions";
 import { CourseService } from "@/services/course-service";
 import { CategoryService } from "@/services/category-service";
 import { Course, Category } from "@/types/api";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 
 // Mock data for fallback when API is unavailable
 const mockCourses = [
@@ -137,6 +139,9 @@ const mockCategories = [
 ];
 
 export default function Index() {
+  const { user, isAuthenticated } = useAuth();
+  const isAdmin = isAuthenticated && user?.userType === "Admin";
+  
   // Use React Query for data fetching with fallback to mock data
   const { 
     data: coursesData,
@@ -181,6 +186,7 @@ export default function Index() {
   return (
     <MainLayout>
       <HeroSection />
+      {isAdmin && <AdminQuickActions />}
       <CourseSection 
         courses={courses} 
         isLoading={isCoursesLoading} 

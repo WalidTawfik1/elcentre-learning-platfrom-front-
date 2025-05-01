@@ -14,8 +14,11 @@ export default function VerifyAccount() {
   const location = useLocation();
   const { toast } = useToast();
   
-  // Get email from state or localStorage
-  const email = location.state?.email || localStorage.getItem("registrationEmail") || "";
+  // Get email from state, sessionStorage (from login) or localStorage (from registration)
+  const email = location.state?.email || 
+                sessionStorage.getItem("unverifiedEmail") || 
+                localStorage.getItem("registrationEmail") || 
+                "";
   
   const [verificationCode, setVerificationCode] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
@@ -75,6 +78,7 @@ export default function VerifyAccount() {
       
       // Clear the stored email after successful verification
       localStorage.removeItem("registrationEmail");
+      sessionStorage.removeItem("unverifiedEmail");
       
       // Redirect to login page
       navigate("/login");
@@ -144,7 +148,7 @@ export default function VerifyAccount() {
                   <Label htmlFor="verificationCode">Verification Code</Label>
                   <Input
                     id="verificationCode"
-                    placeholder="Enter 6-digit code"
+                    placeholder="Enter verification code"
                     value={verificationCode}
                     onChange={(e) => setVerificationCode(e.target.value)}
                     required

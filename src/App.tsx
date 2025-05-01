@@ -26,6 +26,10 @@ import AddCourse from "@/pages/dashboard/instructor/add-course";
 import EditCourse from "@/pages/dashboard/instructor/edit-course";
 import CourseContentManagement from "@/pages/dashboard/instructor/courses/[id]/content";
 import MyCoursesRedirect from "@/components/navigation/my-courses-redirect";
+import AdminDashboard from "@/pages/dashboard/admin/index";
+import AdminCategories from "@/pages/dashboard/admin/categories";
+import CreateAdminPage from "@/pages/dashboard/admin/create-admin";
+import RequireAdminAuth from "@/components/auth/require-admin-auth";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -73,11 +77,27 @@ const App = () => (
             
             {/* Instructor routes */}
             <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
-            <Route path="/admin/dashboard" element={<NotFound />} /> {/* Placeholder */}
             <Route path="/instructor/courses" element={<InstructorCourses/>} />
             <Route path="/dashboard/instructor/courses/new" element={<AddCourse />} />
             <Route path="/dashboard/instructor/courses/:id/edit" element={<EditCourse />} />
             <Route path="/dashboard/instructor/courses/:id/content" element={<CourseContentManagement />} />
+            
+            {/* Admin routes */}
+            <Route path="/admin/dashboard" element={
+              <RequireAdminAuth>
+                <AdminDashboard />
+              </RequireAdminAuth>
+            } />
+            <Route path="/dashboard/admin/categories" element={
+              <RequireAdminAuth>
+                <AdminCategories />
+              </RequireAdminAuth>
+            } />
+            <Route path="/dashboard/admin/create-admin" element={
+              <RequireAdminAuth>
+                <CreateAdminPage />
+              </RequireAdminAuth>
+            } />
 
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

@@ -27,8 +27,6 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
   // Construct the full URL with the direct API URL
   const url = `${DIRECT_API_URL}${endpoint}`;
   
-  console.log(`Making direct API request to: ${url}`); // Debugging
-
   // Set default headers
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -64,13 +62,11 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
     }));
     
     const response = await fetch(url, requestOptions);
-    console.log(`Auth API response status: ${response.status}`);
     
     // Extract JWT token from response headers if available
     const authHeader = response.headers.get('Authorization') || response.headers.get('authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const tokenFromHeader = authHeader.substring(7);
-      console.log('Found JWT in response headers');
       setCookie('jwt', tokenFromHeader, 7);
     }
     
@@ -79,9 +75,33 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
       try {
         const errorData = await response.json();
         console.error('Auth API error:', errorData);
+        
+        // Handle specific error cases
+        if (response.status === 400) {
+          // Check for unverified account error
+          if (errorData.message?.toLowerCase().includes('not verified') || 
+              errorData.message?.toLowerCase().includes('verify') ||
+              errorData.errorCode === 'ACCOUNT_NOT_VERIFIED') {
+            const error = new Error(errorData.message || 'Account not verified');
+            error.name = 'Account not verified';
+            throw error;
+          }
+        }
+        if (response.status === 400) {
+          // Check for unverified account error
+          if (errorData.message?.toLowerCase().includes('invalid')) {
+            const error = new Error(errorData.message || 'Invalid Email or Password');
+            error.name = 'Invalid Email or Password';
+            throw error;
+          }
+        }
+        
         throw new Error(errorData.message || `API Error: ${response.status}`);
       } catch (e) {
-        throw new Error(`API Error: ${response.status}`);
+        if (e.name === 'Account not verified' || e.name === 'Invalid Email or Password') {
+          throw e;
+        }
+        throw new Error(`API Error: ${response.status} - ${response.statusText}`);
       }
     }
     
@@ -91,7 +111,6 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
     }
     
     const data = await response.json();
-    console.log('Auth API response data structure:', Object.keys(data));
     return data;
   } catch (error) {
     console.error("API request failed:", error);
@@ -101,57 +120,76 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
 
 export const AuthService = {
   login: async (credentials: LoginDTO): Promise<any> => {
-    // Use direct API connection for login to ensure cookies are set properly
-    const response = await directApiRequest<any>("/Account/login", {
-      method: "POST",
-      body: JSON.stringify(credentials)
-    }, false);
-    
-    // Check for token in response and manually set it as a cookie if needed
-    if (response) {
-      console.log("Login response structure:", Object.keys(response)); 
+    try {
+      // Use direct API connection for login to ensure cookies are set properly
+      const response = await directApiRequest<any>("/Account/login", {
+        method: "POST",
+        body: JSON.stringify(credentials)
+      }, false);
       
-      // Try to extract token from multiple possible locations in the response
-      let token = null;
-      
-      // Check common locations where the token might be
-      if (typeof response === 'string') {
-        // Sometimes backend returns the token directly as a string
-        token = response;
-      } else {
-        // Look in various possible properties
-        token = response.message || 
-                response.token || 
-                response.accessToken || 
-                response.jwt ||
-                response.access_token ||
-                (response.data && (
-                  response.data.token || 
-                  response.data.accessToken ||
-                  response.data.jwt
-                ));
+      // Check for token in response and manually set it as a cookie if needed
+      if (response) {
+        // Try to extract token from multiple possible locations in the response
+        let token = null;
+        
+        // Check common locations where the token might be
+        if (typeof response === 'string') {
+          // Sometimes backend returns the token directly as a string
+          token = response;
+        } else {
+          // Look in various possible properties
+          token = response.message || 
+                  response.token || 
+                  response.accessToken || 
+                  response.jwt ||
+                  response.access_token ||
+                  (response.data && (
+                    response.data.token || 
+                    response.data.accessToken ||
+                    response.data.jwt
+                  ));
+        }
+        
+        if (token) {
+          // Remove any existing token cookie that might be present
+          document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          // Set the JWT as a cookie that expires in 7 days
+          setCookie('jwt', token, 7);
+        } else {
+          console.warn("No JWT token found in login response");
+        }
       }
       
-      if (token) {
-        console.log("JWT token found in response, setting cookie");
-        // Remove any existing token cookie that might be present
-        document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        // Set the JWT as a cookie that expires in 7 days
-        setCookie('jwt', token, 7);
-      } else {
-        console.warn("No JWT token found in login response");
+      // Debug cookie
+      setTimeout(() => {
+        console.log("Checking for JWT cookie after login:", 
+          document.cookie.includes('jwt=') ? "Found" : "Not found",
+          "Cookie value:", getCookie('jwt')?.substring(0, 10) + "...");
+      }, 300);
+      
+      return response;
+    } catch (error) {
+      // Handle account not verified error
+      if (error.name === 'ACCOUNT_NOT_VERIFIED') {
+        // Store the email in sessionStorage so the verification page can use it
+        if (credentials.email) {
+          sessionStorage.setItem('unverifiedEmail', credentials.email);
+        }
+        
+        // Redirect to verification page
+        window.location.href = '/verify-account';
+        
+        // Return a clear error for handling in the UI
+        return Promise.reject({
+          isUnverified: true,
+          message: error.message || 'Account not verified. Please verify your account.'
+        });
       }
+      
+      // Re-throw other errors
+      return Promise.reject(error);
     }
-    
-    // Debug cookie
-    setTimeout(() => {
-      console.log("Checking for JWT cookie after login:", 
-        document.cookie.includes('jwt=') ? "Found" : "Not found",
-        "Cookie value:", getCookie('jwt')?.substring(0, 10) + "...");
-    }, 300);
-    
-    return response;
   },
   
   register: async (userData: RegisterDTO): Promise<any> => {

@@ -43,7 +43,7 @@ export default function Login() {
         }, 300);
       }
       // Check for verification error and redirect if needed
-      if (error?.includes("verify your email")) {
+      if (error?.includes("Please verify your email")) {
         console.log("Email verification required, redirecting to verification page");
         // Save the email in localStorage for the verification page
         localStorage.setItem("registrationEmail", email);
