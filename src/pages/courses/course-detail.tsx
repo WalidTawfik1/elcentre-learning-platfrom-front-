@@ -422,6 +422,11 @@ export default function CourseDetail() {
     reviews: [],
   } : course;
 
+  // Add a function to check if user is an admin
+  const isAdmin = () => {
+    return user?.userType === "Admin";
+  };
+
   // Add a function to check if user is an instructor
   const isInstructor = () => {
     return user?.userType === "Instructor";
@@ -531,7 +536,7 @@ export default function CourseDetail() {
                          `Enroll for ${courseData.price} LE`}
                       </Button>
                     )}
-                    {!isInstructor() && (
+                    {!isInstructor() || !isAdmin() &&  (
                       <Button 
                         variant="outline" 
                         onClick={handleToggleWishlist}
