@@ -95,10 +95,19 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
             throw error;
           }
         }
+
+        if (response.status === 400) {
+          // Check for unverified account error
+          if (errorData.message?.toLowerCase().includes('must')) {
+            const error = new Error(errorData.message || 'Create a strong password');
+            error.name = 'Create a strong password';
+            throw error;
+          }
+        }
         
         throw new Error(errorData.message || `API Error: ${response.status}`);
       } catch (e) {
-        if (e.name === 'Account not verified' || e.name === 'Invalid Email or Password') {
+        if (e.name === 'Account not verified' || e.name === 'Invalid Email or Password' || e.name === 'Create a strong password') {
           throw e;
         }
         throw new Error(`API Error: ${response.status} - ${response.statusText}`);

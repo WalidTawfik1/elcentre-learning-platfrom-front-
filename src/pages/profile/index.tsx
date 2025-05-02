@@ -294,7 +294,6 @@ export default function ProfilePage() {
                             <SelectContent>
                               <SelectItem value="Male">Male</SelectItem>
                               <SelectItem value="Female">Female</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
                               <SelectItem value="PreferNotToSay">Prefer not to say</SelectItem>
                             </SelectContent>
                           </Select>
