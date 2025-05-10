@@ -536,7 +536,7 @@ export default function CourseDetail() {
                          `Enroll for ${courseData.price} LE`}
                       </Button>
                     )}
-                    {!isInstructor() || !isAdmin() &&  (
+                    {!isInstructor() && !isAdmin() && (
                       <Button 
                         variant="outline" 
                         onClick={handleToggleWishlist}
