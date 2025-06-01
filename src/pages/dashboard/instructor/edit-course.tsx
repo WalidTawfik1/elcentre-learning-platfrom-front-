@@ -14,7 +14,7 @@ import { toast } from "@/components/ui/use-toast";
 import { BookOpen, BookText } from "lucide-react";
 
 // Backend base URL for serving static content
-const API_BASE_URL = "http://elcentre.runasp.net";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://elcentre-api.runasp.net";
 
 export default function EditCourse() {
   const { id } = useParams<{ id: string }>();

@@ -4,12 +4,12 @@
 const isProduction = import.meta.env.PROD;
 
 // Base API URL with environment-specific handling
-const API_BASE_URL = isProduction 
+const API_BASE_URL = isProduction
   ? "/api" // Use Vercel rewrite proxy in production
-  : (import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net");
+  : (import.meta.env.VITE_API_BASE_URL || "http://elcentre-api.runasp.net");
 
 // Original direct API URL (needed for auth operations)
-const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || "http://elcentre.runasp.net";
+const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || "http://elcentre-api.runasp.net";
 
 // Configuration for rate limiting and retries
 const API_CONFIG = {

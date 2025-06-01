@@ -204,9 +204,8 @@ export default function CourseDetail() {
       setIsInWishlist(!isInWishlist);
     }
   };
-
   // Backend base URL for serving static content
-  const API_BASE_URL = "http://elcentre.runasp.net";
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://elcentre-api.runasp.net";
   
   useEffect(() => {
     if (!id) return;
