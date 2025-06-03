@@ -8,6 +8,13 @@ export interface User {
   avatar?: string;
   userType: UserRole;
   isActive: boolean;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  bio?: string;
+  profilePicture?: string;
 }
 
 export interface AuthState {

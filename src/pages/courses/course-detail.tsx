@@ -19,6 +19,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { CourseReview } from "@/types/api";
 import { getImageUrl } from "@/config/api-config";
+import { getInitials } from "@/lib/utils";
 
 // Define the review form schema
 const reviewFormSchema = z.object({
@@ -461,12 +462,9 @@ export default function CourseDetail() {
                 </div>
               </div>
               <h1 className="text-3xl md:text-4xl font-bold mb-4">{courseData.title}</h1>
-              <p className="text-lg text-muted-foreground mb-6">{courseData.description}</p>
-              
-              <div className="flex items-center mb-6">
-                <Avatar className="h-12 w-12 mr-3">
-                  <AvatarImage src={courseData.instructor?.avatar || ''} />
-                  <AvatarFallback>{courseData.instructorName?.charAt(0) || courseData.instructor?.name?.charAt(0) || '?'}</AvatarFallback>
+              <p className="text-lg text-muted-foreground mb-6">{courseData.description}</p>              <div className="flex items-center mb-6">                <Avatar className="h-12 w-12 mr-3">
+                  <AvatarImage src={(courseData.instructorImage) ? getImageUrl(courseData.instructorImage) : ""} />
+                  <AvatarFallback className="bg-primary/10 text-primary">{getInitials(courseData.instructorName || courseData.instructor?.name || 'Unknown')}</AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="font-medium">Created by {courseData.instructorName || courseData.instructor?.name || "Unknown Instructor"}</p>
@@ -780,15 +778,13 @@ export default function CourseDetail() {
               </div>
             </div>
           </TabsContent>
-          
-          {/* <TabsContent value="instructor">
+            {/* <TabsContent value="instructor">
             <div className="max-w-3xl">
               {courseData.instructor ? (
-                <>
-                  <div className="flex items-start gap-4 mb-6">
+                <>                  <div className="flex items-start gap-4 mb-6">
                     <Avatar className="h-16 w-16">
-                      <AvatarImage src={courseData.instructor.avatar || ''} />
-                      <AvatarFallback>{courseData.instructorName?.charAt(0) || courseData.instructor?.name?.charAt(0) || '?'}</AvatarFallback>
+                      <AvatarImage src={(courseData.instructorImage) ? getImageUrl(courseData.instructorImage) : ""} />
+                      <AvatarFallback className="bg-primary/10 text-primary">{getInitials(courseData.instructorName || courseData.instructor?.name || 'Unknown')}</AvatarFallback>
                     </Avatar>
                     <div>
                       <h2 className="text-2xl font-bold">{courseData.instructorName || courseData.instructor.name}</h2>
@@ -869,11 +865,9 @@ export default function CourseDetail() {
                 <div className="space-y-6">
                   {reviews && reviews.length > 0 ? (
                     reviews.map((review: any) => (
-                      <div key={review.id} className="border-b pb-6 last:border-0">
-                        <div className="flex items-start">
-                          <Avatar className="h-10 w-10 mr-3">
-                            <AvatarImage src={review.user?.avatar || ''} />
-                            <AvatarFallback>{review.studentName?.charAt(0) || '?'}</AvatarFallback>
+                      <div key={review.id} className="border-b pb-6 last:border-0">                        <div className="flex items-start">                          <Avatar className="h-10 w-10 mr-3">
+                            <AvatarImage src={(review.studentImage) ? getImageUrl(review.studentImage) : ""} />
+                            <AvatarFallback className="bg-primary/10 text-primary">{getInitials(review.studentName || review.userName || 'Anonymous')}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
                             <div className="flex items-center justify-between">

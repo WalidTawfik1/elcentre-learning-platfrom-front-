@@ -5,6 +5,7 @@ import { MainLayout } from "@/components/layouts/main-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -12,17 +13,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserDTO } from "@/types/api";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Camera } from "lucide-react";
+import { getImageUrl } from "@/config/api-config";
 
 export default function ProfilePage() {
   const { user, updateProfile, isLoading } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const [isEditing, setIsEditing] = useState(false);
+  const navigate = useNavigate();  const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState("");
-  
-  // Initialize form data with user's current information
+  const [selectedProfilePicture, setSelectedProfilePicture] = useState<File | null>(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
+    // Initialize form data with user's current information
   const [formData, setFormData] = useState<Partial<UserDTO>>({
     firstName: "",
     lastName: "",
@@ -30,10 +32,10 @@ export default function ProfilePage() {
     phoneNumber: "",
     gender: "",
     dateOfBirth: "",
-    userType: ""
+    userType: "",
+    bio: ""
   });
-  
-  // Only update form data from user when not in editing mode
+    // Only update form data from user when not in editing mode
   // This prevents the form from resetting while the user is editing
   useEffect(() => {
     if (user && !isEditing) {
@@ -44,7 +46,8 @@ export default function ProfilePage() {
         phoneNumber: user.phoneNumber || "",
         gender: user.gender || "",
         dateOfBirth: user.dateOfBirth || "",
-        userType: user.userType || ""
+        userType: user.userType || "",
+        bio: user.bio || ""
       });
     }
   }, [user, isEditing]);
@@ -66,13 +69,57 @@ export default function ProfilePage() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-  
-  // Handle select input changes
+    // Handle select input changes
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-  
-  // Handle form submission
+
+  // Handle profile picture change
+  const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedProfilePicture(file);
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setProfilePicturePreview(previewUrl);
+    }
+  };  // Get the current profile picture URL
+  const getCurrentProfilePictureUrl = () => {
+    console.log('getCurrentProfilePictureUrl called - user:', user);
+    console.log('user?.avatar:', user?.avatar);
+    console.log('user?.profilePicture:', user?.profilePicture);
+    
+    // If we have a preview (user is editing and selected a new image)
+    if (profilePicturePreview) {
+      console.log('Returning preview URL:', profilePicturePreview);
+      return profilePicturePreview;
+    }
+    
+    // Check both avatar and profilePicture fields (avatar is the computed field from useAuth)
+    const profilePictureSource = user?.avatar || user?.profilePicture;
+    if (profilePictureSource) {
+      try {
+        const imageUrl = getImageUrl(profilePictureSource);
+        console.log('Profile picture URL:', imageUrl, 'Original path:', profilePictureSource);
+        console.log('Is placeholder?', imageUrl === "/placeholder.svg");
+        
+        // Don't return placeholder URLs
+        if (imageUrl === "/placeholder.svg") {
+          console.log('Returning empty string because of placeholder');
+          return "";
+        }
+        console.log('Returning actual image URL:', imageUrl);
+        return imageUrl;
+      } catch (error) {
+        console.error('Error getting profile picture URL:', error);
+        return "";
+      }
+    }
+    
+    console.log('No profile picture found, returning empty string');
+    return "";
+  };
+    // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
@@ -93,11 +140,17 @@ export default function ProfilePage() {
         lastName: formData.lastName,
         gender: formData.gender,
         dateOfBirth: formData.dateOfBirth,
-        phoneNumber: formData.phoneNumber
+        phoneNumber: formData.phoneNumber,
+        bio: formData.bio || ""
       };
       
-      await updateProfile(updatedProfile);
+      await updateProfile(updatedProfile, selectedProfilePicture);
       setIsEditing(false);
+      
+      // Clear selected profile picture and preview after successful update
+      setSelectedProfilePicture(null);
+      setProfilePicturePreview(null);
+      
       toast({
         title: "Profile updated",
         description: "Your profile information has been updated successfully."
@@ -108,8 +161,7 @@ export default function ProfilePage() {
       setIsSaving(false);
     }
   };
-  
-  // Start editing mode
+    // Start editing mode
   const startEditing = () => {
     // Make a fresh copy of the user data to avoid reference issues
     if (user) {
@@ -120,7 +172,8 @@ export default function ProfilePage() {
         phoneNumber: user.phoneNumber || "",
         gender: user.gender || "",
         dateOfBirth: user.dateOfBirth || "",
-        userType: user.userType || ""
+        userType: user.userType || "",
+        bio: user.bio || ""
       });
     }
     setIsEditing(true);
@@ -129,6 +182,8 @@ export default function ProfilePage() {
   // Cancel editing
   const cancelEditing = () => {
     setIsEditing(false);
+    setSelectedProfilePicture(null);
+    setProfilePicturePreview(null);
     // Reset form data to original user data
     if (user) {
       setFormData({
@@ -138,7 +193,8 @@ export default function ProfilePage() {
         phoneNumber: user.phoneNumber || "",
         gender: user.gender || "",
         dateOfBirth: user.dateOfBirth || "",
-        userType: user.userType || ""
+        userType: user.userType || "",
+        bio: user.bio || ""
       });
     }
   };
@@ -176,20 +232,47 @@ export default function ProfilePage() {
   return (
     <MainLayout>
       <div className="container py-12">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex flex-col md:flex-row gap-8 mb-8 items-center md:items-start">
-            <div className="flex flex-col items-center">
-              <Avatar className="h-32 w-32 mb-4">
-                <AvatarImage src={user?.avatar} alt={`${user?.firstName} ${user?.lastName}`} />
-                <AvatarFallback className="text-3xl bg-primary/10 text-primary">{getInitials()}</AvatarFallback>
-              </Avatar>
+        <div className="max-w-3xl mx-auto">          <div className="flex flex-col md:flex-row gap-8 mb-8 items-center md:items-start">            <div className="flex flex-col items-center">
+              <div className="relative">                <Avatar className="h-32 w-32 mb-4">
+                  <AvatarImage 
+                    src={getCurrentProfilePictureUrl() || ""} 
+                    alt={`${user?.firstName} ${user?.lastName}`}
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="text-3xl bg-primary/10 text-primary">{getInitials()}</AvatarFallback>
+                </Avatar>
+                {isEditing && (
+                  <div className="absolute bottom-4 right-0">
+                    <Label htmlFor="profilePicture" className="cursor-pointer">
+                      <div className="flex items-center justify-center w-10 h-10 bg-primary rounded-full text-white hover:bg-primary/90 transition-colors">
+                        <Camera className="h-5 w-5" />
+                      </div>
+                      <input
+                        id="profilePicture"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProfilePictureChange}
+                        className="hidden"
+                      />
+                    </Label>
+                  </div>
+                )}
+              </div>
             </div>
-            
-            <div className="flex-1 text-center md:text-left">
+              <div className="flex-1 text-center md:text-left">
               <h1 className="text-3xl font-bold mb-2">{user?.firstName} {user?.lastName}</h1>
-              <p className="text-muted-foreground mb-4">{user?.email}</p>
+              <p className="text-muted-foreground mb-2">{user?.email}</p>
+              {user?.bio && (
+                <p className="text-sm text-muted-foreground mb-4 max-w-md">{user.bio}</p>
+              )}
               <div className="inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
                 {user?.userType}
+              </div>              {/* Debug info */}
+              <div className="text-xs text-muted-foreground mt-2 p-2 bg-gray-100 rounded">
+                <div>Profile Picture: {user?.profilePicture || 'null'}</div>
+                <div>Avatar: {user?.avatar || 'null'}</div>
+                <div>Using Source: {user?.avatar || user?.profilePicture || 'null'}</div>
+                <div>Generated URL: {getCurrentProfilePictureUrl() || 'empty'}</div>
               </div>
             </div>
           </div>
@@ -302,8 +385,7 @@ export default function ProfilePage() {
                         )}
                       </div>
                     </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="dateOfBirth">Date of Birth</Label>
                         {isEditing ? (
@@ -325,6 +407,24 @@ export default function ProfilePage() {
                         <p className="py-2 px-3 border rounded-md bg-muted/30">{user?.userType}</p>
                         <p className="text-xs text-muted-foreground">Account type cannot be changed</p>
                       </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="bio">Bio</Label>
+                      {isEditing ? (
+                        <Textarea
+                          id="bio"
+                          name="bio"
+                          value={formData.bio}
+                          onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+                          placeholder="Tell us a bit about yourself..."
+                          rows={4}
+                        />
+                      ) : (
+                        <div className="py-2 px-3 border rounded-md bg-muted/30 min-h-[100px]">
+                          {user?.bio || "No bio provided"}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                   

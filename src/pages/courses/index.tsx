@@ -83,23 +83,37 @@ export default function CoursesIndex() {
       // Return default categories array if API call fails
       return [{ id: 0, name: "All Categories" }];
     }
-  });
-
-  // Prepare the course data to match the expected format for CourseCard
-  const mapCourseData = (course: any) => ({
-    id: course.id?.toString() || "",
-    title: course.title || "Untitled Course",
-    description: course.description || "No description available",
-    thumbnail: course.thumbnail ? getImageUrl(course.thumbnail) : "/placeholder.svg",
-    rating: course.rating || 0,
-    price: course.price || 0,
-    category: course.categoryName || course.category || "Uncategorized",
-    instructor: {
-      id: course.instructorId || course.instructor?.id || "",
-      name: course.instructorName || course.instructor?.name || "Unknown Instructor",
-    },
-    duration: course.durationInHours ? `${course.durationInHours} hours` : course.duration || "0 hours",
-  });
+  });  // Prepare the course data to match the expected format for CourseCard
+  const mapCourseData = (course: any) => {
+    const instructorName = course.instructorName || course.instructor?.name || "Unknown Instructor";
+    const instructorImage = course.instructorImage || course.instructor?.avatar || course.instructor?.image;
+    
+    // Debug logging for avatar issues
+    console.log('Course instructor debug:', {
+      courseId: course.id,
+      instructorName,
+      instructorImage,
+      hasImage: !!instructorImage,
+      course: course
+    });
+    
+    return {
+      id: course.id?.toString() || "",
+      title: course.title || "Untitled Course",
+      description: course.description || "No description available",
+      thumbnail: course.thumbnail ? getImageUrl(course.thumbnail) : "/placeholder.svg",
+      rating: course.rating || 0,
+      price: course.price || 0,
+      category: course.categoryName || course.category || "Uncategorized",
+      instructor: {
+        id: course.instructorId || course.instructor?.id || "",
+        name: instructorName,
+        avatar: instructorImage,
+        image: instructorImage,
+      },
+      duration: course.durationInHours ? `${course.durationInHours} hours` : course.duration || "0 hours",
+    };
+  };
 
   // Handle search form submission
   const handleSearch = (e: React.FormEvent) => {

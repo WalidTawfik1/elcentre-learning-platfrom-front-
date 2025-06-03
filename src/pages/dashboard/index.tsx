@@ -23,6 +23,7 @@ import { WishlistService } from "@/services/wishlist-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
+import { getInitials } from "@/lib/utils";
 
 // Learning quotes and tips
 const motivationalQuotes = [
@@ -263,8 +264,7 @@ export default function StudentDashboard() {
                     <Link to="/courses">Browse Courses</Link>
                   </Button>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              ) : (                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {currentCourses.slice(0, 3).map((course) => (
                     <Card key={course.id} className="overflow-hidden flex flex-col">
                       <div className="aspect-video relative overflow-hidden">
@@ -277,12 +277,11 @@ export default function StudentDashboard() {
                       <CardHeader className="p-4 pb-2">
                         <CardTitle className="text-lg line-clamp-1">
                           {course.title}
-                        </CardTitle>
-                        {course.instructorName && (
+                        </CardTitle>                        {course.instructorName && (
                           <div className="flex items-center mt-1">
                             <Avatar className="h-5 w-5 mr-1.5">
-                              <AvatarImage src={course.instructor?.avatar} alt={course.instructorName} />
-                              <AvatarFallback>{course.instructorName.charAt(0)}</AvatarFallback>
+                              <AvatarImage src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} alt={course.instructorName} />
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(course.instructorName)}</AvatarFallback>
                             </Avatar>
                             <span className="text-xs text-muted-foreground">{course.instructorName}</span>
                           </div>
@@ -358,17 +357,15 @@ export default function StudentDashboard() {
                             ? <Heart className="h-5 w-5 text-red-500" fill="currentColor" />
                             : <Heart className="h-5 w-5" />
                           }
-                        </button>
-                      </div>
+                        </button>                      </div>
                       <CardHeader className="p-4 pb-2">
                         <CardTitle className="text-lg line-clamp-1">
                           {course.title}
-                        </CardTitle>
-                        {course.instructorName && (
+                        </CardTitle>                        {course.instructorName && (
                           <div className="flex items-center mt-1">
                             <Avatar className="h-5 w-5 mr-1.5">
-                              <AvatarImage src={course.instructor?.avatar} alt={course.instructorName} />
-                              <AvatarFallback>{course.instructorName.charAt(0)}</AvatarFallback>
+                              <AvatarImage src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} alt={course.instructorName} />
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(course.instructorName)}</AvatarFallback>
                             </Avatar>
                             <span className="text-xs text-muted-foreground">{course.instructorName}</span>
                           </div>
@@ -428,8 +425,7 @@ export default function StudentDashboard() {
                           src={formatThumbnailUrl(course.thumbnail)}
                           alt={course.title}
                           className="object-cover w-full h-full"
-                        />
-                        <button 
+                        />                        <button 
                           onClick={() => toggleWishlist(course)}
                           className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
                           aria-label="Remove from wishlist"
@@ -441,12 +437,11 @@ export default function StudentDashboard() {
                       <CardHeader className="p-4 pb-2">
                         <CardTitle className="text-lg line-clamp-1">
                           {course.title}
-                        </CardTitle>
-                        {course.instructorName && (
+                        </CardTitle>                        {course.instructorName && (
                           <div className="flex items-center mt-1">
                             <Avatar className="h-5 w-5 mr-1.5">
-                              <AvatarImage src={course.instructor?.avatar} alt={course.instructorName} />
-                              <AvatarFallback>{course.instructorName.charAt(0)}</AvatarFallback>
+                              <AvatarImage src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} alt={course.instructorName} />
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(course.instructorName)}</AvatarFallback>
                             </Avatar>
                             <span className="text-xs text-muted-foreground">{course.instructorName}</span>
                           </div>

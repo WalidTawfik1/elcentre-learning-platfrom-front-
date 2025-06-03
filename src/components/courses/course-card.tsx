@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { StarIcon } from "lucide-react";
 import { getImageUrl } from "@/config/api-config";
+import { getInitials } from "@/lib/utils";
 
 interface CourseCardProps {
   id: string;
@@ -18,6 +19,7 @@ interface CourseCardProps {
     id: string;
     name: string;
     avatar?: string;
+    image?: string; // Support for instructorImage field
   };
   duration: string;
 }
@@ -52,10 +54,11 @@ export function CourseCard({
         <span className="ml-2 text-xs text-muted-foreground">{rating.toFixed(1)}</span>
       </div>
     );
-  };
-
-  // Format the thumbnail URL correctly
+  };  // Format the thumbnail URL correctly
   const formattedThumbnail = getImageUrl(thumbnail);
+
+  // Handle avatar source properly
+  const avatarSrc = (instructor.image || instructor.avatar) ? getImageUrl(instructor.image || instructor.avatar) : "";
 
   return (
     <Card className="overflow-hidden group hover:shadow-md transition-shadow">
@@ -74,11 +77,14 @@ export function CourseCard({
           <Link to={`/courses/${id}`} className="hover:text-primary transition-colors">
             {title}
           </Link>
-        </CardTitle>
-        <div className="flex items-center mt-1">
+        </CardTitle>        <div className="flex items-center mt-1">
           <Avatar className="h-6 w-6 mr-2">
-            <AvatarImage src={instructor.avatar} alt={instructor.name} />
-            <AvatarFallback>{instructor.name.charAt(0)}</AvatarFallback>
+            <AvatarImage 
+              src={avatarSrc} 
+              alt={instructor.name} 
+            />            <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+              {getInitials(instructor.name)}
+            </AvatarFallback>
           </Avatar>
           <span className="text-xs text-muted-foreground">{instructor.name}</span>
         </div>

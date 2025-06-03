@@ -13,6 +13,7 @@ import { EnrollmentService } from "@/services/enrollment-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
+import { getInitials } from "@/lib/utils";
 
 // Backend base URL for serving static content
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://elcentre-api.runasp.net";
@@ -445,11 +446,10 @@ export default function CourseLearn() {
                   
                   <div>
                     <h3 className="text-lg font-semibold mb-4">Instructor</h3>
-                    {course?.instructor ? (
-                      <div className="flex items-start gap-4">
+                    {course?.instructor ? (                      <div className="flex items-start gap-4">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={course.instructor.avatar} />
-                          <AvatarFallback>{course.instructorName?.charAt(0) || course.instructor?.name?.charAt(0) || '?'}</AvatarFallback>
+                          <AvatarImage src={course.instructor.avatar ? getImageUrl(course.instructor.avatar) : ""} />
+                          <AvatarFallback className="bg-primary/10 text-primary">{getInitials(course.instructorName || course.instructor?.name || 'Unknown')}</AvatarFallback>
                         </Avatar>
                         <div>
                           <h4 className="font-medium">{course.instructorName || course.instructor.name}</h4>
@@ -477,11 +477,9 @@ export default function CourseLearn() {
                     <div className="space-y-6">
                       {reviews && reviews.length > 0 ? (
                         reviews.map((review: any) => (
-                          <div key={review.id} className="border-b pb-6 last:border-0">
-                            <div className="flex items-start">
-                              <Avatar className="h-10 w-10 mr-3">
-                                <AvatarImage src={review.user?.avatar || ''} />
-                                <AvatarFallback>{review.studentName?.charAt(0) || '?'}</AvatarFallback>
+                          <div key={review.id} className="border-b pb-6 last:border-0">                            <div className="flex items-start">                              <Avatar className="h-10 w-10 mr-3">
+                                <AvatarImage src={getImageUrl(review.studentImage) || ""} />
+                                <AvatarFallback className="bg-primary/10 text-primary">{getInitials(review.studentName || review.userName || 'Unknown')}</AvatarFallback>
                               </Avatar>
                               <div className="flex-1">
                                 <div className="flex items-center justify-between">

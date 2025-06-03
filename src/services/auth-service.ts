@@ -235,13 +235,49 @@ export const AuthService = {
       credentials: "include" // Explicitly include credentials
     }, true);
   },
-  
-  updateProfile: async (userData: UserDTO): Promise<any> => {
+    updateProfile: async (userData: UserDTO): Promise<any> => {
     return apiRequest<any>("/Account/edit-profile", {
       method: "PUT",
       body: JSON.stringify(userData),
       credentials: "include"
     }, true);
+  },
+
+  updateProfileWithPicture: async (userData: UserDTO, profilePicture?: File): Promise<any> => {
+    const formData = new FormData();
+    
+    // Add user data fields
+    formData.append('firstName', userData.firstName);
+    formData.append('lastName', userData.lastName);
+    formData.append('phoneNumber', userData.phoneNumber);
+    formData.append('gender', userData.gender);
+    formData.append('dateOfBirth', userData.dateOfBirth);
+    if (userData.bio) {
+      formData.append('bio', userData.bio);
+    }
+    
+    // Add profile picture if provided
+    if (profilePicture) {
+      formData.append('profilePicture', profilePicture);
+    }
+
+    // Use direct API request for form data
+    const url = `${DIRECT_API_URL}/Account/edit-profile`;
+    return fetch(url, {
+      method: "PUT",
+      body: formData,
+      credentials: "include",
+      mode: 'cors',
+      headers: {
+        'Authorization': `Bearer ${getCookie('jwt')}`,
+      }
+    }).then(async response => {
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `API Error: ${response.status}`);
+      }
+      return response.json();
+    });
   },
   
   verifyOTP: async (email: string, code: string): Promise<any> => {

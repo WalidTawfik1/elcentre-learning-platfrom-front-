@@ -12,7 +12,7 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<boolean>; // Return success status
   register: (userData: any) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (userData: UserDTO) => Promise<void>;
+  updateProfile: (userData: UserDTO, profilePicture?: File) => Promise<void>;
   refreshUser: () => Promise<void>; // Add method to refresh user data
 };
 
@@ -67,12 +67,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       isFetchingRef.current = true;
       lastFetchTimeRef.current = currentTime;
-      
-      const userData = await AuthService.getProfile();      
+        const userData = await AuthService.getProfile();      
       const userWithComputedProps = {
         ...userData,
         name: `${userData.firstName} ${userData.lastName}`,
-        avatar: undefined
+        avatar: userData.profilePicture || undefined
       };
       setUser(userWithComputedProps);
       storeUserInLocalStorage(userWithComputedProps); // Store user in localStorage
@@ -110,15 +109,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Force immediate fetch of user profile
       try {
         await fetchUser(true); // Force fetch
-        
-        // Important fix: The state might not be updated immediately due to React's async state updates
+          // Important fix: The state might not be updated immediately due to React's async state updates
         // So we need to set the user directly here to ensure isAuthenticated becomes true
         if (response.user) {
           const userData = response.user;
           const userWithComputedProps = {
             ...userData,
             name: `${userData.firstName} ${userData.lastName}`,
-            avatar: undefined
+            avatar: userData.profilePicture || undefined
           };
           setUser(userWithComputedProps);
           storeUserInLocalStorage(userWithComputedProps); // Store user in localStorage
@@ -199,13 +197,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     }
   };
-
-  const updateProfile = async (userData: UserDTO) => {
+  const updateProfile = async (userData: UserDTO, profilePicture?: File) => {
     setIsLoading(true);
     try {
-      await AuthService.updateProfile(userData);
-      setUser(userData);
-      storeUserInLocalStorage(userData); // Update user in localStorage
+      if (profilePicture) {
+        await AuthService.updateProfileWithPicture(userData, profilePicture);
+      } else {
+        await AuthService.updateProfile(userData);
+      }
+      
+      // Refresh user data to get updated profile picture URL
+      await fetchUser(true);
+      
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",

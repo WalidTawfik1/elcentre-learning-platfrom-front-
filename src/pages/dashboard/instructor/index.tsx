@@ -24,7 +24,7 @@ import { CourseService } from "@/services/course-service";
 import { EnrollmentService } from "@/services/enrollment-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { getImageUrl } from "@/config/api-config";
 
 // Teaching tips for instructors
@@ -461,16 +461,13 @@ export default function InstructorDashboard() {
                                 <Users className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
                                 <p>No students enrolled in this course yet.</p>
                               </div>
-                            ) : (
-                              <div className="divide-y">
-                                {enrollments.map((enrollment) => (
+                            ) : (                              <div className="divide-y">                                {enrollments.map((enrollment) => (
                                   <div key={enrollment.id} className="py-3 flex items-center justify-between">
                                     <div className="flex items-center">
                                       <Avatar className="h-10 w-10 mr-3">
-                                        <AvatarFallback>
-                                          {enrollment.studentName ? 
-                                            enrollment.studentName.charAt(0) : 
-                                            "S"}
+                                        <AvatarImage src={getImageUrl(enrollment.studentImage) || ""} />
+                                        <AvatarFallback className="bg-primary/10 text-primary">
+                                          {getInitials(enrollment.studentName || "Student")}
                                         </AvatarFallback>
                                       </Avatar>
                                       <div>
@@ -513,8 +510,7 @@ export default function InstructorDashboard() {
                               </div>
                             )}
                           </TabsContent>
-                          
-                          <TabsContent value="active">
+                            <TabsContent value="active">
                             <div className="divide-y">
                               {enrollments.filter(e => e.status === "Active").length === 0 ? (
                                 <div className="text-center py-8">
@@ -522,16 +518,14 @@ export default function InstructorDashboard() {
                                   <p>No active students for this course.</p>
                                 </div>
                               ) : (
-                                enrollments
-                                  .filter(e => e.status === "Active")
+                                enrollments                                  .filter(e => e.status === "Active")
                                   .map((enrollment) => (
                                     <div key={enrollment.id} className="py-3 flex items-center justify-between">
                                       <div className="flex items-center">
                                         <Avatar className="h-10 w-10 mr-3">
-                                          <AvatarFallback>
-                                            {enrollment.studentName ? 
-                                              enrollment.studentName.charAt(0) : 
-                                              "S"}
+                                          <AvatarImage src={getImageUrl(enrollment.studentImage) || ""} />
+                                          <AvatarFallback className="bg-primary/10 text-primary">
+                                            {getInitials(enrollment.studentName || "Student")}
                                           </AvatarFallback>
                                         </Avatar>
                                         <div>
@@ -568,8 +562,7 @@ export default function InstructorDashboard() {
                               )}
                             </div>
                           </TabsContent>
-                          
-                          <TabsContent value="completed">
+                            <TabsContent value="completed">
                             <div className="divide-y">
                               {enrollments.filter(e => e.status === "Completed").length === 0 ? (
                                 <div className="text-center py-8">
@@ -577,16 +570,14 @@ export default function InstructorDashboard() {
                                   <p>No students have completed this course yet.</p>
                                 </div>
                               ) : (
-                                enrollments
-                                  .filter(e => e.status === "Completed")
+                                enrollments                                  .filter(e => e.status === "Completed")
                                   .map((enrollment) => (
                                     <div key={enrollment.id} className="py-3 flex items-center justify-between">
                                       <div className="flex items-center">
                                         <Avatar className="h-10 w-10 mr-3">
-                                          <AvatarFallback>
-                                            {enrollment.studentName ? 
-                                              enrollment.studentName.charAt(0) : 
-                                              "S"}
+                                          <AvatarImage src={getImageUrl(enrollment.studentImage) || ""} />
+                                          <AvatarFallback className="bg-primary/10 text-primary">
+                                            {getInitials(enrollment.studentName || "Student")}
                                           </AvatarFallback>
                                         </Avatar>
                                         <div>

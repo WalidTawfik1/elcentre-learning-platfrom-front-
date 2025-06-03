@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { StarIcon, Play, Clock, User, Book, Video, CheckCircle } from "lucide-react";
 import { API } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
+import { getImageUrl } from "@/config/api-config";
+import { getInitials } from "@/lib/utils";
 
 // Mock course data for development
 const MOCK_COURSE = {
@@ -217,11 +219,10 @@ export default function CourseDetail() {
               </div>
               <h1 className="text-3xl md:text-4xl font-bold mb-4">{course.title}</h1>
               <p className="text-lg text-muted-foreground mb-6">{course.description}</p>
-              
-              <div className="flex items-center mb-6">
+                <div className="flex items-center mb-6">
                 <Avatar className="h-12 w-12 mr-3">
-                  <AvatarImage src={course.instructor.avatar} />
-                  <AvatarFallback>{course.instructor.name.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={course.instructor.avatar ? getImageUrl(course.instructor.avatar) : ""} />
+                  <AvatarFallback className="bg-primary/10 text-primary">{getInitials(course.instructor.name)}</AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="font-medium">Created by {course.instructor.name}</p>
@@ -456,11 +457,10 @@ export default function CourseDetail() {
           </TabsContent>
           
           <TabsContent value="instructor">
-            <div className="max-w-3xl">
-              <div className="flex items-start gap-4 mb-6">
+            <div className="max-w-3xl">              <div className="flex items-start gap-4 mb-6">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage src={course.instructor.avatar} />
-                  <AvatarFallback>{course.instructor.name.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={course.instructor.avatar ? getImageUrl(course.instructor.avatar) : ""} />
+                  <AvatarFallback className="bg-primary/10 text-primary">{getInitials(course.instructor.name)}</AvatarFallback>
                 </Avatar>
                 <div>
                   <h2 className="text-2xl font-bold">{course.instructor.name}</h2>
@@ -532,11 +532,10 @@ export default function CourseDetail() {
               
               <div className="space-y-6">
                 {course.reviews.map((review) => (
-                  <div key={review.id} className="border-b pb-6 last:border-0">
-                    <div className="flex items-start">
+                  <div key={review.id} className="border-b pb-6 last:border-0">                    <div className="flex items-start">
                       <Avatar className="h-10 w-10 mr-3">
-                        <AvatarImage src={review.user.avatar} />
-                        <AvatarFallback>{review.user.name.charAt(0)}</AvatarFallback>
+                        <AvatarImage src={review.user.avatar ? getImageUrl(review.user.avatar) : ""} />
+                        <AvatarFallback className="bg-primary/10 text-primary">{getInitials(review.user.name)}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">

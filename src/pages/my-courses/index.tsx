@@ -12,6 +12,7 @@ import { CourseService } from "@/services/course-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
+import { getInitials } from "@/lib/utils";
 
 export default function MyCourses() {
   const navigate = useNavigate();
@@ -143,12 +144,10 @@ export default function MyCourses() {
                 <CardHeader className="p-4 pb-2">
                   <CardTitle className="text-lg line-clamp-1">
                     {course.title}
-                  </CardTitle>
-                  {course.instructorName && (
-                    <div className="flex items-center mt-1">
+                  </CardTitle>                  {course.instructorName && (                    <div className="flex items-center mt-1">
                       <Avatar className="h-5 w-5 mr-1.5">
-                        <AvatarImage src={course.instructor?.avatar} alt={course.instructorName} />
-                        <AvatarFallback>{course.instructorName.charAt(0)}</AvatarFallback>
+                        <AvatarImage src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} alt={course.instructorName} />
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(course.instructorName)}</AvatarFallback>
                       </Avatar>
                       <span className="text-xs text-muted-foreground">{course.instructorName}</span>
                     </div>

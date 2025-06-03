@@ -13,8 +13,7 @@ interface CourseSectionProps {
   mockCourses: any[];
 }
 
-export function CourseSection({ courses, isLoading, error, mockCourses }: CourseSectionProps) {
-  // Map API response to match the format expected by components
+export function CourseSection({ courses, isLoading, error, mockCourses }: CourseSectionProps) {  // Map API response to match the format expected by components
   const mappedCourses = courses?.length ? courses.map((course: any) => ({
     id: course.id.toString(),
     title: course.title || "Untitled Course",
@@ -28,6 +27,7 @@ export function CourseSection({ courses, isLoading, error, mockCourses }: Course
     instructor: {
       id: course.instructorId || "",
       name: course.instructorName || "Unknown Instructor",
+      avatar: course.instructorImage || "",
     },
     duration: `${course.durationInHours || 0} hours`,
   })) : mockCourses;

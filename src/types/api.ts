@@ -26,6 +26,8 @@ export interface UserDTO {
   dateOfBirth: string;
   name?: string;
   avatar?: string;
+  bio?: string;
+  profilePicture?: string;
 }
 
 // Course related types
@@ -47,6 +49,7 @@ export interface Course {
   rating?: number;
   instructorId?: string;
   instructorName?: string;
+  instructorImage?: string;
   enrollmentCount?: number;
 }
 
@@ -78,6 +81,8 @@ export interface CourseReview {
   userId: string;
   courseId: number;
   userName: string;
+  studentName?: string;
+  studentImage?: string;
 }
 
 export interface Enrollment {
@@ -91,6 +96,8 @@ export interface Enrollment {
   courseName?: string;
   courseDescription?: string;
   courseThumbnail?: string;
+  studentName?: string;
+  studentImage?: string;
 }
 
 // Pagination related types

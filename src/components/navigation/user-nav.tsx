@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/hooks/use-auth"
 import { Link, useNavigate } from "react-router-dom"
 import { UserCircle, LogOut, BookOpen, Gauge, User, GraduationCap } from "lucide-react"
+import { getImageUrl } from "@/config/api-config"
 
 export function UserNav() {
   const { user, logout } = useAuth()
@@ -32,8 +33,7 @@ export function UserNav() {
         .join("")
         .toUpperCase();
     }
-    
-    return "U";
+      return "U";
   };
   
   // Full name from first and last name
@@ -41,8 +41,24 @@ export function UserNav() {
     (user.firstName && user.lastName ? 
       `${user.firstName} ${user.lastName}` : 
       user.name || "User") : 
-    "User";
-  
+    "User";  // Get the current profile picture URL - same approach as profile page
+  const getCurrentProfilePictureUrl = () => {
+    if (user?.profilePicture) {
+      try {
+        const imageUrl = getImageUrl(user.profilePicture);
+        // Don't return placeholder URLs
+        if (imageUrl === "/placeholder.svg") {
+          return "";
+        }
+        return imageUrl;
+      } catch (error) {
+        console.error('Error getting profile picture URL:', error);
+        return "";
+      }
+    }
+    return "";
+  };
+
   // Handle logout with redirect to home page
   const handleLogout = async () => {
     try {
@@ -56,15 +72,17 @@ export function UserNav() {
       window.location.reload();
     } catch (error) {
       console.error("Logout error:", error);
-    }
-  };
+    }  };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <DropdownMenu>      <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
           <Avatar className="h-9 w-9 border border-primary/10">
-            <AvatarImage src={user?.avatar} alt={fullName} />
+            <AvatarImage 
+              src={getCurrentProfilePictureUrl() || ""} 
+              alt={fullName}
+              className="object-cover"
+            />
             <AvatarFallback className="bg-primary/10 text-primary">
               {getInitials()}
             </AvatarFallback>

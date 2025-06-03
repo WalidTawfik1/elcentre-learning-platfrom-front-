@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { StarIcon } from "lucide-react";
 import { getImageUrl } from "@/config/api-config";
+import { getInitials } from "@/lib/utils";
 
 interface Course {
   id: string;
@@ -67,11 +68,10 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
               <Link to={`/courses/${course.id}`} className="hover:text-primary transition-colors">
                 {course.title}
               </Link>
-            </CardTitle>
-            <div className="flex items-center mt-1">
+            </CardTitle>            <div className="flex items-center mt-1">
               <Avatar className="h-6 w-6 mr-2">
-                <AvatarImage src={course.instructor.avatar} alt={course.instructor.name} />
-                <AvatarFallback>{course.instructor.name.charAt(0)}</AvatarFallback>
+                <AvatarImage src={course.instructor.avatar ? getImageUrl(course.instructor.avatar) : ""} alt={course.instructor.name} />
+                <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(course.instructor.name)}</AvatarFallback>
               </Avatar>
               <CardDescription className="text-xs">{course.instructor.name}</CardDescription>
             </div>
