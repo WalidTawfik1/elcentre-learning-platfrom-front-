@@ -59,9 +59,8 @@ export function CourseCard({
 
   // Handle avatar source properly
   const avatarSrc = (instructor.image || instructor.avatar) ? getImageUrl(instructor.image || instructor.avatar) : "";
-
   return (
-    <Card className="overflow-hidden group hover:shadow-md transition-shadow">
+    <Card className="overflow-hidden group hover:shadow-md transition-shadow h-full flex flex-col">
       <Link to={`/courses/${id}`}>
         <div className="aspect-video relative overflow-hidden">
           <img
@@ -72,42 +71,48 @@ export function CourseCard({
           <Badge className="absolute top-2 right-2 bg-primary/90">{category}</Badge>
         </div>
       </Link>
-      <CardHeader className="p-4">
-        <CardTitle className="text-lg line-clamp-1">
-          <Link to={`/courses/${id}`} className="hover:text-primary transition-colors">
-            {title}
-          </Link>
-        </CardTitle>        <div className="flex items-center mt-1">
-          <Avatar className="h-6 w-6 mr-2">
-            <AvatarImage 
-              src={avatarSrc} 
-              alt={instructor.name} 
-            />            <AvatarFallback className="bg-muted text-muted-foreground text-xs">
-              {getInitials(instructor.name)}
-            </AvatarFallback>
-          </Avatar>
-          <span className="text-xs text-muted-foreground">{instructor.name}</span>
-        </div>
-      </CardHeader>
-      <CardContent className="p-4 pt-0">
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{description}</p>
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{duration}</span>
-          {renderRating(rating)}
-        </div>
-      </CardContent>
-      <CardFooter className="p-4 flex justify-between items-center border-t">
-        <div className="font-semibold">
-          {price === 0 ? (
-            <span className="text-eduAccent">Free</span>
-          ) : (
-            <span>{price.toFixed(2)} LE</span>
-          )}
-        </div>
-        <Button variant="outline" size="sm" asChild>
-          <Link to={`/courses/${id}`}>View Course</Link>
-        </Button>
-      </CardFooter>
+      <div className="flex flex-col flex-1">
+        <CardHeader className="p-4 flex-shrink-0">
+          <CardTitle className="text-lg line-clamp-1 min-h-[1.75rem]">
+            <Link to={`/courses/${id}`} className="hover:text-primary transition-colors">
+              {title}
+            </Link>
+          </CardTitle>
+          <div className="flex items-center mt-1 min-h-[1.5rem]">
+            <Avatar className="h-6 w-6 mr-2">
+              <AvatarImage 
+                src={avatarSrc} 
+                alt={instructor.name} 
+              />
+              <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                {getInitials(instructor.name)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-xs text-muted-foreground">{instructor.name}</span>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 pt-0 flex-1 flex flex-col">
+          <div className="flex-1 min-h-[3rem] mb-2">
+            <p className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden">{description}</p>
+          </div>
+          <div className="flex justify-between text-xs text-muted-foreground mt-auto">
+            <span>{duration}</span>
+            {renderRating(rating)}
+          </div>
+        </CardContent>
+        <CardFooter className="p-4 flex justify-between items-center border-t mt-auto">
+          <div className="font-semibold">
+            {price === 0 ? (
+              <span className="text-eduAccent">Free</span>
+            ) : (
+              <span>{price.toFixed(2)} LE</span>
+            )}
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link to={`/courses/${id}`}>View Course</Link>
+          </Button>
+        </CardFooter>
+      </div>
     </Card>
   );
 }

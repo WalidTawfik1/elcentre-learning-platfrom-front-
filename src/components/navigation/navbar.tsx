@@ -57,13 +57,15 @@ export function NavBar() {
               alt="ElCentre Logo"
               className="h-8 w-auto my-auto -mt-2.5"
             />
-          </Link>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
+          </Link>          <nav className="flex items-center space-x-6 text-sm font-medium">
             <Link to="/courses" className="transition-colors hover:text-foreground/80">
               Courses
             </Link>
             <Link to="/categories" className="transition-colors hover:text-foreground/80">
               Categories
+            </Link>
+            <Link to="/instructors" className="transition-colors hover:text-foreground/80">
+              Instructors
             </Link>
             {isAuthenticated && user?.userType === "Student" && (
               <Link to="/my-courses" className="transition-colors hover:text-foreground/80">
@@ -211,13 +213,19 @@ export function NavBar() {
               onClick={handleMobileNavClick}
             >
               Courses
-            </Link>
-            <Link 
+            </Link>            <Link 
               to="/categories" 
               className="px-4 py-2 hover:bg-accent rounded-md" 
               onClick={handleMobileNavClick}
             >
               Categories
+            </Link>
+            <Link 
+              to="/instructors" 
+              className="px-4 py-2 hover:bg-accent rounded-md" 
+              onClick={handleMobileNavClick}
+            >
+              Instructors
             </Link>
             {isAuthenticated && user?.userType === "Student" && (
               <Link 

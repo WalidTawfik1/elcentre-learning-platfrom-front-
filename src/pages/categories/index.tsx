@@ -229,13 +229,21 @@ interface CategoryCardProps {
 
 function CategoryCard({ category }: CategoryCardProps) {
   return (
-    <div className="bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow">
-      <Link to={`/courses?category=${category.id}`} className="block p-6">
-        <div className="flex flex-col items-center text-center">
-          {getIcon(category.icon)}
-          <h3 className="mt-4 text-xl font-semibold">{category.name}</h3>
-          <p className="mt-2 text-muted-foreground text-sm">{category.description}</p>
-          <div className="mt-4 text-sm text-primary">
+    <div className="bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow h-full">
+      <Link to={`/courses?category=${category.id}`} className="block p-6 h-full">
+        <div className="flex flex-col items-center text-center h-full">
+          <div className="flex-shrink-0">
+            {getIcon(category.icon)}
+          </div>
+          <h3 className="mt-4 text-xl font-semibold min-h-[1.75rem] flex items-center">
+            {category.name}
+          </h3>
+          <div className="flex-1 min-h-[3rem] mt-2 mb-4 flex items-start">
+            <p className="text-muted-foreground text-sm line-clamp-2">
+              {category.description}
+            </p>
+          </div>
+          <div className="mt-auto text-sm text-primary flex-shrink-0">
             {category.courseCount !== undefined ? (
               <span>{category.courseCount} {category.courseCount === 1 ? "course" : "courses"}</span>
             ) : (

@@ -16,7 +16,7 @@ import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
 
 // Backend base URL for serving static content
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://elcentre-api.runasp.net";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://elcentre-api.runasp.net";
 
 export default function CourseLearn() {
   const { id } = useParams<{ id: string }>();

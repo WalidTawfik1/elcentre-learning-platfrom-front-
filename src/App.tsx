@@ -29,7 +29,11 @@ import MyCoursesRedirect from "@/components/navigation/my-courses-redirect";
 import AdminDashboard from "@/pages/dashboard/admin/index";
 import AdminCategories from "@/pages/dashboard/admin/categories";
 import CreateAdminPage from "@/pages/dashboard/admin/create-admin";
+import AdminPendingCoursesPage from "@/pages/admin/pending-courses";
+import AdminDashboardNew from "@/pages/admin/index";
 import RequireAdminAuth from "@/components/auth/require-admin-auth";
+import InstructorsPage from "@/pages/instructors/index";
+import InstructorCoursesPage from "@/pages/instructors/[id]/courses";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -59,10 +63,10 @@ const App = () => (
             
             {/* Student routes */}
             <Route path="/courses" element={<CoursesIndex />} />
-            <Route path="/courses/:id" element={<CourseDetail />} />
-            <Route path="/categories" element={<CategoriesIndex />} />
+            <Route path="/courses/:id" element={<CourseDetail />} />            <Route path="/categories" element={<CategoriesIndex />} />
             <Route path="/categories/:slug" element={<NotFound />} /> {/* Placeholder */}
-            <Route path="/instructors" element={<NotFound />} /> {/* Placeholder */}
+            <Route path="/instructors" element={<InstructorsPage />} />
+            <Route path="/instructors/:instructorId/courses" element={<InstructorCoursesPage />} />
             
             {/* Protected routes */}
             <Route path="/dashboard" element={<StudentDashboard />} />
@@ -81,9 +85,18 @@ const App = () => (
             <Route path="/dashboard/instructor/courses/new" element={<AddCourse />} />
             <Route path="/dashboard/instructor/courses/:id/edit" element={<EditCourse />} />
             <Route path="/dashboard/instructor/courses/:id/content" element={<CourseContentManagement />} />
-            
-            {/* Admin routes */}
+              {/* Admin routes */}
             <Route path="/admin/dashboard" element={
+              <RequireAdminAuth>
+                <AdminDashboardNew />
+              </RequireAdminAuth>
+            } />
+            <Route path="/admin/pending-courses" element={
+              <RequireAdminAuth>
+                <AdminPendingCoursesPage />
+              </RequireAdminAuth>
+            } />
+            <Route path="/dashboard/admin" element={
               <RequireAdminAuth>
                 <AdminDashboard />
               </RequireAdminAuth>

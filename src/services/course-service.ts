@@ -1,5 +1,5 @@
 import { API } from "@/lib/api";
-import { Course, PaginatedResponse, CourseModule, Lesson, CourseReview } from "@/types/api";
+import { Course, PaginatedResponse, CourseModule, Lesson, CourseReview, PendingCourse, CourseApprovalRequest } from "@/types/api";
 import { EnrollmentService } from "./enrollment-service";
 
 
@@ -98,10 +98,31 @@ export const CourseService = {
     // Use EnrollmentService directly for consistency
     return EnrollmentService.isEnrolled(Number(courseId));
   },
-
   // Get enrollment count for a course
   getEnrollmentCount: async (courseId: string | number): Promise<any> => {
    return API.enrollments.getStudentsCount(Number(courseId));
+  },
+
+  // Get completion rate for a course
+  getCourseCompletionRate: async (courseId: string | number): Promise<number> => {
+    try {
+      // Get all enrollments for the course
+      const enrollments = await EnrollmentService.getCourseEnrollments(Number(courseId));
+      
+      if (!Array.isArray(enrollments) || enrollments.length === 0) {
+        return 0;
+      }
+      
+      // Calculate average progress across all enrollments
+      const totalProgress = enrollments.reduce((total, enrollment) => {
+        return total + (enrollment.progress || 0);
+      }, 0);
+      
+      return Math.round(totalProgress / enrollments.length);
+    } catch (error) {
+      console.error(`Error calculating completion rate for course ${courseId}:`, error);
+      return 0;
+    }
   },
 
   // Get course reviews with count information
@@ -171,5 +192,20 @@ export const CourseService = {
       console.error("Error deleting course:", error);
       throw error; // Re-throw to handle in component
     }
-  }
+  },
+  // Admin course approval functions
+  getPendingCourses: async (): Promise<any> => {
+    return API.courses.getPendingCourses();
+  },
+
+  approveCourse: async (courseId: number): Promise<any> => {
+    return API.courses.updatePendingCourse(courseId, { status: 'Approved' });
+  },
+
+  rejectCourse: async (courseId: number, rejectionReason?: string): Promise<any> => {
+    return API.courses.updatePendingCourse(courseId, { 
+      status: 'Rejected', 
+      rejectionReason 
+    });
+  },
 };

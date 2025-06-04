@@ -2,9 +2,8 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",  "rewrites": [
-    {
-      "source": "/api/:match*",
-      "destination": "http://elcentre-api.runasp.net/:match*"
+    {      "source": "/api/:match*",
+      "destination": "https://elcentre-api.runasp.net/:match*"
     },
     {
       "source": "/(.*)",

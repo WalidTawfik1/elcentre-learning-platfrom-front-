@@ -4,7 +4,7 @@
 const isProduction = import.meta.env.PROD;
 
 // The original API URL that should be used for direct connections when in development
-const ORIGIN_API_URL = "http://elcentre-api.runasp.net";
+const ORIGIN_API_URL = "https://elcentre-api.runasp.net";
 
 // Production Vercel deployment URL for images
 const PRODUCTION_URL = "https://elcentre.vercel.app";

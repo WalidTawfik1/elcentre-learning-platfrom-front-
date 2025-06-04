@@ -141,11 +141,10 @@ export default function InstructorCourses() {
             <Button asChild>
               <Link to="/dashboard/instructor/courses/new">Create Your First Course</Link>
             </Button>
-          </div>
-        ) : (
+          </div>        ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map((course) => (
-              <Card key={course.id} className="overflow-hidden flex flex-col">
+              <Card key={course.id} className="overflow-hidden flex flex-col h-full">
                 <div className="aspect-video relative overflow-hidden">
                   <img
                     src={formatThumbnailUrl(course.thumbnail)}
@@ -169,26 +168,58 @@ export default function InstructorCourses() {
                     )}
                   </Badge>
                 </div>
-                <CardHeader className="p-4 pb-2">
-                  <CardTitle className="text-lg line-clamp-1">
-                    {course.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 flex-1">
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                    {course.description}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center">
-                      <Users className="h-4 w-4 mr-1 text-muted-foreground" />
-                      <span>{course.studentsCount?.toLocaleString() || 0} students</span>
+                
+                <div className="flex flex-col flex-1">
+                  <CardHeader className="p-4 pb-2 flex-shrink-0">
+                    <CardTitle className="text-lg line-clamp-1 min-h-[1.75rem]">
+                      {course.title}
+                    </CardTitle>
+                  </CardHeader>
+                  
+                  <CardContent className="p-4 pt-0 flex-1 flex flex-col">
+                    <div className="flex-1 min-h-[3rem] mb-3">
+                      <p className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden">
+                        {course.description || "No description available"}
+                      </p>
                     </div>
-                    <div className="flex items-center">
-                      <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" />
-                      <span>{course.price === 0 ? "Free" : `${course.price} LE`}</span>
+                    
+                    {/* Course Status Badge - Fixed height section */}
+                    <div className="min-h-[2rem] mb-3 flex items-start">
+                      {course.courseStatus ? (
+                        <Badge 
+                          variant={
+                            course.courseStatus === "Approved" ? "default" : 
+                            course.courseStatus === "Pending" ? "secondary" : 
+                            "destructive"
+                          }
+                          className={
+                            course.courseStatus === "Approved" ? "bg-green-100 text-green-800 hover:bg-green-200" :
+                            course.courseStatus === "Pending" ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200" :
+                            "bg-red-100 text-red-800 hover:bg-red-200"
+                          }
+                        >
+                          {course.courseStatus === "Approved" && "✓ Approved"}
+                          {course.courseStatus === "Pending" && "⏳ Pending Review"}
+                          {course.courseStatus === "Rejected" && "✗ Rejected"}
+                          {!["Approved", "Pending", "Rejected"].includes(course.courseStatus) && course.courseStatus}
+                        </Badge>
+                      ) : (
+                        <div className="h-6"></div> /* Placeholder for consistent spacing */
+                      )}
                     </div>
-                  </div>
-                </CardContent>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm mt-auto">
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 mr-1 text-muted-foreground" />
+                        <span>{course.studentsCount?.toLocaleString() || 0} students</span>
+                      </div>
+                      <div className="flex items-center">
+                        <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" />
+                        <span>{course.price === 0 ? "Free" : `${course.price} LE`}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </div>
                 <CardFooter className="p-4 border-t">
                   <div className="w-full flex justify-between items-center">
                     <div className="flex gap-2">

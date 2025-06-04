@@ -266,14 +266,7 @@ export default function ProfilePage() {
                 <p className="text-sm text-muted-foreground mb-4 max-w-md">{user.bio}</p>
               )}
               <div className="inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
-                {user?.userType}
-              </div>              {/* Debug info */}
-              <div className="text-xs text-muted-foreground mt-2 p-2 bg-gray-100 rounded">
-                <div>Profile Picture: {user?.profilePicture || 'null'}</div>
-                <div>Avatar: {user?.avatar || 'null'}</div>
-                <div>Using Source: {user?.avatar || user?.profilePicture || 'null'}</div>
-                <div>Generated URL: {getCurrentProfilePictureUrl() || 'empty'}</div>
-              </div>
+                {user?.userType}              </div>
             </div>
           </div>
           

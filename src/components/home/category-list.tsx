@@ -35,17 +35,21 @@ export function CategoryList({ categories }: CategoryListProps) {
         <Link
           key={category.id}
           to={`/courses?category=${category.id}`}
-          className="group block"
+          className="group block h-full"
         >
-          <div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm transition-all hover:shadow-md">
-            <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+          <div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm transition-all hover:shadow-md h-full flex flex-col">
+            <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors flex-shrink-0">
               {getIcon(category.icon)}
             </div>
-            <div className="mb-2 text-lg font-medium">{category.name}</div>
-            <p className="mb-4 flex-1 text-sm text-muted-foreground">
-              {category.description || `Explore ${category.name} courses`}
-            </p>
-            <div className="text-sm text-muted-foreground">
+            <div className="mb-2 text-lg font-medium min-h-[1.75rem] flex items-center">
+              {category.name}
+            </div>
+            <div className="flex-1 min-h-[3rem] mb-4 flex items-start">
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {category.description || `Explore ${category.name} courses`}
+              </p>
+            </div>
+            <div className="text-sm text-muted-foreground mt-auto flex-shrink-0">
               {category.courseCount !== undefined ? (
                 `${category.courseCount} ${category.courseCount === 1 ? "course" : "courses"}`
               ) : (

@@ -113,66 +113,81 @@ const AdminDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-        
-        {/* Admin Modules */}
+          {/* Admin Modules */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Tag className="h-5 w-5 text-primary" />
                 <CardTitle>Categories</CardTitle>
               </div>
               <CardDescription>Manage course categories</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="mb-4">Add, update, or remove course categories</p>
-              <Link to="/dashboard/admin/categories">
-                <Button variant="default">Manage Categories</Button>
-              </Link>
+            <CardContent className="flex-1 flex flex-col">
+              <div className="flex-1 min-h-[3rem] mb-4">
+                <p>Add, update, or remove course categories</p>
+              </div>
+              <div className="mt-auto">
+                <Link to="/dashboard/admin/categories">
+                  <Button variant="default">Manage Categories</Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardHeader>
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
                 <CardTitle>Admin Accounts</CardTitle>
               </div>
               <CardDescription>Create new admin users</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="mb-4">Add new administrators to the platform</p>
-              <Link to="/dashboard/admin/create-admin">
-                <Button variant="default">Create Admin Account</Button>
-              </Link>
+            <CardContent className="flex-1 flex flex-col">
+              <div className="flex-1 min-h-[3rem] mb-4">
+                <p>Add new administrators to the platform</p>
+              </div>
+              <div className="mt-auto">
+                <Link to="/dashboard/admin/create-admin">
+                  <Button variant="default">Create Admin Account</Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardHeader>
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex-shrink-0">
               <div className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
                 <CardTitle>Courses</CardTitle>
               </div>
               <CardDescription>Manage all courses</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="mb-4">Review, edit or delete courses</p>
-              <Button variant="outline">Coming Soon</Button>
+            <CardContent className="flex-1 flex flex-col">
+              <div className="flex-1 min-h-[3rem] mb-4">
+                <p>Review, edit or delete courses</p>
+              </div>
+              <div className="mt-auto">
+                <Button variant="outline">Coming Soon</Button>
+              </div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardHeader>
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Settings className="h-5 w-5 text-primary" />
                 <CardTitle>Settings</CardTitle>
               </div>
               <CardDescription>System configuration</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="mb-4">Configure system settings</p>
-              <Button variant="outline">Coming Soon</Button>
+            <CardContent className="flex-1 flex flex-col">
+              <div className="flex-1 min-h-[3rem] mb-4">
+                <p>Configure system settings</p>
+              </div>
+              <div className="mt-auto">
+                <Button variant="outline">Coming Soon</Button>
+              </div>
             </CardContent>
           </Card>
         </div>

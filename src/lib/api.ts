@@ -6,10 +6,10 @@ const isProduction = import.meta.env.PROD;
 // Base API URL with environment-specific handling
 const API_BASE_URL = isProduction
   ? "/api" // Use Vercel rewrite proxy in production
-  : (import.meta.env.VITE_API_BASE_URL || "http://elcentre-api.runasp.net");
+  : (import.meta.env.VITE_API_BASE_URL || "https://elcentre-api.runasp.net");
 
 // Original direct API URL (needed for auth operations)
-const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || "http://elcentre-api.runasp.net";
+const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || "https://elcentre-api.runasp.net";
 
 // Configuration for rate limiting and retries
 const API_CONFIG = {
@@ -347,9 +347,11 @@ export const API = {
     
     verifyOTP: (data: { email: string; code: string }) => 
       apiRequest('/Account/verify-otp', 'POST', data, false),
-    
-    resendOTP: (data: { email: string }) => 
+      resendOTP: (data: { email: string }) => 
       apiRequest('/Account/resend-otp', 'POST', data, false),
+    
+    getAllInstructors: () => 
+      apiRequest('/Account/get-all-instructors', 'GET', undefined, false),
   },
   
   // Courses
@@ -367,10 +369,25 @@ export const API = {
       apiRequest(`/Course/get-all-courses${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`, 'GET', undefined, false),
     
     getById: (id: number) => 
-      apiRequest(`/Course/get-course/${id}`, 'GET', undefined, false),
-
-    getInstructorCourses: () =>
+      apiRequest(`/Course/get-course/${id}`, 'GET', undefined, false),    getInstructorCourses: () =>
       apiRequest('/Course/get-all-instructor-courses', 'GET', undefined, true),
+    
+    getInstructorCoursesById: (instructorId: string | number) =>
+      apiRequest(`/Course/get-all-approved-instructor-courses/${instructorId}`, 'GET', undefined, false),
+    
+    // Admin course approval endpoints
+    getPendingCourses: () =>
+      apiRequest('/Course/get-pending-courses', 'GET', undefined, true),
+      updatePendingCourse: (courseId: number, data: {
+      status: 'Approved' | 'Rejected';
+      rejectionReason?: string;
+    }) => {
+      const payload = {
+        decision: data.status === 'Approved' ? 'approve' : 'reject',
+        rejectionReason: data.rejectionReason || ""
+      };
+      return apiRequest(`/Course/update-pending-course/${courseId}`, 'PUT', payload, true);
+    },
     
     add: (data: { 
       Title: string; 

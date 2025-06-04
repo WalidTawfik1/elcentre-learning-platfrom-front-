@@ -51,6 +51,7 @@ export interface Course {
   instructorName?: string;
   instructorImage?: string;
   enrollmentCount?: number;
+  courseStatus?: string; // Added to track admin approval status
 }
 
 export interface CourseModule {
@@ -98,6 +99,17 @@ export interface Enrollment {
   courseThumbnail?: string;
   studentName?: string;
   studentImage?: string;
+}
+
+// Admin-specific interfaces
+export interface PendingCourse extends Course {
+  submissionDate: string;
+  rejectionReason?: string;
+}
+
+export interface CourseApprovalRequest {
+  decision: 'approve' | 'reject';
+  rejectionReason?: string;
 }
 
 // Pagination related types

@@ -130,10 +130,9 @@ export default function MyCourses() {
               <Link to="/courses">Browse Courses</Link>
             </Button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        ) : (          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {coursesData.map((course) => (
-              <Card key={course.id} className="overflow-hidden flex flex-col">
+              <Card key={course.id} className="overflow-hidden flex flex-col h-full">
                 <div className="aspect-video relative overflow-hidden">
                   <img
                     src={getImageUrl(course.thumbnail)}
@@ -141,10 +140,10 @@ export default function MyCourses() {
                     className="object-cover w-full h-full"
                   />
                 </div>
-                <CardHeader className="p-4 pb-2">
-                  <CardTitle className="text-lg line-clamp-1">
+                <CardHeader className="p-4 pb-2 flex-shrink-0">
+                  <CardTitle className="text-lg line-clamp-1 min-h-[1.75rem]">
                     {course.title}
-                  </CardTitle>                  {course.instructorName && (                    <div className="flex items-center mt-1">
+                  </CardTitle>                  {course.instructorName && (                    <div className="flex items-center mt-1 min-h-[1.5rem]">
                       <Avatar className="h-5 w-5 mr-1.5">
                         <AvatarImage src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} alt={course.instructorName} />
                         <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(course.instructorName)}</AvatarFallback>
@@ -153,9 +152,11 @@ export default function MyCourses() {
                     </div>
                   )}
                 </CardHeader>
-                <CardContent className="p-4 pt-0 flex-1">
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{course.description}</p>
-                  <div className="space-y-3">
+                <CardContent className="p-4 pt-0 flex-1 flex flex-col">
+                  <div className="flex-1 min-h-[3rem] mb-3">
+                    <p className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden">{course.description}</p>
+                  </div>
+                  <div className="space-y-3 mt-auto">
                     <div className="text-sm flex items-center justify-between">
                       <span>Progress</span>
                       <span className="font-medium">{course.progress}%</span>
@@ -163,7 +164,7 @@ export default function MyCourses() {
                     <Progress value={course.progress} />
                   </div>
                 </CardContent>
-                <CardFooter className="p-4 border-t">
+                <CardFooter className="p-4 border-t mt-auto">
                   <div className="w-full flex justify-between items-center">
                     <div className="flex items-center text-xs text-muted-foreground">
                       {course.enrollmentStatus === "Completed" ? (
