@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { StarIcon, Play, Clock, User, Book, Video, CheckCircle, Edit, Trash2, Heart, BookOpen } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { WishlistService } from "@/services/wishlist-service";
+import { PaymentService } from "@/services/payment-service";
+import { PaymentMethodDialog } from "@/components/ui/payment-method-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -43,10 +45,13 @@ export default function CourseDetail() {
   const [enrollmentCount, setEnrollmentCount] = useState<number>(0);
   const [reviewCount, setReviewCount] = useState<number>(0);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
-  const [currentReview, setCurrentReview] = useState<CourseReview | null>(null);
-  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [currentReview, setCurrentReview] = useState<CourseReview | null>(null);  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [userReview, setUserReview] = useState<CourseReview | null>(null);
   const [selectedRating, setSelectedRating] = useState<number>(0);
+  
+  // Payment related state
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   
   // Form handling for reviews
   const form = useForm<ReviewFormValues>({
@@ -316,7 +321,6 @@ export default function CourseDetail() {
       setIsLoadingReviews(false);
     }
   };
-
   const handleEnroll = async () => {
     if (!isAuthenticated) {
       // Redirect to login
@@ -324,24 +328,116 @@ export default function CourseDetail() {
       return;
     }
     
-    setIsEnrolling(true);
+    if (!courseData) return;
+
+    // If course is free, enroll directly
+    if (courseData.price === 0) {
+      setIsEnrolling(true);
+      try {
+        await CourseService.freeEnroll(id!);
+        setIsEnrolled(true);
+        toast({
+          title: "Success!",
+          description: "You have successfully enrolled in this course for free.",
+        });
+      } catch (error) {
+        console.error("Error enrolling in course:", error);
+        toast({
+          title: "Enrollment Failed",
+          description: "There was a problem with your enrollment. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsEnrolling(false);
+      }
+    } else {
+      // If course is paid, open payment method dialog
+      setPaymentDialogOpen(true);
+    }
+  };
+
+  const handlePaymentMethodSelected = async (paymentMethod: 'card' | 'wallet') => {
+    if (!courseData || !id) return;
+
+    setIsProcessingPayment(true);
     try {
-      // Always enroll for free regardless of course price
-      await CourseService.freeEnroll(id!);
-      setIsEnrolled(true);
-      toast({
-        title: "Success!",
-        description: "You have successfully enrolled in this course for free.",
+      // Create payment token
+      const response = await PaymentService.createPaymentToken({
+        courseId: Number(id),
+        paymentMethod
       });
-    } catch (error) {
-      console.error("Error enrolling in course:", error);
+
+      // Open payment window
+      const paymentWindow = PaymentService.openPaymentWindow(response.redirectUrl);
+      
+      if (!paymentWindow) {
+        toast({
+          title: "Payment Error",
+          description: "Failed to open payment window. Please check your popup blocker settings.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Close the payment method dialog
+      setPaymentDialogOpen(false);
+
+      // Monitor the payment window
+      const checkPaymentWindow = setInterval(() => {
+        if (paymentWindow.closed) {
+          clearInterval(checkPaymentWindow);
+          // Payment window was closed, refresh enrollment status
+          checkEnrollmentStatus();
+        }
+      }, 1000);
+
       toast({
-        title: "Enrollment Failed",
-        description: "There was a problem with your enrollment. Please try again.",
+        title: "Payment Window Opened",
+        description: "Complete your payment in the new window to finish enrollment.",
+      });    } catch (error) {
+      console.error("Error creating payment token:", error);
+      
+      // Enhanced error handling
+      let errorMessage = "Failed to initiate payment. Please try again.";
+      if (error instanceof Error) {
+        if (error.message.includes("400")) {
+          errorMessage = "Invalid payment request. Please check your course selection and try again.";
+        } else if (error.message.includes("401")) {
+          errorMessage = "Please log in to complete your payment.";
+        } else if (error.message.includes("403")) {
+          errorMessage = "You don't have permission to enroll in this course.";
+        } else if (error.message.includes("404")) {
+          errorMessage = "Course not found. Please try again later.";
+        } else if (error.message.includes("500")) {
+          errorMessage = "Payment service is temporarily unavailable. Please try again later.";
+        }
+      }
+      
+      toast({
+        title: "Payment Error",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
-      setIsEnrolling(false);
+      setIsProcessingPayment(false);
+    }
+  };
+
+  // Function to check enrollment status after payment
+  const checkEnrollmentStatus = async () => {
+    if (!id) return;
+    
+    try {
+      const enrolled = await CourseService.isEnrolled(id);
+      if (enrolled) {
+        setIsEnrolled(true);
+        toast({
+          title: "Payment Successful!",
+          description: "You have successfully enrolled in this course.",
+        });
+      }
+    } catch (error) {
+      console.error("Error checking enrollment status:", error);
     }
   };
 
@@ -523,8 +619,7 @@ export default function CourseDetail() {
                           </Link>
                         </Button>
                       </div>
-                    ) : (
-                      <Button 
+                    ) : (                      <Button 
                         onClick={handleEnroll} 
                         disabled={isEnrolling || !canEnroll()} 
                         className="bg-eduBlue-500 hover:bg-eduBlue-600"
@@ -533,7 +628,7 @@ export default function CourseDetail() {
                         {isEnrolling ? "Enrolling..." : 
                          !canEnroll() ? "Students Only" :
                          courseData.price === 0 ? "Enroll for Free" : 
-                         `Enroll for ${courseData.price} LE`}
+                         `Enroll Now - ${courseData.price} LE`}
                       </Button>
                     )}
                     {!isInstructor() && !isAdmin() && (
@@ -629,8 +724,7 @@ export default function CourseDetail() {
                               </Link>
                             </Button>
                           </div>
-                        ) : (
-                          <Button 
+                        ) : (                          <Button 
                             onClick={handleEnroll} 
                             disabled={isEnrolling || !canEnroll()} 
                             className="w-full bg-eduBlue-500 hover:bg-eduBlue-600"
@@ -639,7 +733,7 @@ export default function CourseDetail() {
                             {isEnrolling ? "Enrolling..." : 
                              !canEnroll() ? "Students Only" :
                              courseData.price === 0 ? "Enroll for Free" : 
-                             `Enroll for ${courseData.price} LE`}
+                             `Enroll Now - ${courseData.price} LE`}
                           </Button>
                         )}
                         {!isInstructor() && (
@@ -966,10 +1060,20 @@ export default function CourseDetail() {
                   {isSubmittingReview ? "Submitting..." : "Submit Review"}
                 </Button>
               </div>
-            </form>
-          </Form>
+            </form>        </Form>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Method Dialog */}
+      <PaymentMethodDialog
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        paymentMethods={PaymentService.getPaymentMethods()}
+        onPaymentMethodSelected={handlePaymentMethodSelected}
+        isLoading={isProcessingPayment}
+        courseTitle={courseData?.title}
+        coursePrice={courseData?.price}
+      />
     </MainLayout>
   );
 }
