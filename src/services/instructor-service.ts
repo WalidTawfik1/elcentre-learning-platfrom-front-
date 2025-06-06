@@ -16,17 +16,13 @@ export const InstructorService = {
       return [];
     }
   },
-  
   /**
    * Get instructor by ID
    */
   getInstructorById: async (instructorId: string | number): Promise<UserDTO | null> => {
     try {
       console.log(`Fetching instructor by ID: ${instructorId}`);
-      const instructors = await API.auth.getAllInstructors();
-      const instructor = Array.isArray(instructors) 
-        ? instructors.find(inst => inst.id === instructorId || inst.id === Number(instructorId))
-        : null;
+      const instructor = await API.auth.getInstructorById(instructorId) as UserDTO;
       console.log("Found instructor:", instructor);
       return instructor || null;
     } catch (error) {

@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { StarIcon, Play, Clock, Book, Video, CheckCircle, FileText, ArrowLeft, Check } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { EnrollmentService } from "@/services/enrollment-service";
+import { InstructorService } from "@/services/instructor-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
@@ -26,10 +27,10 @@ export default function CourseLearn() {
   const [modules, setModules] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeLesson, setActiveLesson] = useState<any>(null);
-  const [completedLessons, setCompletedLessons] = useState<number[]>([]);
-  const [courseProgress, setCourseProgress] = useState(0);
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [completedLessons, setCompletedLessons] = useState<number[]>([]);  const [courseProgress, setCourseProgress] = useState(0);  const [reviews, setReviews] = useState<any[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [instructor, setInstructor] = useState<any>(null);
+  const [isLoadingInstructor, setIsLoadingInstructor] = useState(false);
   
   useEffect(() => {
     // Redirect to login if user is not authenticated
@@ -103,10 +104,30 @@ export default function CourseLearn() {
       } finally {
         setIsLoading(false);
       }
-    };
+    };    
+    fetchCourse();  }, [id, isAuthenticated, navigate]);
+  
+  // Fetch detailed instructor information
+  const fetchInstructorDetails = async (instructorId: string) => {
+    if (!instructorId || instructor) return; // Don't fetch if we already have instructor data
     
-    fetchCourse();
-  }, [id, isAuthenticated, navigate]);
+    setIsLoadingInstructor(true);
+    try {
+      const instructorData = await InstructorService.getInstructorById(instructorId);
+      setInstructor(instructorData);
+    } catch (error) {
+      console.error("Error fetching instructor details:", error);
+    } finally {
+      setIsLoadingInstructor(false);
+    }
+  };
+  
+  // Fetch instructor details when course is loaded
+  useEffect(() => {
+    if (course?.instructorId && !instructor) {
+      fetchInstructorDetails(course.instructorId);
+    }
+  }, [course?.instructorId, instructor]);
   
   // Fetch course reviews when the reviews tab is clicked
   const handleFetchReviews = async () => {
@@ -442,18 +463,48 @@ export default function CourseLearn() {
                         ))}
                       </ul>
                     </div>
-                  )}
-                  
-                  <div>
+                  )}                  <div>
                     <h3 className="text-lg font-semibold mb-4">Instructor</h3>
-                    {course?.instructor ? (                      <div className="flex items-start gap-4">
+                    {isLoadingInstructor ? (
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-full bg-muted animate-pulse"></div>
+                        <div className="space-y-2">
+                          <div className="h-4 w-32 bg-muted rounded animate-pulse"></div>
+                          <div className="h-3 w-48 bg-muted rounded animate-pulse"></div>
+                        </div>
+                      </div>                    ) : instructor ? (
+                      <div className="flex items-start gap-4">
+                        <Link to={`/instructors/${instructor.id}/courses`} className="flex-shrink-0">
+                          <Avatar className="h-16 w-16 hover:ring-2 hover:ring-primary/20 transition-all cursor-pointer">
+                            <AvatarImage src={instructor.avatar || instructor.profilePicture ? getImageUrl(instructor.avatar || instructor.profilePicture) : ""} />
+                            <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                              {getInitials(`${instructor.firstName || ''} ${instructor.lastName || ''}` || instructor.name || 'Unknown')}
+                            </AvatarFallback>
+                          </Avatar>
+                        </Link>                        <div className="flex-1">
+                          <Link to={`/instructors/${instructor.id}/courses`} className="group">
+                            <h4 className="text-lg font-medium group-hover:text-primary transition-colors cursor-pointer">
+                              {instructor.name || `${instructor.firstName || ''} ${instructor.lastName || ''}`.trim() || 'Unknown Instructor'}
+                            </h4>
+                          </Link>
+                          {instructor.bio && (
+                            <p className="text-sm text-muted-foreground">
+                              {instructor.bio}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : course?.instructorName ? (
+                      <div className="flex items-start gap-4">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={course.instructor.avatar ? getImageUrl(course.instructor.avatar) : ""} />
-                          <AvatarFallback className="bg-primary/10 text-primary">{getInitials(course.instructorName || course.instructor?.name || 'Unknown')}</AvatarFallback>
+                          <AvatarImage src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {getInitials(course.instructorName || 'Unknown')}
+                          </AvatarFallback>
                         </Avatar>
                         <div>
-                          <h4 className="font-medium">{course.instructorName || course.instructor.name}</h4>
-                          <p className="text-sm text-muted-foreground">{course.instructor.bio || "No instructor biography available."}</p>
+                          <h4 className="font-medium">{course.instructorName}</h4>
+                          <p className="text-sm text-muted-foreground">Instructor details not available</p>
                         </div>
                       </div>
                     ) : (
@@ -462,50 +513,71 @@ export default function CourseLearn() {
                   </div>
                 </div>
               </TabsContent>
-              
-              <TabsContent value="reviews">
-                <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold">Student Reviews</h2>
+                <TabsContent value="reviews">
+                <div className="max-w-3xl">                  <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-2xl font-bold">Student Reviews</h2>
+                  </div>
+                  
+                  <div className="flex items-center mb-8">
+                    <div className="text-center mr-8">
+                      <p className="text-5xl font-bold">{course?.rating || 0}</p>
+                      <div className="flex items-center justify-center my-2">
+                        {[...Array(5)].map((_, i) => (
+                          <StarIcon
+                            key={`course-rating-star-${i}`}
+                            className={`h-5 w-5 ${
+                              i < Math.floor(course?.rating || 0) 
+                                ? "text-yellow-400 fill-yellow-400" 
+                                : i < (course?.rating || 0) 
+                                  ? "text-yellow-400 fill-yellow-400 opacity-50" 
+                                  : "text-gray-300"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Course Rating</p>
+                    </div>
+                    <div className="flex-1">
+                      {/* Could add rating distribution bars here */}
+                    </div>
                   </div>
                   
                   {isLoadingReviews ? (
-                    <div className="flex justify-center items-center py-8">
+                    <div className="flex justify-center items-center py-10">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-eduBlue-500"></div>
                     </div>
                   ) : (
                     <div className="space-y-6">
                       {reviews && reviews.length > 0 ? (
                         reviews.map((review: any) => (
-                          <div key={review.id} className="border-b pb-6 last:border-0">                            <div className="flex items-start">                              <Avatar className="h-10 w-10 mr-3">
-                                <AvatarImage src={getImageUrl(review.studentImage) || ""} />
-                                <AvatarFallback className="bg-primary/10 text-primary">{getInitials(review.studentName || review.userName || 'Unknown')}</AvatarFallback>
+                          <div key={review.id} className="border-b pb-6 last:border-0">
+                            <div className="flex items-start">
+                              <Avatar className="h-10 w-10 mr-3">
+                                <AvatarImage src={(review.studentImage) ? getImageUrl(review.studentImage) : ""} />
+                                <AvatarFallback className="bg-primary/10 text-primary">{getInitials(review.studentName || review.userName || 'Anonymous')}</AvatarFallback>
                               </Avatar>
                               <div className="flex-1">
                                 <div className="flex items-center justify-between">
                                   <h4 className="font-medium">{review.studentName || "Anonymous Student"}</h4>
-                                  <span className="text-sm text-muted-foreground">
-                                    {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : ""}
-                                  </span>
+                                  <span className="text-sm text-muted-foreground">{review.createdAt ? new Date(review.createdAt).toLocaleDateString() : ""}</span>
                                 </div>
                                 <div className="flex items-center my-1">
                                   {[...Array(5)].map((_, i) => (
                                     <StarIcon
-                                      key={i}
+                                      key={`review-star-${review.id}-${i}`}
                                       className={`h-4 w-4 ${
                                         i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
                                       }`}
                                     />
                                   ))}
-                                </div>
-                                <p className="text-muted-foreground mt-2">{review.reviewContent}</p>
+                                </div>                                <p className="text-muted-foreground mt-2">{review.reviewContent}</p>
                               </div>
                             </div>
                           </div>
                         ))
                       ) : (
                         <div className="text-center py-6 border rounded-lg">
-                          <p className="text-muted-foreground">No reviews yet for this course.</p>
+                          <p className="text-muted-foreground">No reviews yet. Be the first to review this course!</p>
                         </div>
                       )}
                     </div>
@@ -515,7 +587,6 @@ export default function CourseLearn() {
             </Tabs>
           </div>
         </div>
-      </div>
-    </MainLayout>
+      </div>    </MainLayout>
   );
 }

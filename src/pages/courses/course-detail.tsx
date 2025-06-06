@@ -797,15 +797,16 @@ export default function CourseDetail() {
               
               {modules.length > 0 ? (
                 <Accordion type="single" collapsible className="w-full">
-                  {modules.map((module, moduleIndex) => (
-                    <AccordionItem key={module.id} value={module.id.toString()}>
+                  {modules.map((module, moduleIndex) => (                    <AccordionItem key={module.id} value={module.id.toString()}>
                       <AccordionTrigger className="hover:no-underline">
-                        <div className="flex items-center text-left">
-                          <span className="mr-2 font-bold">{moduleIndex + 1}.</span>
-                          <span className="font-medium">{module.title}</span>
-                        </div>
-                        <div className="flex items-center space-x-2 ml-4 text-sm text-muted-foreground">
-                          <span>{module.lessons?.length || 0} lessons</span>
+                        <div className="flex items-center justify-between text-left w-full">
+                          <div className="flex items-center">
+                            <span className="mr-2 font-bold">{moduleIndex + 1}.</span>
+                            <span className="font-medium">{module.title}</span>
+                          </div>
+                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                            <span>{module.lessons?.length || 0} lessons</span>
+                          </div>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>

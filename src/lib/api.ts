@@ -349,9 +349,11 @@ export const API = {
       apiRequest('/Account/verify-otp', 'POST', data, false),
       resendOTP: (data: { email: string }) => 
       apiRequest('/Account/resend-otp', 'POST', data, false),
-    
-    getAllInstructors: () => 
+      getAllInstructors: () => 
       apiRequest('/Account/get-all-instructors', 'GET', undefined, false),
+    
+    getInstructorById: (instructorId: string | number) =>
+      apiRequest(`/Account/get-instructor-by-id/${instructorId}`, 'GET', undefined, false),
   },
   
   // Courses
