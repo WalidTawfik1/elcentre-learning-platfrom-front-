@@ -462,14 +462,17 @@ export default function CourseDetail() {
                 </div>
               </div>
               <h1 className="text-3xl md:text-4xl font-bold mb-4">{courseData.title}</h1>
-              <p className="text-lg text-muted-foreground mb-6">{courseData.description}</p>              <div className="flex items-center mb-6">                <Avatar className="h-12 w-12 mr-3">
-                  <AvatarImage src={(courseData.instructorImage) ? getImageUrl(courseData.instructorImage) : ""} />
-                  <AvatarFallback className="bg-primary/10 text-primary">{getInitials(courseData.instructorName || courseData.instructor?.name || 'Unknown')}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium">Created by {courseData.instructorName || courseData.instructor?.name || "Unknown Instructor"}</p>
-                  <p className="text-sm text-muted-foreground">Last updated: {courseData.lastUpdated || new Date().toISOString().split('T')[0]}</p>
-                </div>
+              <p className="text-lg text-muted-foreground mb-6">{courseData.description}</p>              <div className="flex items-center mb-6">
+                <Link to={`/instructors/${courseData.instructorId || courseData.instructor?.id}/courses`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={(courseData.instructorImage) ? getImageUrl(courseData.instructorImage) : ""} />
+                    <AvatarFallback className="bg-primary/10 text-primary">{getInitials(courseData.instructorName || courseData.instructor?.name || 'Unknown')}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium hover:text-primary transition-colors">Created by {courseData.instructorName || courseData.instructor?.name || "Unknown Instructor"}</p>
+                    <p className="text-sm text-muted-foreground">Created at: {courseData.createdAt ? new Date(courseData.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}</p>
+                  </div>
+                </Link>
               </div>
               
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-6">

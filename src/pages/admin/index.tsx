@@ -4,30 +4,46 @@ import { MainLayout } from "@/components/layouts/main-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle, XCircle, Users, BookOpen, TrendingUp, Settings } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Users, BookOpen, TrendingUp, Settings, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { CourseService } from "@/services/course-service";
+import { AdminService } from "@/services/admin-service";
 
 export default function AdminDashboard() {
   const [pendingCount, setPendingCount] = useState<number>(0);
+  const [adminStats, setAdminStats] = useState({
+    totalCourses: 0,
+    activeCourses: 0,
+    totalInstructors: 0,
+    totalEnrollments: 0
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadPendingCoursesCount();
+    loadAdminData();
   }, []);
-
-  const loadPendingCoursesCount = async () => {
+  const loadAdminData = async () => {
     try {
-      const response = await CourseService.getPendingCourses();
-      const courses = response.data || response || [];
-      const pending = courses.filter((course: any) => course.status === 'Pending').length;
-      setPendingCount(pending);
+      setLoading(true);
+      console.log("Loading admin dashboard data...");
+      const stats = await AdminService.getAdminStatistics();
+      console.log("Admin dashboard stats received:", stats);
+      
+      setPendingCount(stats.pendingCourses);
+      setAdminStats({
+        totalCourses: stats.totalCourses,
+        activeCourses: stats.activeCourses,
+        totalInstructors: stats.totalInstructors,
+        totalEnrollments: stats.totalEnrollments
+      });
+      
+      console.log("Admin dashboard state updated - Pending count:", stats.pendingCourses);
     } catch (error) {
-      console.error("Error loading pending courses count:", error);
+      console.error("Error loading admin data:", error);
     } finally {
       setLoading(false);
     }
-  };  const adminActions = [
+  };const adminActions = [
     {
       title: "Pending Course Approvals",
       description: "Review and approve new course submissions from instructors",
@@ -58,9 +74,7 @@ export default function AdminDashboard() {
       href: "/admin/settings",
       color: "border-purple-200 hover:border-purple-300 bg-purple-50 hover:bg-purple-100"
     }
-  ];
-
-  const quickStats = [
+  ];  const quickStats = [
     {
       title: "Pending Reviews",
       value: loading ? "..." : pendingCount.toString(),
@@ -70,52 +84,70 @@ export default function AdminDashboard() {
     },
     {
       title: "Active Courses",
-      value: "124",
+      value: loading ? "..." : adminStats.activeCourses.toString(),
       icon: BookOpen,
       color: "text-blue-600",
       description: "Published courses"
     },
     {
-      title: "Total Users",
-      value: "1,234",
+      title: "Total Instructors",
+      value: loading ? "..." : adminStats.totalInstructors.toString(),
       icon: Users,
       color: "text-green-600",
-      description: "Registered users"
+      description: "Registered instructors"
     },
     {
-      title: "This Month",
-      value: "45",
+      title: "Total Enrollments",
+      value: loading ? "..." : adminStats.totalEnrollments.toString(),
       icon: TrendingUp,
       color: "text-purple-600",
-      description: "New enrollments"
+      description: "Student enrollments"
     }
   ];
   return (
     <MainLayout>
-      <div className="container mx-auto py-8 px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground mt-2">
-            Manage and monitor your learning platform
-          </p>
-        </div>
-
-      {/* Quick Stats */}
+      <div className="container mx-auto py-8 px-4">        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+              <p className="text-muted-foreground mt-2">
+                Manage and monitor your learning platform
+              </p>
+            </div>
+            <Button 
+              onClick={loadAdminData} 
+              variant="outline" 
+              size="sm"
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh Data
+            </Button>
+          </div>
+        </div>      {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {quickStats.map((stat, index) => (
-          <Card key={index}>
+          <Card key={index} className={index === 0 && pendingCount > 0 ? "border-yellow-300 bg-yellow-50" : ""}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
                     {stat.title}
                   </p>
-                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className={`text-2xl font-bold ${index === 0 && pendingCount > 0 ? 'text-yellow-700' : ''}`}>
+                    {stat.value}
+                    {index === 0 && pendingCount > 0 && (
+                      <Badge variant="destructive" className="ml-2 text-xs">
+                        Action Required
+                      </Badge>
+                    )}
+                  </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {stat.description}
                   </p>
                 </div>
-                <stat.icon className={`h-8 w-8 ${stat.color}`} />
+                <stat.icon className={`h-8 w-8 ${stat.color} ${index === 0 && pendingCount > 0 ? 'animate-pulse' : ''}`} />
               </div>
             </CardContent>
           </Card>

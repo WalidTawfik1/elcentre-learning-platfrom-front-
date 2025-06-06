@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CourseService } from "@/services/course-service";
-import { CheckCircle, XCircle, Clock, User, Calendar, DollarSign, BookOpen, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, Clock, User, Calendar, DollarSign, BookOpen, AlertCircle, Eye, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { getImageUrl } from "@/config/api-config";
 
 interface PendingCourse {
   id: number;
@@ -22,7 +24,7 @@ interface PendingCourse {
   categoryId: number;
   durationInHours: number;
   createdAt: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
+  status: string; // Made flexible to handle different status formats
   rejectionReason?: string;
 }
 
@@ -35,13 +37,40 @@ export default function PendingCoursesPage() {
 
   useEffect(() => {
     loadPendingCourses();
-  }, []);
-
-  const loadPendingCourses = async () => {
+  }, []);  const loadPendingCourses = async () => {
     try {
       setLoading(true);
       const response = await CourseService.getPendingCourses();
-      setPendingCourses(response.data || response || []);
+      console.log("Raw API response:", response);
+      console.log("Response data:", response?.data);
+      console.log("Response items:", response?.items);
+      
+      // Handle different possible response structures
+      let coursesData = [];
+      if (response?.data && Array.isArray(response.data)) {
+        coursesData = response.data;
+      } else if (response?.items && Array.isArray(response.items)) {
+        coursesData = response.items;
+      } else if (Array.isArray(response)) {
+        coursesData = response;
+      }
+        // Normalize the status field - check for different possible status field names
+      coursesData = coursesData.map(course => {
+        // Log each course to debug
+        console.log("Processing course:", course);
+        const statusField = course.status || course.courseStatus || course.Status || course.CourseStatus;
+        console.log("Found status field:", statusField);
+        
+        return {
+          ...course,
+          status: statusField || 'Pending' // Default to Pending if no status found
+        };
+      });
+      
+      console.log("Processed courses data:", coursesData);
+      console.log("Courses with status:", coursesData.map(c => ({ id: c.id, title: c.title, status: c.status })));
+      
+      setPendingCourses(coursesData || []);
     } catch (error) {
       console.error("Error loading pending courses:", error);
       toast.error("Failed to load pending courses");
@@ -98,9 +127,8 @@ export default function PendingCoursesPage() {
   };
 
   const formatPrice = (price: number) => {
-    return price === 0 ? "Free" : `$${price.toFixed(2)}`;
+    return price === 0 ? "Free" : `${price.toFixed(2)} LE`;
   };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -109,22 +137,37 @@ export default function PendingCoursesPage() {
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Pending':
+  const isPendingStatus = (status: string) => {
+    const normalizedStatus = status?.toLowerCase();
+    return normalizedStatus === 'pending' || 
+           normalizedStatus === 'Pending' || 
+           normalizedStatus === 'PENDING' ||
+           !status; // Also treat empty/undefined status as pending
+  };
+
+  const isRejectedStatus = (status: string) => {
+    const normalizedStatus = status?.toLowerCase();
+    return normalizedStatus === 'rejected' || 
+           normalizedStatus === 'Rejected' || 
+           normalizedStatus === 'REJECTED';
+  };const getStatusBadge = (status: string) => {
+    const normalizedStatus = status?.toLowerCase();
+    switch (normalizedStatus) {
+      case 'pending':
         return <Badge variant="secondary" className="flex items-center gap-1"><Clock className="h-3 w-3" />Pending</Badge>;
-      case 'Approved':
+      case 'approved':
         return <Badge variant="default" className="flex items-center gap-1 bg-green-600"><CheckCircle className="h-3 w-3" />Approved</Badge>;
-      case 'Rejected':
+      case 'rejected':
         return <Badge variant="destructive" className="flex items-center gap-1"><XCircle className="h-3 w-3" />Rejected</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
-
-  const pendingCount = pendingCourses.filter(course => course.status === 'Pending').length;
-  const approvedCount = pendingCourses.filter(course => course.status === 'Approved').length;
-  const rejectedCount = pendingCourses.filter(course => course.status === 'Rejected').length;
+  const pendingCount = pendingCourses.filter(course => isPendingStatus(course.status)).length;
+  console.log("Pending count calculation:");
+  console.log("Total courses:", pendingCourses.length);
+  console.log("All course statuses:", pendingCourses.map(c => ({ id: c.id, title: c.title, status: c.status })));
+  console.log("Pending count:", pendingCount);
 
   if (loading) {
     return (
@@ -161,9 +204,8 @@ export default function PendingCoursesPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Pending Course Approvals</h1>
           <p className="text-muted-foreground mt-2">Review and manage course submissions</p>
-        
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-6">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
@@ -171,30 +213,6 @@ export default function PendingCoursesPage() {
                 <div>
                   <p className="text-sm font-medium">Pending Review</p>
                   <p className="text-2xl font-bold">{pendingCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                <div>
-                  <p className="text-sm font-medium">Approved</p>
-                  <p className="text-2xl font-bold">{approvedCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-red-600" />
-                <div>
-                  <p className="text-sm font-medium">Rejected</p>
-                  <p className="text-2xl font-bold">{rejectedCount}</p>
                 </div>
               </div>
             </CardContent>
@@ -210,41 +228,51 @@ export default function PendingCoursesPage() {
             <p className="text-muted-foreground">There are currently no courses pending approval.</p>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid gap-6">
-          {pendingCourses.map((course) => (
+      ) : (        <div className="grid gap-6">
+          {pendingCourses.map((course) => {
+            console.log(`Rendering course ${course.id}: title="${course.title}", status="${course.status}"`);
+            return (
             <Card key={course.id} className="overflow-hidden">
               <CardContent className="p-0">
-                <div className="flex gap-6 p-6">
-                  {/* Course Thumbnail */}
-                  <div className="flex-shrink-0">
-                    <img
-                      src={course.thumbnail || "/placeholder.svg"}
-                      alt={course.title}
-                      className="w-32 h-20 object-cover rounded-lg"
-                      onError={(e) => {
-                        e.currentTarget.src = "/placeholder.svg";
-                      }}
-                    />
+                <div className="flex gap-6 p-6">{/* Course Thumbnail */}
+                  <div className="flex-shrink-0 relative">
+                    <Link to={`/courses/${course.id}`} className="block hover:opacity-80 transition-opacity relative">
+                      <img
+                        src={course.thumbnail ? getImageUrl(course.thumbnail) : "/placeholder.svg"}
+                        alt={course.title}
+                        className="w-32 h-20 object-cover rounded-lg"
+                        onError={(e) => {
+                          e.currentTarget.src = "/placeholder.svg";
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors rounded-lg flex items-center justify-center opacity-0 hover:opacity-100">
+                        <Eye className="h-6 w-6 text-white" />
+                      </div>
+                    </Link>
                   </div>
                   
                   {/* Course Details */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">                    <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h3 className="text-xl font-semibold mb-1">{course.title}</h3>
+                        <Link to={`/courses/${course.id}`} className="hover:text-primary transition-colors">
+                          <h3 className="text-xl font-semibold mb-1 hover:underline">{course.title}</h3>
+                        </Link>
                         <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                           {course.description}
                         </p>
                       </div>
                       {getStatusBadge(course.status)}
                     </div>
-                    
-                    {/* Course Meta Information */}
+                      {/* Course Meta Information */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div className="flex items-center gap-1">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        <span>{course.instructorName}</span>
+                        <Link 
+                          to={`/instructors/${course.instructorId}/courses`}
+                          className="hover:text-primary transition-colors hover:underline"
+                        >
+                          {course.instructorName}
+                        </Link>
                       </div>
                       <div className="flex items-center gap-1">
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -263,9 +291,8 @@ export default function PendingCoursesPage() {
                     <div className="text-sm text-muted-foreground mt-2">
                       <span className="font-medium">Category:</span> {course.categoryName}
                     </div>
-                    
-                    {/* Rejection Reason */}
-                    {course.status === 'Rejected' && course.rejectionReason && (
+                      {/* Rejection Reason */}
+                    {isRejectedStatus(course.status) && course.rejectionReason && (
                       <Alert className="mt-4">
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
@@ -273,10 +300,8 @@ export default function PendingCoursesPage() {
                         </AlertDescription>
                       </Alert>
                     )}
-                  </div>
-                  
-                  {/* Action Buttons */}
-                  {course.status === 'Pending' && (
+                  </div>                  {/* Action Buttons */}
+                  {isPendingStatus(course.status) && (
                     <div className="flex flex-col gap-2 flex-shrink-0">
                       <Button
                         onClick={() => handleApproveCourse(course.id)}
@@ -333,13 +358,13 @@ export default function PendingCoursesPage() {
                           </div>
                         </DialogContent>
                       </Dialog>
-                    </div>
-                  )}
+                    </div>                  )}
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>      )}
+          );
+          })}
+        </div>)}
     </div>
     </MainLayout>
   );

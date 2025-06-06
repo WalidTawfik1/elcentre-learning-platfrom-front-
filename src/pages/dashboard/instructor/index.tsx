@@ -250,7 +250,7 @@ export default function InstructorDashboard() {
                       Your Courses
                     </h2>
                     <Button asChild variant="outline">
-                      <Link to="/dashboard/instructor/courses">View All Courses</Link>
+                      <Link to="/instructor/courses">View All Courses</Link>
                     </Button>
                   </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -14,12 +14,14 @@ import {
   DollarSign,
   Users,
   Calendar,
-  Tag
+  Tag,
+  GraduationCap
 } from "lucide-react";
 import { InstructorService } from "@/services/instructor-service";
 import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
+import { UserDTO } from "@/types/api";
 
 interface InstructorCourse {
   id: number;
@@ -38,35 +40,39 @@ interface InstructorCourse {
 export default function InstructorCoursesPage() {
   const { instructorId } = useParams<{ instructorId: string }>();
   const [courses, setCourses] = useState<InstructorCourse[]>([]);
+  const [instructor, setInstructor] = useState<UserDTO | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [instructorName, setInstructorName] = useState<string>("");
-
+  const [isInstructorLoading, setIsInstructorLoading] = useState(true);
   useEffect(() => {
     if (!instructorId) return;
 
-    const fetchInstructorCourses = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
+      setIsInstructorLoading(true);
+      
       try {
-        const coursesData = await InstructorService.getInstructorCourses(instructorId);
-        setCourses(coursesData);
+        // Fetch instructor details and courses in parallel
+        const [instructorData, coursesData] = await Promise.all([
+          InstructorService.getInstructorById(instructorId),
+          InstructorService.getInstructorCourses(instructorId)
+        ]);
         
-        // Set instructor name from the first course if available
-        if (coursesData.length > 0 && coursesData[0].instructorName) {
-          setInstructorName(coursesData[0].instructorName);
-        }
+        setInstructor(instructorData);
+        setCourses(coursesData);
       } catch (error) {
-        console.error("Error fetching instructor courses:", error);
+        console.error("Error fetching data:", error);
         toast({
           title: "Error",
-          description: "Failed to load instructor courses. Please try again.",
+          description: "Failed to load instructor information and courses. Please try again.",
           variant: "destructive",
         });
       } finally {
         setIsLoading(false);
+        setIsInstructorLoading(false);
       }
     };
 
-    fetchInstructorCourses();
+    fetchData();
   }, [instructorId]);
 
   const formatPrice = (price: number) => {
@@ -81,8 +87,7 @@ export default function InstructorCoursesPage() {
 
   return (
     <MainLayout>
-      <div className="container py-8">
-        {/* Header */}
+      <div className="container py-8">        {/* Header */}
         <div className="mb-8">
           <Button variant="ghost" asChild className="mb-4">
             <Link to="/instructors">
@@ -90,19 +95,127 @@ export default function InstructorCoursesPage() {
               Back to Instructors
             </Link>
           </Button>
-          
-          <div className="text-center">
-            <h1 className="text-4xl font-bold mb-4">
-              {isLoading ? (
-                <Skeleton className="h-10 w-64 mx-auto" />
-              ) : (
-                `Courses by ${instructorName || "Instructor"}`
-              )}
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              Explore all courses created by this instructor
-            </p>
-          </div>
+        </div>
+
+        {/* Instructor Information Section */}
+        <div className="mb-12">
+          {isInstructorLoading ? (
+            <Card className="overflow-hidden">
+              <CardContent className="p-8">
+                <div className="flex flex-col lg:flex-row gap-8 items-center lg:items-start">
+                  <div className="flex-shrink-0">
+                    <Skeleton className="h-32 w-32 rounded-full" />
+                  </div>
+                  <div className="flex-1 text-center lg:text-left space-y-4">
+                    <Skeleton className="h-8 w-64 mx-auto lg:mx-0" />
+                    <Skeleton className="h-6 w-32 mx-auto lg:mx-0" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-5/6 mx-auto lg:mx-0" />
+                      <Skeleton className="h-4 w-4/6 mx-auto lg:mx-0" />
+                    </div>
+                    <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
+                      <Skeleton className="h-12 w-32" />
+                      <Skeleton className="h-12 w-32" />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : instructor ? (
+            <Card className="overflow-hidden border-2 border-primary/20 shadow-lg">
+              <CardContent className="p-8">
+                <div className="flex flex-col lg:flex-row gap-8 items-center lg:items-start">
+                  {/* Instructor Avatar */}
+                  <div className="flex-shrink-0">
+                    <Avatar className="h-32 w-32 border-4 border-primary/20 shadow-lg">
+                      <AvatarImage 
+                        src={instructor.profilePicture ? getImageUrl(instructor.profilePicture) : ""} 
+                        alt={`${instructor.firstName} ${instructor.lastName}`}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/30 text-primary text-2xl font-semibold">
+                        {getInitials(`${instructor.firstName} ${instructor.lastName}`)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+
+                  {/* Instructor Details */}
+                  <div className="flex-1 text-center lg:text-left">
+                    <div className="mb-4">
+                      <h1 className="text-3xl lg:text-4xl font-bold mb-2">
+                        {instructor.firstName} {instructor.lastName}
+                      </h1>
+                      <Badge variant="secondary" className="flex items-center gap-1 w-fit mx-auto lg:mx-0">
+                        <GraduationCap className="h-3 w-3" />
+                        <span>Instructor</span>
+                      </Badge>
+                    </div>
+
+                    {/* Bio */}
+                    <div className="mb-6">
+                      {instructor.bio ? (
+                        <p className="text-lg text-muted-foreground leading-relaxed">
+                          {instructor.bio}
+                        </p>
+                      ) : (
+                        <p className="text-lg text-muted-foreground italic opacity-60">
+                          No bio available
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Course Statistics */}
+                    <div className="flex flex-wrap gap-6 justify-center lg:justify-start">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">{courses.length}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {courses.length === 1 ? 'Course' : 'Courses'}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">
+                          {courses.reduce((total, course) => total + (course.studentsCount || 0), 0)}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Students</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">
+                          {courses.length > 0 
+                            ? (courses.reduce((sum, course) => sum + (course.rating || 0), 0) / courses.filter(c => c.rating).length || 0).toFixed(1)
+                            : '0.0'
+                          }
+                        </div>
+                        <div className="text-sm text-muted-foreground">Avg Rating</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="overflow-hidden border-destructive/20">
+              <CardContent className="p-8 text-center">
+                <div className="flex justify-center mb-4">
+                  <Users className="h-16 w-16 text-muted-foreground/50" />
+                </div>
+                <h3 className="text-2xl font-medium mb-2">Instructor Not Found</h3>
+                <p className="text-muted-foreground">
+                  The requested instructor could not be found.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Courses Section Title */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-2">
+            {instructor ? `Courses by ${instructor.firstName} ${instructor.lastName}` : 'Courses'}
+          </h2>
+          <p className="text-muted-foreground">
+            Explore all courses created by this instructor
+          </p>
         </div>
 
         {/* Courses Grid */}
@@ -135,17 +248,9 @@ export default function InstructorCoursesPage() {
             <p className="text-muted-foreground">
               This instructor hasn't published any courses yet.
             </p>
-          </div>
-        ) : (
+          </div>        ) : (
           <>
-            {/* Course Count */}
-            <div className="mb-6">
-              <p className="text-lg text-muted-foreground">
-                {courses.length} {courses.length === 1 ? 'course' : 'courses'} available
-              </p>
-            </div>
-
-            {/* Courses Grid */}            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Courses Grid */}<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {courses.map((course) => (
                 <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col">
                   {/* Course Thumbnail */}
