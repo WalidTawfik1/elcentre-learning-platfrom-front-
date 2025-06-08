@@ -16,10 +16,8 @@ import { getInitials } from "@/lib/utils";
 
 export default function MyCourses() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-  const [enrollments, setEnrollments] = useState<any[]>([]);
-  const [coursesData, setCoursesData] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated } = useAuth();  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [coursesData, setCoursesData] = useState<any[]>([]);  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     // Redirect to login if not authenticated
@@ -27,14 +25,13 @@ export default function MyCourses() {
       navigate("/login?redirect=/my-courses", { replace: true });
       return;
     }
-    
-    // Fetch enrollments
-    const fetchEnrollments = async () => {
+
+  // Function to fetch enrollments and recalculate progress
+  const fetchEnrollments = async (shouldRecalculate = true) => {
       setIsLoading(true);
       try {
         const enrollmentsData = await EnrollmentService.getStudentEnrollments();
-                
-        if (Array.isArray(enrollmentsData) && enrollmentsData.length > 0) {
+                  if (Array.isArray(enrollmentsData) && enrollmentsData.length > 0) {
           setEnrollments(enrollmentsData);
           
           // Fetch detailed course data for each enrollment
@@ -42,11 +39,23 @@ export default function MyCourses() {
             enrollmentsData.map(async (enrollment) => {
               try {
                 const courseData = await CourseService.getCourseById(enrollment.courseId);
+                
+                // Recalculate progress if requested
+                let updatedProgress = enrollment.progress || 0;
+                if (shouldRecalculate && enrollment.id) {
+                  try {
+                    const result = await EnrollmentService.recalculateProgress(enrollment.id);
+                    updatedProgress = result.progress;
+                  } catch (error) {
+                    console.error(`Error recalculating progress for enrollment ${enrollment.id}:`, error);
+                  }
+                }
+                
                 return {
                   ...courseData,
                   enrollmentId: enrollment.id,
                   enrollmentStatus: enrollment.status,
-                  progress: enrollment.progress || 0
+                  progress: updatedProgress
                 };
               } catch (error) {
                 console.error(`Error fetching course ${enrollment.courseId}:`, error);
@@ -80,16 +89,14 @@ export default function MyCourses() {
       } finally {
         setIsLoading(false);
       }
-    };
-    
+    };    
     fetchEnrollments();
   }, [isAuthenticated, navigate]);
 
   return (
     <MainLayout>
       <div className="container py-8">
-        <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 mb-8">
-          <div>
+        <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 mb-8">          <div>
             <h1 className="text-3xl font-bold mb-2">My Courses</h1>
             <p className="text-muted-foreground">Continue learning and track your progress</p>
           </div>

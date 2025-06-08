@@ -573,6 +573,60 @@ export const API = {
     
     update: (data: UserDTO) => 
       apiRequest("/Account/edit-profile", "PUT", data),
+  },  // Quiz endpoints
+  quiz: {
+    getAllCourseQuizzes: (courseId: number) =>
+      apiRequest(`/Quiz/get-all-course-quizzes?courseId=${courseId}`, 'GET', undefined, true),
+      getQuizById: (id: number) =>
+      apiRequest(`/Quiz/get-quiz-by-id/${id}`, 'GET', undefined, true),
+        addQuiz: (data: {
+      Question: string;
+      OptionA: string;
+      OptionB: string;
+      OptionC: string;
+      OptionD: string;
+      CorrectAnswer: string;
+      Explanation: string;
+      CourseId: number;
+      LessonId: number;
+    }) => {
+      const formData = createFormData(data);
+      return apiRequest('/Quiz/add-quiz', 'POST', formData, true, true);
+    },
+
+    updateQuiz: (data: {
+      Id: number;
+      Question: string;
+      OptionA: string;
+      OptionB: string;
+      OptionC: string;
+      OptionD: string;
+      CorrectAnswer: string;
+      Explanation: string;
+      CourseId: number;
+      LessonId: number;
+    }) => {
+      const formData = createFormData(data);
+      return apiRequest('/Quiz/update-quiz', 'PUT', formData, true, true);
+    },
+    
+    deleteQuiz: (quizId: number) =>
+      apiRequest(`/Quiz/delete-quiz/${quizId}`, 'DELETE', undefined, true),
+  },
+  
+  // Student Quiz endpoints
+  studentQuiz: {
+    submitAnswer: (data: {
+      QuizId: number;
+      SelectedAnswer: 'A' | 'B' | 'C' | 'D';
+    }) =>
+      apiRequest('/StudentQuiz/submit-quiz-answer', 'POST', data, true),
+    
+    getTotalScore: (lessonId: number) =>
+      apiRequest(`/StudentQuiz/get-total-score/${lessonId}`, 'GET', undefined, true),
+    
+    getStudentQuizzesByLesson: (lessonId: number) =>
+      apiRequest(`/StudentQuiz/get-student-quizzes-by-lesson/${lessonId}`, 'GET', undefined, true),
   }
 };
 

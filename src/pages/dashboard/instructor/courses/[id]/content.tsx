@@ -47,24 +47,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { CourseService } from "@/services/course-service";
 import { ModuleService } from "@/services/module-service";
 import { LessonService } from "@/services/lesson-service";
 import { CourseModule, Lesson } from "@/types/api";
+import { QuizManagement } from "@/components/quiz/quiz-management";
 import { 
   ChevronLeft, 
   PlusCircle, 
   Edit, 
   Trash2, 
-  Video, 
+  Video,
   FileText,
   Loader2,
   MoveUp,
   MoveDown,
   Play,
-  BookOpen
+  BookOpen,
+  HelpCircle
 } from "lucide-react";
 
 export default function CourseContentManagement() {
@@ -499,7 +507,6 @@ export default function CourseContentManagement() {
       </MainLayout>
     );
   }
-
   return (
     <MainLayout>
       <div className="container py-8">
@@ -514,14 +521,27 @@ export default function CourseContentManagement() {
           <h1 className="text-3xl font-bold">{course?.title || "Course"}: Content Management</h1>
         </div>
 
-        <div className="flex justify-between items-center mb-6">
-          <p className="text-muted-foreground">
-            Add and manage modules and lessons for your course.
-          </p>
-          <Button onClick={handleAddModule}>
-            <PlusCircle className="h-4 w-4 mr-2" /> Add Module
-          </Button>
-        </div>
+        <Tabs defaultValue="modules" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="modules" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Modules & Lessons
+            </TabsTrigger>
+            <TabsTrigger value="quizzes" className="flex items-center gap-2">
+              <HelpCircle className="h-4 w-4" />
+              Quizzes
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="modules" className="mt-6">
+            <div className="flex justify-between items-center mb-6">
+              <p className="text-muted-foreground">
+                Add and manage modules and lessons for your course.
+              </p>
+              <Button onClick={handleAddModule}>
+                <PlusCircle className="h-4 w-4 mr-2" /> Add Module
+              </Button>
+            </div>
 
         {/* Modules List */}
         {modules.length === 0 ? (
@@ -717,9 +737,21 @@ export default function CourseContentManagement() {
                   </div>
                 </AccordionContent>
               </AccordionItem>
-            ))}
-          </Accordion>
+            ))}          </Accordion>
         )}
+          </TabsContent>          <TabsContent value="quizzes" className="mt-6">
+            <QuizManagement 
+              courseId={parseInt(id!)}
+              lessonTitle={course?.title || "Course"}
+              lessons={modules.flatMap(module => 
+                (module as any).lessons?.map((lesson: Lesson) => ({
+                  id: lesson.id,
+                  title: lesson.title
+                })) || []
+              )}
+            />
+          </TabsContent>
+        </Tabs>
 
         {/* Module Dialog */}
         <Dialog open={moduleDialogOpen} onOpenChange={setModuleDialogOpen}>

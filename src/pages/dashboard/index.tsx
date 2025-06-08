@@ -93,17 +93,28 @@ export default function StudentDashboard() {
           
           if (Array.isArray(enrollmentsData) && enrollmentsData.length > 0) {
             setEnrollments(enrollmentsData);
-            
-            // Fetch detailed course data for current enrollments
+              // Fetch detailed course data for current enrollments
             const coursesDetailedData = await Promise.all(
               enrollmentsData.map(async (enrollment) => {
                 try {
                   const courseData = await CourseService.getCourseById(enrollment.courseId);
+                  
+                  // Recalculate progress for accurate display
+                  let updatedProgress = enrollment.progress || 0;
+                  if (enrollment.id) {
+                    try {
+                      const result = await EnrollmentService.recalculateProgress(enrollment.id);
+                      updatedProgress = result.progress;
+                    } catch (error) {
+                      console.error(`Error recalculating progress for enrollment ${enrollment.id}:`, error);
+                    }
+                  }
+                  
                   return {
                     ...courseData,
                     enrollmentId: enrollment.id,
                     enrollmentStatus: enrollment.status,
-                    progress: enrollment.progress || 0
+                    progress: updatedProgress
                   };
                 } catch (error) {
                   console.error(`Error fetching course ${enrollment.courseId}:`, error);

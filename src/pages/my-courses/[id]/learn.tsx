@@ -27,10 +27,13 @@ export default function CourseLearn() {
   const [modules, setModules] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeLesson, setActiveLesson] = useState<any>(null);
-  const [completedLessons, setCompletedLessons] = useState<number[]>([]);  const [courseProgress, setCourseProgress] = useState(0);  const [reviews, setReviews] = useState<any[]>([]);
+  const [completedLessons, setCompletedLessons] = useState<number[]>([]);
+  const [courseProgress, setCourseProgress] = useState(0);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [instructor, setInstructor] = useState<any>(null);
   const [isLoadingInstructor, setIsLoadingInstructor] = useState(false);
+  const [enrollmentId, setEnrollmentId] = useState<number | null>(null);
   
   useEffect(() => {
     // Redirect to login if user is not authenticated
@@ -43,10 +46,20 @@ export default function CourseLearn() {
       if (!id) return;
       
       setIsLoading(true);
-      try {
-        // Fetch course data
+      try {        // Fetch course data
         const courseData = await CourseService.getCourseById(id);
         setCourse(courseData);
+        
+        // Get user's enrollment ID for this course
+        try {
+          const enrollments = await EnrollmentService.getStudentEnrollments();
+          const currentEnrollment = enrollments.find((enrollment: any) => enrollment.courseId === Number(id));
+          if (currentEnrollment) {
+            setEnrollmentId(currentEnrollment.id);
+          }
+        } catch (error) {
+          console.error("Error fetching enrollment ID:", error);
+        }
         
         // Get modules and lessons for this course
         const modulesData = await CourseService.getModules(id);
@@ -148,8 +161,7 @@ export default function CourseLearn() {
       setIsLoadingReviews(false);
     }
   };
-  
-  // Handle lesson completion
+    // Handle lesson completion
   const handleCompleteLesson = async (lessonId: number) => {
     if (completedLessons.includes(lessonId)) {
       // Lesson already completed
@@ -162,16 +174,38 @@ export default function CourseLearn() {
       // Update the completed lessons list
       setCompletedLessons((prev) => [...prev, lessonId]);
       
-      // Recalculate progress
-      if (modules.length > 0) {
-        const totalLessons = modules.reduce(
-          (total, module) => total + (module.lessons?.length || 0),
-          0
-        );
-        
-        if (totalLessons > 0) {
-          const progress = Math.round(((completedLessons.length + 1) / totalLessons) * 100);
-          setCourseProgress(progress);
+      // Recalculate progress using the backend endpoint if we have the enrollment ID
+      if (enrollmentId) {
+        try {
+          const result = await EnrollmentService.recalculateProgress(enrollmentId);
+          setCourseProgress(result.progress);
+        } catch (error) {
+          console.error("Error recalculating progress:", error);
+          // Fallback to local calculation if API call fails
+          if (modules.length > 0) {
+            const totalLessons = modules.reduce(
+              (total, module) => total + (module.lessons?.length || 0),
+              0
+            );
+            
+            if (totalLessons > 0) {
+              const progress = Math.round(((completedLessons.length + 1) / totalLessons) * 100);
+              setCourseProgress(progress);
+            }
+          }
+        }
+      } else {
+        // Fallback to local calculation if no enrollment ID
+        if (modules.length > 0) {
+          const totalLessons = modules.reduce(
+            (total, module) => total + (module.lessons?.length || 0),
+            0
+          );
+          
+          if (totalLessons > 0) {
+            const progress = Math.round(((completedLessons.length + 1) / totalLessons) * 100);
+            setCourseProgress(progress);
+          }
         }
       }
       

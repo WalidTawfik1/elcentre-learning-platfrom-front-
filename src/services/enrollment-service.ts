@@ -40,12 +40,17 @@ export const EnrollmentService = {
   isLessonCompleted: async (lessonId: number): Promise<boolean> => {
     return apiRequest<boolean>(`/Enrollment/is-lesson-completed/${lessonId}`);
   },
-  
-  getCompletedLessons: async (courseId: number): Promise<number[]> => {
+    getCompletedLessons: async (courseId: number): Promise<number[]> => {
     return apiRequest<number[]>(`/Enrollment/completed-lessons/${courseId}`);
   },
   
   getStudentsCount: async (courseId: number): Promise<number> => {
     return apiRequest<number>(`/Enrollment/students-count/${courseId}`);
+  },
+
+  recalculateProgress: async (enrollmentId: number): Promise<{ progress: number }> => {
+    return apiRequest<{ progress: number }>(`/Enrollment/recalculate-progress/${enrollmentId}`, {
+      method: "POST",
+    });
   },
 };

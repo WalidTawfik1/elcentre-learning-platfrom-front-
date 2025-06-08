@@ -120,3 +120,43 @@ export interface PaginatedResponse<T> {
   pageSize: number;
   totalPages: number;
 }
+
+// Quiz related types
+export interface Quiz {
+  id?: number; // Optional for creation, required for updates
+  question: string;
+  optionA: string;
+  optionB: string;
+  optionC?: string;
+  optionD?: string;
+  correctAnswer: 'A' | 'B' | 'C' | 'D';
+  explanation?: string;
+  courseId: number;
+  lessonId: number;
+}
+
+export interface StudentQuizAnswer {
+  id: number;
+  quizId: number;
+  studentId: string;
+  selectedAnswer: 'A' | 'B' | 'C' | 'D';
+  isCorrect: boolean;
+  answeredAt: string;
+}
+
+export interface QuizScore {
+  lessonId: number;
+  totalScore: number;
+  totalQuizzes: number;
+  correctAnswers: number;
+  percentage: number;
+}
+
+export interface StudentQuizProgress {
+  quizId: number;
+  quizTitle: string;
+  selectedAnswer: 'A' | 'B' | 'C' | 'D';
+  correctAnswer: 'A' | 'B' | 'C' | 'D';
+  isCorrect: boolean;
+  answeredAt: string;
+}
