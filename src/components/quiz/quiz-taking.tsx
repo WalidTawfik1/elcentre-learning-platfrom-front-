@@ -19,19 +19,32 @@ interface QuizTakingProps {
 export function QuizTaking({ lessonId, courseId, onQuizComplete }: QuizTakingProps) {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<'A' | 'B' | 'C' | 'D' | null>(null);
+  const [localAnswers, setLocalAnswers] = useState<Record<number, 'A' | 'B' | 'C' | 'D'>>({});
   const [answeredQuizzes, setAnsweredQuizzes] = useState<StudentQuizProgress[]>([]);
   const [score, setScore] = useState<QuizScore | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);  const [quizCompleted, setQuizCompleted] = useState(false);
   
   // Debug state to show API responses
   const [debugInfo, setDebugInfo] = useState<any>(null);
-
   useEffect(() => {
     loadQuizzes();
-  }, [lessonId, courseId]);  const loadQuizzes = async () => {
+  }, [lessonId, courseId]);
+
+  // Load saved answers from localStorage on component mount
+  useEffect(() => {
+    const savedAnswers = localStorage.getItem(`quiz-answers-${lessonId}`);
+    if (savedAnswers) {
+      setLocalAnswers(JSON.parse(savedAnswers));
+    }
+  }, [lessonId]);  // Save answers to localStorage whenever they change
+  useEffect(() => {
+    if (Object.keys(localAnswers).length > 0) {
+      localStorage.setItem(`quiz-answers-${lessonId}`, JSON.stringify(localAnswers));
+    }
+  }, [localAnswers, lessonId]);
+
+  const loadQuizzes = async () => {
     setIsLoading(true);
     try {
       console.log('=== LOADING QUIZ DATA ===');
@@ -84,77 +97,104 @@ export function QuizTaking({ lessonId, courseId, onQuizComplete }: QuizTakingPro
     } finally {
       setIsLoading(false);
     }
+  };  const handleAnswerChange = (quizId: number, answer: 'A' | 'B' | 'C' | 'D') => {
+    setLocalAnswers(prev => ({
+      ...prev,
+      [quizId]: answer
+    }));
   };
-  const handleAnswerSubmit = async () => {
-    if (!selectedAnswer || currentQuizIndex >= quizzes.length) return;
 
-    setIsSubmitting(true);    try {
-      const currentQuiz = quizzes[currentQuizIndex];
-      
-      const result = await QuizService.submitQuizAnswer(currentQuiz.id, selectedAnswer);
-      
-      // Convert score to boolean (1 = correct, 0 = incorrect)
-      const isCorrect = result.score === 1;
-      
-      // Update answered quizzes
-      const newAnswer: StudentQuizProgress = {
-        quizId: currentQuiz.id,
-        quizTitle: currentQuiz.question,
-        selectedAnswer,
-        correctAnswer: currentQuiz.correctAnswer,
-        isCorrect: isCorrect,
-        answeredAt: result.takenAt || new Date().toISOString()
-      };
-      
-      setAnsweredQuizzes(prev => [...prev, newAnswer]);
+  const handleSubmitAllAnswers = async () => {
+    if (Object.keys(localAnswers).length === 0) {
+      toast({
+        title: 'No Answers',
+        description: 'Please answer at least one question before submitting.',
+        variant: 'destructive'
+      });
+      return;
+    }
 
-      // Show result feedback
-      if (isCorrect) {
-        toast({
-          title: 'Correct!',
-          description: 'Well done! That\'s the right answer.',
-        });
-      } else {
-        toast({
-          title: 'Incorrect',
-          description: `The correct answer was ${currentQuiz.correctAnswer}.`,
-          variant: 'destructive'
-        });
-      }
-
-      // Move to next quiz or complete
-      if (currentQuizIndex < quizzes.length - 1) {
-        setCurrentQuizIndex(prev => prev + 1);
-        setSelectedAnswer(null);
-      } else {
-        // All quizzes completed
-        setQuizCompleted(true);
-        const finalScore = await QuizService.getTotalScore(lessonId);
-        setScore(finalScore);
+    setIsSubmitting(true);
+    const submittedAnswers: StudentQuizProgress[] = [];
+    
+    try {      // Submit each answer
+      for (const [quizIdStr, answer] of Object.entries(localAnswers)) {
+        const quizId = parseInt(quizIdStr);
+        const quiz = quizzes.find(q => q.id === quizId);
         
-        if (onQuizComplete) {
-          onQuizComplete(finalScore);
+        if (quiz) {
+          const result = await QuizService.submitQuizAnswer(quizId, answer);
+          
+          // Debug logging to understand the response
+          console.log('Quiz submission result:', result);
+          console.log('Selected answer:', answer);
+          console.log('Correct answer:', quiz.correctAnswer);
+          console.log('Result score:', result.score);
+          
+          // Check if the answer is correct by comparing the selected answer with the correct answer
+          const isCorrect = answer === quiz.correctAnswer;
+          
+          console.log('Is correct (by comparison):', isCorrect);
+          console.log('Is correct (by score):', result.score === 1);
+          
+          submittedAnswers.push({
+            quizId,
+            quizTitle: quiz.question,
+            selectedAnswer: answer,
+            correctAnswer: quiz.correctAnswer,
+            isCorrect,
+            answeredAt: result.takenAt || new Date().toISOString()
+          });
         }
       }
+
+      // Update state with all submitted answers
+      setAnsweredQuizzes(submittedAnswers);
+      setQuizCompleted(true);
+      
+      // Get final score
+      const finalScore = await QuizService.getTotalScore(lessonId);
+      setScore(finalScore);
+      
+      // Clear local storage
+      localStorage.removeItem(`quiz-answers-${lessonId}`);
+      
+      // Show success message
+      toast({
+        title: 'Quiz Submitted!',
+        description: `You answered ${submittedAnswers.length} questions. Results are now available.`,
+      });
+      
+      if (onQuizComplete) {
+        onQuizComplete(finalScore);
+      }
     } catch (error) {
-      console.error('Error submitting answer:', error);
+      console.error('Error submitting quiz answers:', error);
       toast({
         title: 'Error',
-        description: 'Failed to submit answer. Please try again.',
+        description: 'Failed to submit quiz answers. Please try again.',
         variant: 'destructive'
-      });    } finally {
+      });
+    } finally {
       setIsSubmitting(false);
     }
   };
-  // Note: Quiz retaking has been disabled on the backend
 
+  const handlePreviousQuestion = () => {
+    if (currentQuizIndex > 0) {
+      setCurrentQuizIndex(prev => prev - 1);
+    }
+  };
+
+  const handleNextQuestion = () => {
+    if (currentQuizIndex < quizzes.length - 1) {
+      setCurrentQuizIndex(prev => prev + 1);
+    }
+  };
+  // Note: Quiz retaking has been disabled on the backend
   const getAnswerLabel = (option: 'A' | 'B' | 'C' | 'D', text: string | undefined) => {
     if (!text) return null;
     return `${option}. ${text}`;
-  };
-
-  const isQuizAnswered = (quizId: number) => {
-    return answeredQuizzes.some(answered => answered.quizId === quizId);
   };
 
   if (isLoading) {
@@ -189,8 +229,7 @@ export function QuizTaking({ lessonId, courseId, onQuizComplete }: QuizTakingPro
           )}
         </CardContent>
       </Card>
-    );
-  }
+    );  }
 
   if (quizCompleted) {
     return (
@@ -363,74 +402,115 @@ export function QuizTaking({ lessonId, courseId, onQuizComplete }: QuizTakingPro
         </CardContent>
       </Card>
     );
-  }
-
-  const currentQuiz = quizzes[currentQuizIndex];
-  const progress = ((currentQuizIndex + answeredQuizzes.length) / quizzes.length) * 100;
+  }  const currentQuiz = quizzes[currentQuizIndex];
+  const answeredCount = Object.keys(localAnswers).length;
+  const questionsProgress = ((currentQuizIndex + 1) / quizzes.length) * 100;
+  const currentAnswer = localAnswers[currentQuiz?.id] || null;
 
   return (
     <Card>
       <CardHeader>        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            {currentQuiz.question}
+          <CardTitle>
+            Quiz Progress
           </CardTitle>
           <Badge variant="outline">
             Question {currentQuizIndex + 1} of {quizzes.length}
           </Badge>
+        </div>        <div className="space-y-2">
+          <Progress value={questionsProgress} className="w-full" />
+          <div className="flex justify-between text-sm text-muted-foreground">
+            <span>Progress: {currentQuizIndex + 1}/{quizzes.length} questions</span>
+            <span>Answered: {answeredCount}/{quizzes.length}</span>
+          </div>
         </div>
-        <Progress value={progress} className="w-full" />
       </CardHeader>
       
       <CardContent className="space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-4">{currentQuiz.question}</h3>
-          
-          <RadioGroup value={selectedAnswer || ''} onValueChange={(value) => setSelectedAnswer(value as 'A' | 'B' | 'C' | 'D')}>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="A" id="option-a" />
-                <Label htmlFor="option-a" className="flex-1 cursor-pointer">
-                  {getAnswerLabel('A', currentQuiz.optionA)}
-                </Label>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="B" id="option-b" />
-                <Label htmlFor="option-b" className="flex-1 cursor-pointer">
-                  {getAnswerLabel('B', currentQuiz.optionB)}
-                </Label>
-              </div>
-              
-              {currentQuiz.optionC && (
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="C" id="option-c" />
-                  <Label htmlFor="option-c" className="flex-1 cursor-pointer">
-                    {getAnswerLabel('C', currentQuiz.optionC)}
-                  </Label>
-                </div>
-              )}
-              
-              {currentQuiz.optionD && (
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="D" id="option-d" />
-                  <Label htmlFor="option-d" className="flex-1 cursor-pointer">
-                    {getAnswerLabel('D', currentQuiz.optionD)}
-                  </Label>
-                </div>
-              )}
-            </div>
-          </RadioGroup>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-lg font-semibold mb-2 text-blue-900">
+            Question {currentQuizIndex + 1}
+          </h3>
+          <p className="text-blue-800">{currentQuiz.question}</p>
         </div>
+        
+        <RadioGroup 
+          value={currentAnswer || ''} 
+          onValueChange={(value) => handleAnswerChange(currentQuiz.id, value as 'A' | 'B' | 'C' | 'D')}
+        >
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="A" id="option-a" />
+              <Label htmlFor="option-a" className="flex-1 cursor-pointer">
+                {getAnswerLabel('A', currentQuiz.optionA)}
+              </Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="B" id="option-b" />
+              <Label htmlFor="option-b" className="flex-1 cursor-pointer">
+                {getAnswerLabel('B', currentQuiz.optionB)}
+              </Label>
+            </div>
+            
+            {currentQuiz.optionC && (
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="C" id="option-c" />
+                <Label htmlFor="option-c" className="flex-1 cursor-pointer">
+                  {getAnswerLabel('C', currentQuiz.optionC)}
+                </Label>
+              </div>
+            )}
+            
+            {currentQuiz.optionD && (
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="D" id="option-d" />
+                <Label htmlFor="option-d" className="flex-1 cursor-pointer">
+                  {getAnswerLabel('D', currentQuiz.optionD)}
+                </Label>
+              </div>
+            )}
+          </div>
+        </RadioGroup>
+
+        {/* Answer status indicator */}
+        {currentAnswer && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <span className="text-sm text-green-800">
+                Answer saved: Option {currentAnswer}
+              </span>
+            </div>
+          </div>
+        )}
       </CardContent>
       
-      <CardFooter>
+      <CardFooter className="flex justify-between">
+        <div className="flex gap-2">
+          <Button 
+            onClick={handlePreviousQuestion}
+            disabled={currentQuizIndex === 0}
+            variant="outline"
+            size="sm"
+          >
+            ← Previous
+          </Button>
+          <Button 
+            onClick={handleNextQuestion}
+            disabled={currentQuizIndex === quizzes.length - 1}
+            variant="outline"
+            size="sm"
+          >
+            Next →
+          </Button>
+        </div>
+        
         <Button 
-          onClick={handleAnswerSubmit}
-          disabled={!selectedAnswer || isSubmitting || isQuizAnswered(currentQuiz.id)}
-          className="w-full"
+          onClick={handleSubmitAllAnswers}
+          disabled={isSubmitting || answeredCount === 0}
+          className="bg-blue-600 hover:bg-blue-700"
         >
-          {isSubmitting ? 'Submitting...' : 'Submit Answer'}
+          {isSubmitting ? 'Submitting...' : `Submit Quiz (${answeredCount}/${quizzes.length})`}
         </Button>
       </CardFooter>
     </Card>
