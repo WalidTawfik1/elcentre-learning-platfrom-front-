@@ -79,12 +79,12 @@ export function QuizManagement({ lessonId, courseId, lessonTitle, onQuizChange, 
   const [currentQuizId, setCurrentQuizId] = useState<number | null>(null);
   const [formData, setFormData] = useState<QuizFormData>(initialFormData);
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedLessonId, setSelectedLessonId] = useState<number | undefined>(lessonId);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLessonId, setSelectedLessonId] = useState<number | undefined>(lessonId);  const [searchQuery, setSearchQuery] = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('quizzes');
-  const [previewQuiz, setPreviewQuiz] = useState<Quiz | null>(null);
-  const [stats, setStats] = useState<QuizStats | null>(null);
+  const [previewQuiz, setPreviewQuiz] = useState<Quiz | null>(null);  const [stats, setStats] = useState<QuizStats | null>(null);
+  const [lessonSearchQuery, setLessonSearchQuery] = useState('');
+  const [searchInputRef, setSearchInputRef] = useState<HTMLInputElement | null>(null);
   useEffect(() => {
     if (selectedLessonId) {
       loadQuizzes();
@@ -111,12 +111,23 @@ export function QuizManagement({ lessonId, courseId, lessonTitle, onQuizChange, 
     
     setFilteredQuizzes(filtered);
   }, [quizzes, searchQuery, filterDifficulty]);
-
   useEffect(() => {
     if (quizzes.length > 0) {
       calculateStats();
     }
-  }, [quizzes]);  const calculateStats = () => {
+  }, [quizzes]);
+  // Filter lessons based on search query
+  const filteredLessons = lessons?.filter(lesson => 
+    lesson.title.toLowerCase().includes(lessonSearchQuery.toLowerCase())
+  ) || [];
+
+  // Reset lesson search when dropdown closes or selection changes
+  const handleLessonChange = (value: string) => {
+    setSelectedLessonId(value === "all" ? undefined : parseInt(value));
+    setLessonSearchQuery(''); // Clear search when selection is made
+  };
+
+  const calculateStats = () => {
     if (quizzes.length === 0) return;
     
     // Calculate real difficulty distribution
@@ -622,34 +633,115 @@ export function QuizManagement({ lessonId, courseId, lessonTitle, onQuizChange, 
             </DialogContent>
           </Dialog>
         </div>
-      </div>
-
-      {/* Lesson Selector with Enhanced Design */}
+      </div>      {/* Lesson Selector with Enhanced Design */}
       {lessons && lessons.length > 0 && (
         <Card className="border-0 shadow-md">
           <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="space-y-4">              {/* Filter by Lesson Header */}
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-muted-foreground" />
-                <Label htmlFor="lesson-select" className="text-sm font-medium">
+                <Label className="text-sm font-medium">
                   Filter by Lesson:
                 </Label>
               </div>
+                {/* Lesson Selection Dropdown with Search */}
               <Select
                 value={selectedLessonId?.toString() || "all"}
-                onValueChange={(value) => setSelectedLessonId(value === "all" ? undefined : parseInt(value))}
+                onValueChange={handleLessonChange}
+                onOpenChange={(open) => {
+                  // Clear search when dropdown closes
+                  if (!open) {
+                    setLessonSearchQuery('');
+                  }
+                }}
               >
-                <SelectTrigger className="w-full sm:w-[350px]">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a lesson to manage quizzes" />
-                </SelectTrigger>
-                <SelectContent>
+                </SelectTrigger>                <SelectContent>                  {/* Search Input inside dropdown */}
+                  <div 
+                    className="flex items-center border-b px-3 pb-2 mb-2"
+                    data-search-input
+                    onPointerDown={(e) => {
+                      // Prevent dropdown from closing when interacting with search
+                      e.stopPropagation();
+                    }}
+                  >
+                    <Search className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />                    <input
+                      ref={(input) => setSearchInputRef(input)}
+                      type="text"
+                      placeholder="Search lessons..."
+                      value={lessonSearchQuery}                      onChange={(e) => {
+                        setLessonSearchQuery(e.target.value);
+                        // Maintain focus when filtering results
+                        setTimeout(() => {
+                          if (searchInputRef && document.activeElement !== searchInputRef) {
+                            searchInputRef.focus();
+                          }
+                        }, 0);
+                      }}
+                      className="flex-1 outline-none bg-transparent text-sm placeholder:text-muted-foreground"
+                      onKeyDown={(e) => {
+                        // Prevent any keyboard events from bubbling up to the Select component
+                        e.stopPropagation();
+                        // Prevent default behavior for all navigation keys
+                        if (['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Space'].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                        // Clear search on Escape
+                        if (e.key === 'Escape') {
+                          setLessonSearchQuery('');
+                          e.preventDefault();
+                        }
+                      }}
+                      onKeyUp={(e) => {
+                        // Additional prevention on key up
+                        e.stopPropagation();
+                      }}
+                      onInput={(e) => {
+                        // Prevent input events from bubbling
+                        e.stopPropagation();
+                      }}
+                      onFocus={(e) => {
+                        // Prevent focus events from bubbling up
+                        e.stopPropagation();
+                      }}                      onBlur={(e) => {
+                        // If blur is due to no search results, refocus immediately
+                        if (lessonSearchQuery && filteredLessons.length === 0) {
+                          setTimeout(() => {
+                            if (e.currentTarget) {
+                              e.currentTarget.focus();
+                            }
+                          }, 10);
+                        }
+                        e.stopPropagation();
+                      }}
+                      onMouseDown={(e) => {
+                        // Prevent mouse events from closing the dropdown
+                        e.stopPropagation();
+                      }}
+                      onMouseUp={(e) => {
+                        // Prevent mouse up events from bubbling
+                        e.stopPropagation();
+                      }}
+                      onClick={(e) => {
+                        // Prevent click events from bubbling up
+                        e.stopPropagation();
+                        // Force focus to stay on input
+                        e.currentTarget.focus();
+                      }}                      autoFocus={false}
+                      autoComplete="off"
+                      spellCheck="false"
+                      tabIndex={-1}
+                    />
+                  </div>
+                  
                   <SelectItem value="all">
                     <div className="flex items-center gap-2">
                       <BookOpen className="h-4 w-4" />
                       All Course Quizzes
                     </div>
                   </SelectItem>
-                  {lessons.map((lesson) => (
+                  {filteredLessons.map((lesson) => (
                     <SelectItem key={lesson.id} value={lesson.id.toString()}>
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-blue-500"></div>
@@ -657,7 +749,31 @@ export function QuizManagement({ lessonId, courseId, lessonTitle, onQuizChange, 
                       </div>
                     </SelectItem>
                   ))}
-                </SelectContent>
+                    {/* No results message */}
+                  {lessonSearchQuery && filteredLessons.length === 0 && (
+                    <div 
+                      className="px-3 py-2 text-sm text-muted-foreground text-center"
+                      onMouseDown={(e) => {
+                        // Prevent this div from capturing mouse events
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
+                      onClick={(e) => {
+                        // Prevent click events and redirect focus back to search
+                        e.stopPropagation();
+                        e.preventDefault();
+                        const searchInput = document.querySelector('[data-search-input] input') as HTMLInputElement;
+                        if (searchInput) {
+                          searchInput.focus();
+                        }
+                      }}
+                    >
+                      No lessons found matching "{lessonSearchQuery}"
+                      <div className="text-xs mt-1 text-muted-foreground/60">
+                        Continue typing or clear search to see all lessons
+                      </div>
+                    </div>
+                  )}                </SelectContent>
               </Select>
             </div>
           </CardContent>
