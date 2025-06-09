@@ -6,11 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { StarIcon, Play, Clock, Book, Video, CheckCircle, FileText, ArrowLeft, Check } from "lucide-react";
+import { StarIcon, Play, Clock, Book, Video, CheckCircle, FileText, ArrowLeft, Check, HelpCircle, Trophy } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { EnrollmentService } from "@/services/enrollment-service";
 import { InstructorService } from "@/services/instructor-service";
+import { QuizTaking } from "@/components/quiz/quiz-taking";
+import { QuizService } from "@/services/quiz-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
@@ -30,10 +33,11 @@ export default function CourseLearn() {
   const [completedLessons, setCompletedLessons] = useState<number[]>([]);
   const [courseProgress, setCourseProgress] = useState(0);
   const [reviews, setReviews] = useState<any[]>([]);
-  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
-  const [instructor, setInstructor] = useState<any>(null);
-  const [isLoadingInstructor, setIsLoadingInstructor] = useState(false);
-  const [enrollmentId, setEnrollmentId] = useState<number | null>(null);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);  const [instructor, setInstructor] = useState<any>(null);
+  const [isLoadingInstructor, setIsLoadingInstructor] = useState(false);  const [enrollmentId, setEnrollmentId] = useState<number | null>(null);
+  const [showQuizzes, setShowQuizzes] = useState(false);
+  const [quizScore, setQuizScore] = useState<any>(null);
+  const [courseQuizzes, setCourseQuizzes] = useState<any[]>([]);
   
   useEffect(() => {
     // Redirect to login if user is not authenticated
@@ -60,9 +64,23 @@ export default function CourseLearn() {
         } catch (error) {
           console.error("Error fetching enrollment ID:", error);
         }
-        
-        // Get modules and lessons for this course
+          // Get modules and lessons for this course
         const modulesData = await CourseService.getModules(id);
+          // Fetch course quizzes
+        try {
+          console.log('Fetching quizzes for course ID:', Number(id));
+          const quizzesData = await QuizService.getAllCourseQuizzes(Number(id));
+          console.log('Quizzes response:', quizzesData);
+          setCourseQuizzes(Array.isArray(quizzesData) ? quizzesData : []);
+        } catch (error) {
+          console.error("Error fetching course quizzes:", error);
+          setCourseQuizzes([]);
+          toast({
+            title: "Warning",
+            description: "Could not load quizzes for this course.",
+            variant: "destructive",
+          });
+        }
         
         // If we have modules, fetch lessons for each module
         if (modulesData && Array.isArray(modulesData)) {
@@ -244,13 +262,36 @@ export default function CourseLearn() {
     
     return `${hours}h ${minutes}m`;
   };
-
   // Helper function to count total lessons
   const getTotalLessons = () => {
     if (!modules || modules.length === 0) return 0;
     return modules.reduce((total, module) => {
       return total + (module.lessons ? module.lessons.length : 0);
     }, 0);
+  };
+  // Helper function to check if a lesson has quizzes
+  const lessonHasQuizzes = (lessonId: number) => {
+    return courseQuizzes.some(quiz => quiz.lessonId === lessonId);
+  };
+
+  // Handle quiz completion and update progress
+  const handleQuizComplete = (score: any) => {
+    setQuizScore(score);
+    toast({
+      title: "Quiz Completed!",
+      description: `You scored ${score.correctAnswers} out of ${score.totalQuizzes} questions.`,
+    });
+
+    // Optionally recalculate course progress including quiz completion
+    if (enrollmentId) {
+      EnrollmentService.recalculateProgress(enrollmentId)
+        .then((result) => {
+          setCourseProgress(result.progress);
+        })
+        .catch((error) => {
+          console.error("Error recalculating progress after quiz:", error);
+        });
+    }
   };
 
   // Determine lesson content based on type
@@ -302,6 +343,40 @@ export default function CourseLearn() {
     }
   };
 
+  // Debug function to check JWT token status
+  const debugJwtToken = () => {
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('jwt='))
+      ?.split('=')[1];
+    
+    console.log('=== JWT TOKEN DEBUG ===');
+    console.log('Token present:', !!token);
+    if (token) {
+      console.log('Token length:', token.length);
+      console.log('Token preview:', token.substring(0, 20) + '...');
+      
+      try {
+        const parts = token.split('.');
+        console.log('Token parts count:', parts.length);
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          console.log('Token payload:', {
+            userId: payload.sub || payload.id,
+            email: payload.email,
+            exp: new Date(payload.exp * 1000).toISOString(),
+            iat: new Date(payload.iat * 1000).toISOString(),
+            isExpired: payload.exp < Math.floor(Date.now() / 1000)
+          });
+        }
+      } catch (error) {
+        console.error('Error parsing token:', error);
+      }
+    }
+    console.log('All cookies:', document.cookie);
+    console.log('=======================');
+  };
+
   if (isLoading) {
     return (
       <MainLayout>
@@ -339,9 +414,8 @@ export default function CourseLearn() {
           <div className="lg:col-span-1 order-2 lg:order-1">
             <div className="border rounded-lg bg-card overflow-hidden sticky top-24">
               <div className="p-4 border-b bg-muted/50">
-                <h2 className="font-semibold">Course Content</h2>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {modules.length} modules • {getTotalLessons()} lessons • {calculateTotalDuration()} total
+                <h2 className="font-semibold">Course Content</h2>                <div className="text-xs text-muted-foreground mt-1">
+                  {modules.length} modules • {getTotalLessons()} lessons • {courseQuizzes.length} quizzes • {calculateTotalDuration()} total
                 </div>
               </div>
               
@@ -379,9 +453,12 @@ export default function CourseLearn() {
                                         {moduleIndex + 1}.{lessonIndex + 1}
                                       </div>
                                     )}
-                                  </div>
-                                  <div className="flex-1">
-                                    <div className="text-sm">{lesson.title}</div>
+                                  </div>                                  <div className="flex-1">
+                                    <div className="text-sm flex items-center justify-between">
+                                      <span>{lesson.title}</span>                                      {lessonHasQuizzes(lesson.id) && (
+                                        <HelpCircle className="h-3 w-3 text-eduBlue-500" />
+                                      )}
+                                    </div>
                                     <div className="flex items-center text-xs text-muted-foreground mt-1">
                                       {lesson.contentType === 'video' ? (
                                         <Play className="h-3 w-3 mr-1" />
@@ -410,43 +487,63 @@ export default function CourseLearn() {
             <div className="mb-8">
               <div className="border rounded-lg p-6">
                 {renderLessonContent(activeLesson)}
-                
-                {activeLesson && (
-                  <div className="mt-8 flex justify-between items-center">
-                    <div className="text-sm text-muted-foreground">
-                      {activeLesson.contentType === 'video' ? (
-                        <div className="flex items-center">
-                          <Play className="h-4 w-4 mr-1" />
-                          <span>Video • {activeLesson.durationInMinutes} min</span>
+                  {activeLesson && (
+                  <div className="mt-8 space-y-4">
+                    {/* Quiz indicator for current lesson */}
+                    {lessonHasQuizzes(activeLesson.id) && (
+                      <div className="flex items-center gap-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <HelpCircle className="h-5 w-5 text-blue-600" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-blue-900">
+                            This lesson has quizzes available
+                          </p>
+                          <p className="text-xs text-blue-700">
+                            Complete the lesson to unlock the quiz in the Quizzes tab
+                          </p>
                         </div>
-                      ) : (
-                        <div className="flex items-center">
-                          <FileText className="h-4 w-4 mr-1" />
-                          <span>Reading • {activeLesson.durationInMinutes} min</span>
-                        </div>
-                      )}
-                    </div>
+                        {completedLessons.includes(activeLesson.id) && (
+                          <Badge variant="default" className="bg-blue-600">
+                            Quiz Unlocked
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                     
-                    <Button
-                      variant={completedLessons.includes(activeLesson.id) ? "outline" : "default"}
-                      onClick={() => handleCompleteLesson(activeLesson.id)}
-                      disabled={completedLessons.includes(activeLesson.id)}
-                      className={completedLessons.includes(activeLesson.id) ? "border-eduBlue-500 text-eduBlue-500" : ""}
-                    >
-                      {completedLessons.includes(activeLesson.id) ? (
-                        <>
-                          <Check className="h-4 w-4 mr-2" /> Completed
-                        </>
-                      ) : (
-                        "Mark as Completed"
-                      )}
-                    </Button>
+                    <div className="flex justify-between items-center">
+                      <div className="text-sm text-muted-foreground">
+                        {activeLesson.contentType === 'video' ? (
+                          <div className="flex items-center">
+                            <Play className="h-4 w-4 mr-1" />
+                            <span>Video • {activeLesson.durationInMinutes} min</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            <FileText className="h-4 w-4 mr-1" />
+                            <span>Reading • {activeLesson.durationInMinutes} min</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <Button
+                        variant={completedLessons.includes(activeLesson.id) ? "outline" : "default"}
+                        onClick={() => handleCompleteLesson(activeLesson.id)}
+                        disabled={completedLessons.includes(activeLesson.id)}
+                        className={completedLessons.includes(activeLesson.id) ? "border-eduBlue-500 text-eduBlue-500" : ""}
+                      >
+                        {completedLessons.includes(activeLesson.id) ? (
+                          <>
+                            <Check className="h-4 w-4 mr-2" /> Completed
+                          </>
+                        ) : (
+                          "Mark as Completed"
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
-            
-            {/* Course Tabs */}
+              {/* Course Tabs */}
             <Tabs defaultValue="overview">
               <TabsList className="w-full justify-start border-b rounded-none mb-6 px-0 h-auto">
                 <TabsTrigger 
@@ -454,6 +551,13 @@ export default function CourseLearn() {
                   className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
                 >
                   Overview
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="quizzes"
+                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+                >
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  Quizzes
                 </TabsTrigger>
                 <TabsTrigger 
                   value="reviews"
@@ -540,14 +644,121 @@ export default function CourseLearn() {
                           <h4 className="font-medium">{course.instructorName}</h4>
                           <p className="text-sm text-muted-foreground">Instructor details not available</p>
                         </div>
-                      </div>
-                    ) : (
+                      </div>                    ) : (
                       <p className="text-muted-foreground">Instructor information not available.</p>
                     )}
                   </div>
+                  
+                  {/* Course Progress Summary */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Your Progress</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-blue-700">Lessons</p>
+                            <p className="text-2xl font-bold text-blue-900">
+                              {completedLessons.length}/{getTotalLessons()}
+                            </p>
+                          </div>
+                          <CheckCircle className="h-8 w-8 text-blue-600" />
+                        </div>
+                      </div>
+                      
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-green-700">Quizzes Available</p>
+                            <p className="text-2xl font-bold text-green-900">
+                              {courseQuizzes.length}
+                            </p>
+                          </div>
+                          <HelpCircle className="h-8 w-8 text-green-600" />
+                        </div>
+                      </div>
+                      
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-purple-700">Overall Progress</p>
+                            <p className="text-2xl font-bold text-purple-900">
+                              {courseProgress}%
+                            </p>
+                          </div>
+                          <Trophy className="h-8 w-8 text-purple-600" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </TabsContent>
-                <TabsContent value="reviews">
+                <TabsContent value="quizzes">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold">Course Quizzes</h2>
+                    {quizScore && (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+                        <Trophy className="h-5 w-5 text-green-600" />
+                        <span className="text-green-800 font-medium">
+                          Last Score: {quizScore.correctAnswers}/{quizScore.totalQuizzes}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {courseQuizzes.length > 0 ? (
+                    <div className="space-y-4">
+                      <p className="text-muted-foreground">
+                        Complete lessons to unlock their quizzes and test your knowledge.
+                      </p>
+                      
+                      {modules.map((module) => 
+                        module.lessons?.map((lesson: any) => {
+                          const lessonQuizzes = courseQuizzes.filter(quiz => quiz.lessonId === lesson.id);
+                          const isCompleted = completedLessons.includes(lesson.id);
+                          
+                          if (lessonQuizzes.length === 0) return null;
+                          
+                          return (
+                            <Card key={lesson.id} className="overflow-hidden">
+                              <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <CardTitle className="text-lg">{lesson.title}</CardTitle>
+                                    <p className="text-sm text-muted-foreground">
+                                      {lessonQuizzes.length} quiz{lessonQuizzes.length > 1 ? 'es' : ''} available
+                                    </p>
+                                  </div>
+                                  <Badge variant={isCompleted ? "default" : "secondary"}>
+                                    {isCompleted ? "Unlocked" : "Complete lesson to unlock"}
+                                  </Badge>
+                                </div>
+                              </CardHeader>                              {isCompleted && (                                <CardContent className="pt-0">
+                                  <QuizTaking 
+                                    lessonId={lesson.id}
+                                    courseId={Number(id)}
+                                    onQuizComplete={handleQuizComplete}
+                                  />
+                                </CardContent>
+                              )}
+                            </Card>
+                          );
+                        })
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 border border-dashed rounded-lg">
+                      <HelpCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No Quizzes Available</h3>
+                      <p className="text-muted-foreground">
+                        This course doesn't have any quizzes yet. Check back later!
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="reviews">
                 <div className="max-w-3xl">                  <div className="flex items-center justify-between mb-8">
                     <h2 className="text-2xl font-bold">Student Reviews</h2>
                   </div>

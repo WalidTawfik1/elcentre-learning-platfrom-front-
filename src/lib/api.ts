@@ -89,16 +89,30 @@ async function apiRequest<T>(
   if (!isFormData) {
     headers["Content-Type"] = "application/json";
   }
-  
   // Add JWT token to Authorization header if authentication is required
   if (requiresAuth) {
     const token = getCookie('jwt');
     if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    } else {
+      // Validate token format and expiration
+      if (!isValidJwtToken(token)) {
+        console.error('Invalid JWT token format found in cookie');
+        if (!silentMode) {
+          console.warn('Clearing invalid JWT token');
+        }
+        // Clear invalid token
+        document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      } else if (isTokenExpired(token)) {
+        console.error('JWT token has expired');
+        if (!silentMode) {
+          console.warn('Clearing expired JWT token');
+        }
+        // Clear expired token
+        document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";      } else {
+        headers["Authorization"] = `Bearer ${token}`;
+      }    } else {
       // Don't log this warning for silent mode requests
       if (!silentMode) {
-        console.warn('No JWT token found in cookies for authenticated request');
+        console.warn(`No JWT token found for authenticated request to ${endpoint}`);
       }
     }
   }
@@ -276,6 +290,41 @@ const createFormData = (data: Record<string, any>): FormData => {
   return formData;
 };
 
+// Helper function to validate JWT token format
+const isValidJwtToken = (token: string): boolean => {
+  if (!token) return false;
+  // JWT tokens should have 3 parts separated by dots
+  const parts = token.split('.');
+  return parts.length === 3 && parts.every(part => part.length > 0);
+};
+
+// Helper function to decode JWT payload (for debugging)
+const decodeJwtPayload = (token: string): any => {
+  try {
+    if (!isValidJwtToken(token)) return null;
+    const payload = token.split('.')[1];
+    const decoded = atob(payload);
+    return JSON.parse(decoded);
+  } catch (error) {
+    console.error('Error decoding JWT payload:', error);
+    return null;
+  }
+};
+
+// Helper function to check if JWT token is expired
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const payload = decodeJwtPayload(token);
+    if (!payload || !payload.exp) return true;
+    
+    const currentTime = Math.floor(Date.now() / 1000);
+    return payload.exp < currentTime;
+  } catch (error) {
+    console.error('Error checking token expiration:', error);
+    return true;
+  }
+};
+
 // API Functions
 export const API = {
   // Authentication
@@ -310,8 +359,7 @@ export const API = {
         return response.json();
       });
     },
-    
-    login: (data: { email: string; password: string }) => {
+      login: (data: { email: string; password: string }) => {
       // Use direct API URL for auth endpoints to ensure cookies are set correctly
       const url = `${DIRECT_API_URL}/Account/login`;
       return fetch(url, {
@@ -323,13 +371,57 @@ export const API = {
         body: JSON.stringify(data),
         credentials: 'include',
         mode: 'cors'
-      }).then(response => {
+      }).then(async response => {
         if (!response.ok) {
-          return response.json().then(data => {
-            throw new Error(data.message || 'Login failed');
-          });
+          const data = await response.json();
+          throw new Error(data.message || 'Login failed');
         }
-        return response.json();
+        
+        const responseData = await response.json();
+        
+        // Extract JWT token from response and set it as cookie
+        let token = null;
+        
+        // Check for token in multiple possible locations
+        if (typeof responseData === 'string') {
+          token = responseData;
+        } else if (responseData) {
+          token = responseData.message || 
+                  responseData.token || 
+                  responseData.accessToken || 
+                  responseData.jwt ||
+                  responseData.access_token ||
+                  (responseData.data && (
+                    responseData.data.token || 
+                    responseData.data.accessToken ||
+                    responseData.data.jwt
+                  ));
+        }
+        
+        // Also check response headers for Authorization header
+        const authHeader = response.headers.get('Authorization') || response.headers.get('authorization');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          token = authHeader.substring(7);
+        }
+        
+        if (token) {
+          // Clear any existing token cookies
+          document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          
+          // Set the JWT as a cookie with proper attributes
+          const date = new Date();
+          date.setTime(date.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days
+          const expires = "; expires=" + date.toUTCString();
+          document.cookie = "jwt=" + token + expires + "; path=/; SameSite=Lax";
+          
+          console.log('JWT token set in cookie (first 10 chars):', token.substring(0, 10) + '...');
+        } else {
+          console.warn('No JWT token found in login response');
+          console.warn('Response structure:', Object.keys(responseData || {}));
+        }
+        
+        return responseData;
       });
     },
     
@@ -574,8 +666,7 @@ export const API = {
     update: (data: UserDTO) => 
       apiRequest("/Account/edit-profile", "PUT", data),
   },  // Quiz endpoints
-  quiz: {
-    getAllCourseQuizzes: (courseId: number) =>
+  quiz: {    getAllCourseQuizzes: (courseId: number) => 
       apiRequest(`/Quiz/get-all-course-quizzes?courseId=${courseId}`, 'GET', undefined, true),
       getQuizById: (id: number) =>
       apiRequest(`/Quiz/get-quiz-by-id/${id}`, 'GET', undefined, true),
@@ -608,26 +699,23 @@ export const API = {
     }) => {
       const formData = createFormData(data);
       return apiRequest('/Quiz/update-quiz', 'PUT', formData, true, true);
-    },
-    
-    deleteQuiz: (quizId: number) =>
+    },    deleteQuiz: (quizId: number) =>
       apiRequest(`/Quiz/delete-quiz/${quizId}`, 'DELETE', undefined, true),
   },
   
   // Student Quiz endpoints
   studentQuiz: {
-    submitAnswer: (data: {
-      QuizId: number;
-      SelectedAnswer: 'A' | 'B' | 'C' | 'D';
-    }) =>
-      apiRequest('/StudentQuiz/submit-quiz-answer', 'POST', data, true),
+    submitAnswer: (quizId: number, answer: string) => {
+      const endpoint = `/StudentQuiz/submit-quiz-answer?quizId=${quizId}&answer=${encodeURIComponent(answer)}`;
+      return apiRequest(endpoint, 'POST', undefined, true);
+    },
     
     getTotalScore: (lessonId: number) =>
-      apiRequest(`/StudentQuiz/get-total-score/${lessonId}`, 'GET', undefined, true),
+      apiRequest(`/StudentQuiz/get-total-score?lessonId=${lessonId}`, 'GET', undefined, true),
     
     getStudentQuizzesByLesson: (lessonId: number) =>
-      apiRequest(`/StudentQuiz/get-student-quizzes-by-lesson/${lessonId}`, 'GET', undefined, true),
-  }
+      apiRequest(`/StudentQuiz/get-student-quizzes-by-lesson?lessonId=${lessonId}`, 'GET', undefined, true),
+  },
 };
 
 // Types based on the documentation

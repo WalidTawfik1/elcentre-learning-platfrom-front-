@@ -12,10 +12,11 @@ import { toast } from '@/components/ui/use-toast';
 
 interface QuizTakingProps {
   lessonId: number;
+  courseId?: number;
   onQuizComplete?: (score: QuizScore) => void;
 }
 
-export function QuizTaking({ lessonId, onQuizComplete }: QuizTakingProps) {
+export function QuizTaking({ lessonId, courseId, onQuizComplete }: QuizTakingProps) {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<'A' | 'B' | 'C' | 'D' | null>(null);
@@ -24,29 +25,55 @@ export function QuizTaking({ lessonId, onQuizComplete }: QuizTakingProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quizCompleted, setQuizCompleted] = useState(false);
+  
+  // Debug state to show API responses
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
     loadQuizzes();
-  }, [lessonId]);
-  const loadQuizzes = async () => {
+  }, [lessonId, courseId]);  const loadQuizzes = async () => {
     setIsLoading(true);
     try {
+      console.log('=== LOADING QUIZ DATA ===');
+      console.log('Lesson ID:', lessonId);
+      console.log('Course ID:', courseId);
+      
       // Load quizzes for this lesson
-      const quizData = await QuizService.getQuizzesByLessonId(lessonId);
+      const quizData = await QuizService.getQuizzesByLessonId(lessonId, courseId);
+      console.log('Quiz Data:', quizData);
+      console.log('Quiz Count:', quizData.length);
       setQuizzes(quizData);
 
       // Load existing answers
       const answered = await QuizService.getStudentQuizzesByLesson(lessonId);
+      console.log('Answered Quizzes:', answered);
+      console.log('Answered Count:', answered.length);
       setAnsweredQuizzes(answered);
 
       // Load current score
       const currentScore = await QuizService.getTotalScore(lessonId);
+      console.log('Current Score:', currentScore);
       setScore(currentScore);
+      
+      // Store debug information
+      setDebugInfo({
+        lessonId,
+        courseId,
+        quizCount: quizData.length,
+        answeredCount: answered.length,
+        currentScore,
+        allQuizzes: quizData
+      });
 
       // Check if all quizzes are completed
       if (quizData.length > 0 && answered.length >= quizData.length) {
+        console.log('All quizzes completed');
         setQuizCompleted(true);
+      } else {
+        console.log('Quiz not completed - quizzes:', quizData.length, 'answered:', answered.length);
       }
+      
+      console.log('========================');
     } catch (error) {
       console.error('Error loading quizzes:', error);
       toast({
@@ -58,28 +85,31 @@ export function QuizTaking({ lessonId, onQuizComplete }: QuizTakingProps) {
       setIsLoading(false);
     }
   };
-
   const handleAnswerSubmit = async () => {
     if (!selectedAnswer || currentQuizIndex >= quizzes.length) return;
 
-    setIsSubmitting(true);
-    try {
+    setIsSubmitting(true);    try {
       const currentQuiz = quizzes[currentQuizIndex];
+      
       const result = await QuizService.submitQuizAnswer(currentQuiz.id, selectedAnswer);
-        // Update answered quizzes
+      
+      // Convert score to boolean (1 = correct, 0 = incorrect)
+      const isCorrect = result.score === 1;
+      
+      // Update answered quizzes
       const newAnswer: StudentQuizProgress = {
         quizId: currentQuiz.id,
         quizTitle: currentQuiz.question,
         selectedAnswer,
         correctAnswer: currentQuiz.correctAnswer,
-        isCorrect: result.isCorrect,
-        answeredAt: result.answeredAt
+        isCorrect: isCorrect,
+        answeredAt: result.takenAt || new Date().toISOString()
       };
       
       setAnsweredQuizzes(prev => [...prev, newAnswer]);
 
       // Show result feedback
-      if (result.isCorrect) {
+      if (isCorrect) {
         toast({
           title: 'Correct!',
           description: 'Well done! That\'s the right answer.',
@@ -112,11 +142,11 @@ export function QuizTaking({ lessonId, onQuizComplete }: QuizTakingProps) {
         title: 'Error',
         description: 'Failed to submit answer. Please try again.',
         variant: 'destructive'
-      });
-    } finally {
+      });    } finally {
       setIsSubmitting(false);
     }
   };
+  // Note: Quiz retaking has been disabled on the backend
 
   const getAnswerLabel = (option: 'A' | 'B' | 'C' | 'D', text: string | undefined) => {
     if (!text) return null;
@@ -142,6 +172,21 @@ export function QuizTaking({ lessonId, onQuizComplete }: QuizTakingProps) {
       <Card>
         <CardContent className="text-center py-8">
           <p className="text-muted-foreground">No quizzes available for this lesson.</p>
+          
+          {/* Debug information */}
+          {debugInfo && (
+            <div className="mt-4 p-4 bg-gray-50 border rounded text-left text-xs">
+              <h4 className="font-bold mb-2">Debug Information:</h4>
+              <div className="space-y-1">
+                <p><strong>Lesson ID:</strong> {debugInfo.lessonId}</p>
+                <p><strong>Course ID:</strong> {debugInfo.courseId}</p>
+                <p><strong>Quiz Count:</strong> {debugInfo.quizCount}</p>
+                <p><strong>Answered Count:</strong> {debugInfo.answeredCount}</p>
+                <p><strong>Score:</strong> {debugInfo.currentScore ? JSON.stringify(debugInfo.currentScore, null, 2) : 'None'}</p>
+                <p><strong>Raw Quizzes:</strong> {JSON.stringify(debugInfo.allQuizzes, null, 2)}</p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -166,31 +211,154 @@ export function QuizTaking({ lessonId, onQuizComplete }: QuizTakingProps) {
             </p>
             
             <Progress value={score?.percentage || 0} className="w-full" />
-            
-            <div className="flex justify-center">
+              <div className="flex justify-center">
               <Badge variant={score && score.percentage >= 70 ? "default" : "secondary"}>
                 {score && score.percentage >= 70 ? "Passed" : "Needs Improvement"}
               </Badge>
-            </div>
-
-            {/* Show review of answers */}
-            <div className="mt-6 space-y-3">
-              <h4 className="font-semibold">Review Your Answers:</h4>
-              {answeredQuizzes.map((answer, index) => (
-                <div key={answer.quizId} className="flex items-center justify-between p-3 border rounded">
-                  <span className="text-sm">Question {index + 1}</span>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">Your answer: {answer.selectedAnswer}</Badge>
-                    <Badge variant="outline">Correct: {answer.correctAnswer}</Badge>
-                    {answer.isCorrect ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-red-500" />
-                    )}
+            </div>            {/* Quiz completion notice */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <CheckCircle className="h-5 w-5 text-blue-600" />
+                <span className="font-medium text-blue-900">Quiz Completed</span>
+              </div>
+              <p className="text-sm text-blue-800">
+                This quiz has been completed and submitted. Quiz results are final and cannot be changed.
+              </p>
+            </div>{/* Show detailed review of answers */}
+            <div className="mt-8 space-y-6 text-left">
+              <div className="text-center">
+                <h4 className="text-lg font-semibold mb-4">📝 Quiz Review</h4>
+                
+                {/* Performance Summary */}
+                <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {answeredQuizzes.filter(a => a.isCorrect).length}
+                    </div>
+                    <div className="text-sm text-gray-600">Correct</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">
+                      {answeredQuizzes.filter(a => !a.isCorrect).length}
+                    </div>
+                    <div className="text-sm text-gray-600">Incorrect</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {answeredQuizzes.length}
+                    </div>
+                    <div className="text-sm text-gray-600">Total</div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+
+              {answeredQuizzes.map((answer, index) => {
+                const quiz = quizzes.find(q => q.id === answer.quizId);
+                if (!quiz) return null;
+
+                return (
+                  <div key={answer.quizId} className="border rounded-lg p-6 space-y-4">
+                    {/* Question Header */}
+                    <div className="flex items-start justify-between">
+                      <h5 className="font-medium text-lg">Question {index + 1}</h5>
+                      <div className="flex items-center gap-2">
+                        {answer.isCorrect ? (
+                          <Badge variant="default" className="bg-green-600">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Correct
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Incorrect
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Question Text */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="font-medium text-gray-900">{quiz.question}</p>
+                    </div>
+
+                    {/* Answer Options */}
+                    <div className="space-y-2">
+                      {[
+                        { letter: 'A', text: quiz.optionA },
+                        { letter: 'B', text: quiz.optionB },
+                        { letter: 'C', text: quiz.optionC },
+                        { letter: 'D', text: quiz.optionD }
+                      ].filter(option => option.text).map(option => {
+                        const isCorrect = option.letter === quiz.correctAnswer;
+                        const isSelected = option.letter === answer.selectedAnswer;
+                        
+                        let bgColor = 'bg-white border-gray-200';
+                        let textColor = 'text-gray-700';
+                        
+                        if (isCorrect) {
+                          bgColor = 'bg-green-50 border-green-200';
+                          textColor = 'text-green-800';
+                        } else if (isSelected && !isCorrect) {
+                          bgColor = 'bg-red-50 border-red-200';
+                          textColor = 'text-red-800';
+                        }
+
+                        return (
+                          <div key={option.letter} className={`p-3 border rounded-lg ${bgColor}`}>
+                            <div className="flex items-center gap-3">
+                              <Badge 
+                                variant={isCorrect ? "default" : isSelected ? "destructive" : "outline"}
+                                className="w-6 h-6 text-xs flex items-center justify-center"
+                              >
+                                {option.letter}
+                              </Badge>
+                              <span className={`flex-1 ${textColor}`}>
+                                {option.text}
+                              </span>
+                              {isCorrect && (
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                              )}
+                              {isSelected && !isCorrect && (
+                                <XCircle className="h-4 w-4 text-red-600" />
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Your Answer vs Correct Answer */}
+                    <div className="flex flex-wrap gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Your Answer:</span>
+                        <Badge variant={answer.isCorrect ? "default" : "destructive"}>
+                          {answer.selectedAnswer}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Correct Answer:</span>
+                        <Badge variant="default" className="bg-green-600">
+                          {quiz.correctAnswer}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Explanation */}
+                    {quiz.explanation && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex items-start gap-2">
+                          <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center mt-0.5">
+                            <span className="text-white text-xs font-bold">!</span>
+                          </div>
+                          <div>
+                            <h6 className="font-medium text-blue-900 mb-1">Explanation:</h6>
+                            <p className="text-blue-800 text-sm leading-relaxed">{quiz.explanation}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>                );
+              })}            </div>
           </div>
         </CardContent>
       </Card>

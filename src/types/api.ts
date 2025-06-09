@@ -137,6 +137,17 @@ export interface Quiz {
 
 export interface StudentQuizAnswer {
   id: number;
+  studentId: string;
+  quizId: number;
+  quiz: Quiz;
+  answer: 'A' | 'B' | 'C' | 'D';
+  score: number; // 1 for correct, 0 for incorrect
+  takenAt: string;
+}
+
+// For compatibility with existing code that expects isCorrect boolean
+export interface StudentQuizResponse {
+  id: number;
   quizId: number;
   studentId: string;
   selectedAnswer: 'A' | 'B' | 'C' | 'D';
