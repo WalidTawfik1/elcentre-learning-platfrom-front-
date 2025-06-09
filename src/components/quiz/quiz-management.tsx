@@ -472,12 +472,11 @@ export function QuizManagement({ lessonId, courseId, lessonTitle, onQuizChange, 
               </div>
             )}
           </div>
-          
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button 
                 onClick={handleAddQuiz} 
-                disabled={!selectedLessonId && lessons && lessons.length > 0}
+                disabled={!selectedLessonId}
                 size="lg"
                 className="bg-blue-600 hover:bg-blue-700"
               >
