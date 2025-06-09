@@ -7,7 +7,7 @@ const isProduction = import.meta.env.PROD;
 const FALLBACK_API_URL = "https://elcentre-api.runasp.net";
 
 // Production Vercel deployment URL for images
-const PRODUCTION_URL = "https://elcentre.vercel.app";
+const PRODUCTION_URL = "https://elcentre-learn.vercel.app";
 
 // Use relative URL in production (for Vercel proxy) and environment/fallback URL in development
 export const API_BASE_URL = isProduction 
