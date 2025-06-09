@@ -537,8 +537,7 @@ export function QuizManagement({ lessonId, courseId, lessonTitle, onQuizChange, 
                         onChange={(e) => setFormData({ ...formData, optionA: e.target.value })}
                         placeholder="Enter option A"
                         className="pl-8"
-                      />
-                      <span className="absolute left-3 top-8 text-xs font-bold text-green-600">A</span>
+                      />                      <span className="absolute left-3 top-1/2 -translate-y-1/2 mt-3 text-xs font-bold text-green-600">A</span>
                     </div>
 
                     <div className="relative">
@@ -550,7 +549,7 @@ export function QuizManagement({ lessonId, courseId, lessonTitle, onQuizChange, 
                         placeholder="Enter option B"
                         className="pl-8"
                       />
-                      <span className="absolute left-3 top-8 text-xs font-bold text-green-600">B</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 mt-3 text-xs font-bold text-green-600">B</span>
                     </div>
 
                     <div className="relative">
@@ -562,7 +561,7 @@ export function QuizManagement({ lessonId, courseId, lessonTitle, onQuizChange, 
                         placeholder="Enter option C (optional)"
                         className="pl-8"
                       />
-                      <span className="absolute left-3 top-8 text-xs font-bold text-gray-500">C</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 mt-3 text-xs font-bold text-gray-500">C</span>
                     </div>
 
                     <div className="relative">
@@ -574,7 +573,7 @@ export function QuizManagement({ lessonId, courseId, lessonTitle, onQuizChange, 
                         placeholder="Enter option D (optional)"
                         className="pl-8"
                       />
-                      <span className="absolute left-3 top-8 text-xs font-bold text-gray-500">D</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 mt-3 text-xs font-bold text-gray-500">D</span>
                     </div>
                   </div>
                 </div>
