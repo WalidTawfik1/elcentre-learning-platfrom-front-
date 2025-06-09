@@ -27,7 +27,7 @@ const API_BASE_URL = DIRECT_API_URL;
 export default function CourseLearn() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const [course, setCourse] = useState<any>(null);
   const [modules, setModules] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +42,10 @@ export default function CourseLearn() {
   const [courseQuizzes, setCourseQuizzes] = useState<any[]>([]);
   
   useEffect(() => {
-    // Redirect to login if user is not authenticated
+    // Don't redirect while auth is still loading
+    if (authLoading) return;
+    
+    // Redirect to login if user is not authenticated after loading is complete
     if (!isAuthenticated) {
       navigate(`/login?redirect=/my-courses/${id}/learn`, { replace: true });
       return;
@@ -138,7 +141,7 @@ export default function CourseLearn() {
         setIsLoading(false);
       }
     };    
-    fetchCourse();  }, [id, isAuthenticated, navigate]);
+    fetchCourse();  }, [id, isAuthenticated, authLoading, navigate]);
   
   // Fetch detailed instructor information
   const fetchInstructorDetails = async (instructorId: string) => {

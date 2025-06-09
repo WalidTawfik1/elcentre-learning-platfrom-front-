@@ -277,8 +277,7 @@ export const AuthService = {
       body: JSON.stringify({ email, password, code }),
     }, false);
   },
-  
-  // Helper method to check if JWT cookie is present
+    // Helper method to check if JWT cookie is present
   hasAuthCookie: (): boolean => {
     return document.cookie.includes('jwt=');
   },
@@ -286,5 +285,29 @@ export const AuthService = {
   // Get the JWT token from cookie
   getAuthToken: (): string | null => {
     return getCookie('jwt');
-  }
+  },
+  
+  // Debug function to check auth state
+  checkAuthState: (): { hasToken: boolean; tokenValue: string | null; isExpired: boolean } => {
+    const token = getCookie('jwt');
+    const hasToken = !!token;
+    let isExpired = false;
+    
+    if (token) {
+      try {
+        // Simple check - if token looks like JWT, try to decode the payload (without verification)
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const currentTime = Math.floor(Date.now() / 1000);
+          isExpired = payload.exp && payload.exp < currentTime;
+        }
+      } catch (error) {
+        console.warn('Could not decode JWT token:', error);
+      }
+    }
+    
+    return { hasToken, tokenValue: token, isExpired };
+  },
+  
 };

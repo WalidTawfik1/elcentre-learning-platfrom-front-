@@ -25,12 +25,14 @@ import { Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function InstructorCourses() {
-  const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Don't redirect while auth is still loading
+    if (authLoading) return;
+    
     // Redirect if not authenticated or not an instructor
     if (!isAuthenticated || user?.userType !== "Instructor") {
         navigate("/login", { replace: true });
@@ -72,10 +74,8 @@ export default function InstructorCourses() {
       } finally {
         setIsLoading(false);
       }
-    };
-
-    fetchCourses();
-  }, [isAuthenticated, user, navigate]);
+    };    fetchCourses();
+  }, [isAuthenticated, authLoading, user, navigate]);
 
   // Format the thumbnail URL properly using getImageUrl function
   const formatThumbnailUrl = (thumbnail: string | undefined): string => {

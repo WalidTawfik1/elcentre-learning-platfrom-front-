@@ -45,6 +45,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('userType');
     }
   };
+    // Initialize user from localStorage on app start
+  useEffect(() => {
+    const initializeAuth = () => {
+      const hasJwtCookie = document.cookie.includes('jwt=');
+      const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+      
+      if (hasJwtCookie && storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          ("Initializing user from localStorage");
+          setUser(parsedUser);
+          setError(null);
+        } catch (parseError) {
+          console.error("Failed to parse stored user data:", parseError);
+          localStorage.removeItem(USER_STORAGE_KEY);
+          localStorage.removeItem('userType');
+        }
+      }
+    };
+    
+    initializeAuth();
+  }, []);
+    // Helper function to check if auth state is valid
+  const isAuthStateValid = useCallback(() => {
+    const hasJwtCookie = document.cookie.includes('jwt=');
+    const hasStoredUser = !!localStorage.getItem(USER_STORAGE_KEY);
+    return hasJwtCookie && (user || hasStoredUser);
+  }, [user]);
   
   // Use useCallback to memoize the fetchUser function
   const fetchUser = useCallback(async (force = false) => {
@@ -58,8 +86,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Check if we have JWT cookie before even trying
     if (!document.cookie.includes('jwt=')) {
+      // No JWT cookie, clear everything
       setUser(null);
-      storeUserInLocalStorage(null); // Clear user data from localStorage
+      storeUserInLocalStorage(null);
       setIsLoading(false);
       return;
     }
@@ -67,20 +96,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       isFetchingRef.current = true;
       lastFetchTimeRef.current = currentTime;
-        const userData = await AuthService.getProfile();      
+      
+      const userData = await AuthService.getProfile();      
       const userWithComputedProps = {
         ...userData,
         name: `${userData.firstName} ${userData.lastName}`,
         avatar: userData.profilePicture || undefined
       };
       setUser(userWithComputedProps);
-      storeUserInLocalStorage(userWithComputedProps); // Store user in localStorage
+      storeUserInLocalStorage(userWithComputedProps);
       setError(null);
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
-      setUser(null);
-      storeUserInLocalStorage(null); // Clear user data from localStorage
-      setError("Failed to fetch user profile");
+      
+      // If we have a JWT cookie but the API call failed, try to restore from localStorage
+      // This prevents users from being logged out on page refresh when there are temporary network issues
+      const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          ("Restoring user from localStorage due to API failure");
+          setUser(parsedUser);
+          setError(null);
+        } catch (parseError) {
+          console.error("Failed to parse stored user data:", parseError);
+          // Only clear everything if we can't parse stored data
+          setUser(null);
+          storeUserInLocalStorage(null);
+          setError("Failed to restore user session");
+        }
+      } else {
+        // No stored user data, clear everything
+        setUser(null);
+        storeUserInLocalStorage(null);
+        setError("Failed to fetch user profile");
+      }
     } finally {
       setIsLoading(false);
       isFetchingRef.current = false;
@@ -91,12 +141,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = useCallback(async () => {
     await fetchUser(true); // Force refresh
   }, [fetchUser]);
-
   // Check for existing authentication on load - only once when component mounts
   useEffect(() => {
-    fetchUser();
+    // Add a small delay to allow localStorage initialization to complete
+    const timeoutId = setTimeout(() => {
+      fetchUser();
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, [fetchUser]);
-
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
@@ -109,7 +162,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Force immediate fetch of user profile
       try {
         await fetchUser(true); // Force fetch
-          // Important fix: The state might not be updated immediately due to React's async state updates
+        
+        // Important fix: The state might not be updated immediately due to React's async state updates
         // So we need to set the user directly here to ensure isAuthenticated becomes true
         if (response.user) {
           const userData = response.user;
@@ -119,7 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             avatar: userData.profilePicture || undefined
           };
           setUser(userWithComputedProps);
-          storeUserInLocalStorage(userWithComputedProps); // Store user in localStorage
+          storeUserInLocalStorage(userWithComputedProps);
         }
         
         toast({
@@ -129,6 +183,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return true;
       } catch (profileError) {
         console.error("Error fetching profile after login:", profileError);
+        
+        // If profile fetch fails but we have the JWT cookie, try to proceed anyway
+        // The user will be restored from localStorage on next app load
+        if (document.cookie.includes('jwt=')) {
+          toast({
+            title: "Login successful",
+            description: "Welcome back!",
+          });
+          return true;
+        }
+        
         toast({
           title: "Login partial success",
           description: "Logged in but couldn't fetch your profile. Please refresh.",
@@ -140,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error: any) {
       setUser(null);
-      storeUserInLocalStorage(null); // Clear user data from localStorage
+      storeUserInLocalStorage(null);
       setIsLoading(false);
       const errorMessage = error.message || "Login failed. Please check your network connection.";
       setError(errorMessage);
@@ -170,28 +235,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     }
   };
-
   const logout = async () => {
     setIsLoading(true);
     try {
       await AuthService.logout();
       
-      // Clear both JWT and token cookies that might exist
+      // Clear all possible JWT and token cookies that might exist
       document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      document.cookie = "auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       
       setUser(null);
-      storeUserInLocalStorage(null); // Clear user data from localStorage
+      storeUserInLocalStorage(null);
+      
       toast({
         title: "Logged out",
         description: "You have been logged out successfully.",
       });
     } catch (error) {
       console.error("Logout failed:", error);
+      
+      // Even if logout API call fails, clear local state
+      document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      document.cookie = "auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      
+      setUser(null);
+      storeUserInLocalStorage(null);
+      
       toast({
-        title: "Logout Failed",
-        description: "There was an issue logging you out. Please try again.",
-        variant: "destructive"
+        title: "Logged out",
+        description: "You have been logged out.",
       });
     } finally {
       setIsLoading(false);

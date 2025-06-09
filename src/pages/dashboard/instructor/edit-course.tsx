@@ -20,8 +20,7 @@ const API_BASE_URL = DIRECT_API_URL;
 
 export default function EditCourse() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -46,6 +45,9 @@ export default function EditCourse() {
     const checkAuthAndFetchCourse = async () => {
       setIsLoading(true);
       try {
+        // Don't redirect while auth is still loading
+        if (authLoading) return;
+        
         // First check authentication
         if (!isAuthenticated) {
           navigate("/login", { 
@@ -102,10 +104,8 @@ export default function EditCourse() {
       } finally {
         setIsLoading(false);
       }
-    };
-
-    checkAuthAndFetchCourse();
-  }, [id, isAuthenticated, user, navigate]);
+    };    checkAuthAndFetchCourse();
+  }, [id, isAuthenticated, authLoading, user, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;

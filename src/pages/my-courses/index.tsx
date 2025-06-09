@@ -16,11 +16,14 @@ import { getInitials } from "@/lib/utils";
 
 export default function MyCourses() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();  const [enrollments, setEnrollments] = useState<any[]>([]);
   const [coursesData, setCoursesData] = useState<any[]>([]);  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    // Redirect to login if not authenticated
+    // Don't redirect while auth is still loading
+    if (authLoading) return;
+    
+    // Redirect to login if not authenticated after loading is complete
     if (!isAuthenticated) {
       navigate("/login?redirect=/my-courses", { replace: true });
       return;
@@ -89,9 +92,8 @@ export default function MyCourses() {
       } finally {
         setIsLoading(false);
       }
-    };    
-    fetchEnrollments();
-  }, [isAuthenticated, navigate]);
+    };      fetchEnrollments();
+  }, [isAuthenticated, authLoading, navigate]);
 
   return (
     <MainLayout>
