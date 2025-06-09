@@ -278,9 +278,20 @@ export default function EditCourse() {
                 min="0"
                 required
               />
-            </div>
+            </div>            <div>
+              <label className="block text-sm font-medium mb-2">Thumbnail</label>
+              
+              {/* Thumbnail Size Recommendations */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 space-y-2">
+                <h4 className="text-sm font-medium text-blue-900">📏 Recommended Thumbnail Specifications</h4>
+                <div className="text-xs text-blue-800 space-y-1">
+                  <p><strong>Best Size:</strong> 1280×720 pixels (16:9 aspect ratio)</p>
+                  <p><strong>Format:</strong> JPEG or PNG | <strong>File Size:</strong> 100-300KB</p>
+                  <p><strong>Alternative sizes:</strong> 1920×1080 (HD) or 960×540 (medium)</p>
+                  <p className="text-blue-600">💡 16:9 ratio ensures your thumbnail looks perfect across all devices!</p>
+                </div>
+              </div>
 
-            <div>
               <div className="mb-2">
                 <img 
                   src={getThumbnailPreview()}
