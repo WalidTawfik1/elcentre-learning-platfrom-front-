@@ -9,7 +9,6 @@ export const AdminService = {  // Get total courses count
       const courses = (response as any)?.data || (response as any)?.items || response || [];
       return Array.isArray(courses) ? courses.length : 0;
     } catch (error) {
-      console.error("Error fetching total courses count:", error);
       return 0;
     }
   },
@@ -101,7 +100,6 @@ export const AdminService = {  // Get total courses count
         AdminService.getTotalEnrollmentsCount()
       ]);      // Fetch pending courses separately for better debugging
       const pendingCoursesResponse = await CourseService.getPendingCourses();
-      console.log("AdminService - Pending courses response:", pendingCoursesResponse);
       
       // Handle different response structures
       let coursesArray = [];
@@ -122,18 +120,15 @@ export const AdminService = {  // Get total courses count
         };
       });
       
-      console.log("AdminService - Courses array:", coursesArray);
-      console.log("AdminService - Courses statuses:", coursesArray.map((c: any) => ({ id: c.id, status: c.status })));
-      
       // Count pending courses with flexible status matching
       const pendingCourses = coursesArray.filter((course: any) => {
         const normalizedStatus = course.status?.toLowerCase();
-        return normalizedStatus === 'pending' || 
+        return normalizedStatus === 'pending' ||
                normalizedStatus === 'Pending' || 
                normalizedStatus === 'PENDING' ||
                !course.status; // Also count courses without status as pending
       }).length;
-      console.log("AdminService - Pending courses count:", pendingCourses);
+      
 
       return {
         totalCourses,

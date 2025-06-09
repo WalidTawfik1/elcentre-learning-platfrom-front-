@@ -407,7 +407,7 @@ export default function CourseContentManagement() {
           }
         }
         
-        console.log("Updating lesson with data:", {
+        ("Updating lesson with data:", {
           id: updateData.id,
           title: updateData.title,
           contentType: updateData.contentType,

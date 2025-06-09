@@ -19,9 +19,9 @@ export const PaymentService = {  /**
    * Create payment token for course enrollment
    */
   createPaymentToken: async (request: CreatePaymentTokenRequest): Promise<CreatePaymentTokenResponse> => {
-    console.log('Creating payment token with:', request);
+    
     const url = `/Payment/create-payment-token?courseID=${request.courseId}&paymentMethod=${request.paymentMethod}`;
-    console.log('Payment API URL:', url);
+    
     
     return apiRequest<CreatePaymentTokenResponse>(
       url, 

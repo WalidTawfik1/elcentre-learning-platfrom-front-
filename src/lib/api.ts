@@ -1,15 +1,6 @@
 // API Service for interacting with the backend
 
-// Determine if we're in production
-const isProduction = import.meta.env.PROD;
-
-// Base API URL with environment-specific handling
-const API_BASE_URL = isProduction
-  ? "/api" // Use Vercel rewrite proxy in production
-  : (import.meta.env.VITE_API_BASE_URL || "https://elcentre-api.runasp.net");
-
-// Original direct API URL (needed for auth operations)
-const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || "https://elcentre-api.runasp.net";
+import { API_BASE_URL, DIRECT_API_URL } from "@/config/api-config";
 
 // Configuration for rate limiting and retries
 const API_CONFIG = {
@@ -92,27 +83,23 @@ async function apiRequest<T>(
   // Add JWT token to Authorization header if authentication is required
   if (requiresAuth) {
     const token = getCookie('jwt');
-    if (token) {
-      // Validate token format and expiration
+    if (token) {      // Validate token format and expiration
       if (!isValidJwtToken(token)) {
-        console.error('Invalid JWT token format found in cookie');
         if (!silentMode) {
-          console.warn('Clearing invalid JWT token');
+          // Clear invalid token
         }
         // Clear invalid token
         document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       } else if (isTokenExpired(token)) {
-        console.error('JWT token has expired');
         if (!silentMode) {
-          console.warn('Clearing expired JWT token');
+          // Clear expired token
         }
         // Clear expired token
-        document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";      } else {
+        document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";} else {
         headers["Authorization"] = `Bearer ${token}`;
-      }    } else {
-      // Don't log this warning for silent mode requests
+      }    } else {      // Don't log this warning for silent mode requests
       if (!silentMode) {
-        console.warn(`No JWT token found for authenticated request to ${endpoint}`);
+        // No JWT token found for authenticated request
       }
     }
   }
@@ -144,7 +131,7 @@ async function apiRequest<T>(
       if (retryCount > 0) {
         const backoffMs = calculateBackoff(retryCount - 1);
         if (!silentMode) {
-          console.log(`Rate limited (429). Retry ${retryCount}/${API_CONFIG.maxRetries} after ${backoffMs}ms delay`);
+          
         }
         await sleep(backoffMs);
       }
@@ -164,7 +151,7 @@ async function apiRequest<T>(
       // Only log for non-silent requests
       if (!silentMode) {
         // Log reduced information without full URLs
-        console.log(`API ${method} to ${endpointPath} - Status: ${response.status}`);
+        
       }
       
       // Check if we got a rate limit error and should retry
@@ -206,14 +193,9 @@ async function apiRequest<T>(
             // Standard error format for other status codes
             errorMessage = errorData.message || `API Error: ${response.status}`;
           }
-          
-          // Only log errors for non-silent requests
+            // Only log errors for non-silent requests
           if (!silentMode) {
-            console.error(`API Error (${method} ${endpointPath}):`, {
-              status: response.status,
-              message: errorMessage,
-              data: errorData
-            });
+            // API Error occurred
           }
         } catch (e) {
           errorMessage = `API Error: ${response.status}`;
@@ -235,10 +217,9 @@ async function apiRequest<T>(
       // Try to parse JSON or return empty object
       try {
         return await response.json();
-      } catch (jsonError) {
-        // Only log warnings for non-silent requests
+      } catch (jsonError) {        // Only log warnings for non-silent requests
         if (!silentMode) {
-          console.warn(`Could not parse response as JSON for ${endpointPath}`);
+          // Could not parse response as JSON
         }
         return {} as T;
       }
@@ -260,10 +241,8 @@ async function apiRequest<T>(
   if (silentMode) {
     return ([] as unknown) as T;
   }
-  
-  // For other errors, log with limited info
-  console.error(`API request failed after ${retryCount} retries (${method} ${endpointPath}):`, 
-    lastError instanceof Error ? lastError.message : "Unknown error");
+    // For other errors, log with limited info
+  // API request failed after retries
   
   throw lastError || new Error(`Request failed after ${retryCount} retries`);
 }
@@ -303,10 +282,8 @@ const decodeJwtPayload = (token: string): any => {
   try {
     if (!isValidJwtToken(token)) return null;
     const payload = token.split('.')[1];
-    const decoded = atob(payload);
-    return JSON.parse(decoded);
+    const decoded = atob(payload);    return JSON.parse(decoded);
   } catch (error) {
-    console.error('Error decoding JWT payload:', error);
     return null;
   }
 };
@@ -317,10 +294,8 @@ const isTokenExpired = (token: string): boolean => {
     const payload = decodeJwtPayload(token);
     if (!payload || !payload.exp) return true;
     
-    const currentTime = Math.floor(Date.now() / 1000);
-    return payload.exp < currentTime;
+    const currentTime = Math.floor(Date.now() / 1000);    return payload.exp < currentTime;
   } catch (error) {
-    console.error('Error checking token expiration:', error);
     return true;
   }
 };
@@ -412,13 +387,8 @@ export const API = {
           // Set the JWT as a cookie with proper attributes
           const date = new Date();
           date.setTime(date.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days
-          const expires = "; expires=" + date.toUTCString();
-          document.cookie = "jwt=" + token + expires + "; path=/; SameSite=Lax";
+          const expires = "; expires=" + date.toUTCString();          document.cookie = "jwt=" + token + expires + "; path=/; SameSite=Lax";
           
-          console.log('JWT token set in cookie (first 10 chars):', token.substring(0, 10) + '...');
-        } else {
-          console.warn('No JWT token found in login response');
-          console.warn('Response structure:', Object.keys(responseData || {}));
         }
         
         return responseData;

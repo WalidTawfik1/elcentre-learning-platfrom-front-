@@ -20,7 +20,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { CourseReview } from "@/types/api";
-import { getImageUrl } from "@/config/api-config";
+import { getImageUrl, DIRECT_API_URL } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
 
 // Define the review form schema
@@ -209,9 +209,8 @@ export default function CourseDetail() {
       // Update local state to reflect the change
       setIsInWishlist(!isInWishlist);
     }
-  };
-  // Backend base URL for serving static content
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://elcentre-api.runasp.net";
+  };  // Backend base URL for serving static content
+  const API_BASE_URL = DIRECT_API_URL;
   
   useEffect(() => {
     if (!id) return;
@@ -285,7 +284,7 @@ export default function CourseDetail() {
             // Don't change the enrollment status if there's an error checking it
           }
         } else {
-          console.log("User not authenticated, skipping enrollment check");
+          
         }
       } catch (error) {
         console.error("Error fetching course:", error);

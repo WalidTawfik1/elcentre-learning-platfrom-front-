@@ -207,21 +207,14 @@ export function QuizManagement({ lessonId, courseId, lessonTitle, onQuizChange, 
     setCurrentQuizId(null);
     setIsDialogOpen(true);
   };
-
   const loadQuizzes = async () => {
     if (!selectedLessonId) return;
     
     setIsLoading(true);
     try {
       const quizData = await QuizService.getQuizzesByLessonId(selectedLessonId, courseId);
-      console.log('=== LOAD QUIZZES DEBUG ===');
-      console.log('Lesson ID:', selectedLessonId);
-      console.log('Course ID:', courseId);
-      console.log('Loaded quizzes:', JSON.stringify(quizData, null, 2));
-      console.log('==========================');
       setQuizzes(quizData);
     } catch (error) {
-      console.error('Error loading quizzes:', error);
       toast({
         title: 'Error',
         description: 'Failed to load quizzes. Please try again.',
@@ -308,21 +301,13 @@ export function QuizManagement({ lessonId, courseId, lessonTitle, onQuizChange, 
         }
         if (formData.optionD && formData.optionD.trim()) {
           updateData.optionD = formData.optionD;
-        }
-        if (formData.explanation && formData.explanation.trim()) {
+        }        if (formData.explanation && formData.explanation.trim()) {
           updateData.explanation = formData.explanation;
         }
-          console.log('=== UPDATE QUIZ DEBUG ===');
-        console.log('Current Quiz ID:', currentQuizId, 'Type:', typeof currentQuizId);
-        console.log('Selected Lesson ID:', selectedLessonId, 'Type:', typeof selectedLessonId);
-        console.log('Course ID:', courseId, 'Type:', typeof courseId);
-        console.log('Update data being sent:', JSON.stringify(updateData, null, 2));
         
         // Verify the quiz exists before updating
-        console.log('Verifying quiz exists...');
         const existingQuiz = await QuizService.getQuizById(currentQuizId);
         if (!existingQuiz) {
-          console.error('Quiz not found in database! Quiz ID:', currentQuizId);
           toast({
             title: 'Error',
             description: 'Quiz not found. It may have been deleted by another user.',
@@ -338,8 +323,6 @@ export function QuizManagement({ lessonId, courseId, lessonTitle, onQuizChange, 
           }
           return;
         }
-        console.log('Quiz exists in database:', JSON.stringify(existingQuiz, null, 2));
-        console.log('========================');
         
         await QuizService.updateQuiz(updateData);
         toast({

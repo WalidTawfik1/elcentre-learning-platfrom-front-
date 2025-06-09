@@ -5,12 +5,10 @@ export const ModuleService = {
   /**
    * Get all modules for a specific course
    */
-  getModulesByCourseId: async (courseId: string | number): Promise<CourseModule[]> => {
-    try {
+  getModulesByCourseId: async (courseId: string | number): Promise<CourseModule[]> => {    try {
       const modules = await API.modules.getAll(Number(courseId));
       return Array.isArray(modules) ? modules : [];
     } catch (error) {
-      console.error(`Error fetching modules for course ${courseId}:`, error);
       return [];
     }
   },
@@ -24,10 +22,8 @@ export const ModuleService = {
       // Check if module has all required CourseModule properties
       if (module && typeof module === 'object' && module !== null && 'id' in module && 'title' in module) {
         return module as CourseModule;
-      }
-      return null;
+      }      return null;
     } catch (error) {
-      console.error(`Error fetching module ${id}:`, error);
       return null;
     }
   },
@@ -48,11 +44,8 @@ export const ModuleService = {
         Description: moduleData.description,
         IsPublished: moduleData.isPublished,
         CourseId: moduleData.courseId
-      };
-
-      return await API.modules.add(formattedData);
+      };      return await API.modules.add(formattedData);
     } catch (error) {
-      console.error("Error adding module:", error);
       throw error; // Re-throw to handle in component
     }
   },
@@ -76,11 +69,8 @@ export const ModuleService = {
       // Only add properties that are defined
       if (moduleData.title !== undefined) formattedData.Title = moduleData.title;
       if (moduleData.description !== undefined) formattedData.Description = moduleData.description;
-      if (moduleData.isPublished !== undefined) formattedData.IsPublished = moduleData.isPublished;
-
-      return await API.modules.update(formattedData);
+      if (moduleData.isPublished !== undefined) formattedData.IsPublished = moduleData.isPublished;      return await API.modules.update(formattedData);
     } catch (error) {
-      console.error("Error updating module:", error);
       throw error; // Re-throw to handle in component
     }
   },
@@ -89,11 +79,9 @@ export const ModuleService = {
    * Delete a module by ID
    */
   deleteModule: async (moduleId: number): Promise<boolean> => {
-    try {
-      await API.modules.delete(moduleId);
+    try {      await API.modules.delete(moduleId);
       return true;
     } catch (error) {
-      console.error("Error deleting module:", error);
       throw error; // Re-throw to handle in component
     }
   }

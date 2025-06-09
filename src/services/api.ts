@@ -77,18 +77,8 @@ export async function apiRequest<T>(
   const jwtToken = getJwtToken();
   if (requiresAuth && jwtToken) {
     defaultOptions.headers = {
-      ...defaultOptions.headers,
-      "Authorization": `Bearer ${jwtToken}`,
+      ...defaultOptions.headers,    "Authorization": `Bearer ${jwtToken}`,
     };
-  }
-  
-  // Debug logging for auth requests
-  if (endpoint.includes("/Account/") || requiresAuth) {
-    console.log(`API Request to ${endpoint}`, { 
-      hasToken: !!jwtToken,
-      requiresAuth,
-      method: options.method || 'GET'
-    });
   }
 
   const mergedOptions = { ...defaultOptions, ...options };
@@ -102,9 +92,7 @@ export async function apiRequest<T>(
     try {
       // If this is a retry, add a delay with exponential backoff
       if (retryCount > 0) {
-        const backoffMs = calculateBackoff(retryCount - 1);
-        console.log(`Rate limited (429). Retry ${retryCount}/${API_CONFIG.maxRetries} after ${backoffMs}ms delay`);
-        await sleep(backoffMs);
+        const backoffMs = calculateBackoff(retryCount - 1);        await sleep(backoffMs);
       }
       
       const response = await fetch(url, mergedOptions);
@@ -123,10 +111,8 @@ export async function apiRequest<T>(
         } catch {
           errorMessage = `Error: ${response.status} ${response.statusText}`;
         }
-        
-        // Handle authentication errors
+          // Handle authentication errors
         if (response.status === 401 && requiresAuth) {
-          console.error("Authentication error:", errorMessage);
           // Don't show toast for /profile endpoint when not logged in
           if (!endpoint.includes("/Account/profile")) {
             toast({
@@ -173,7 +159,7 @@ export async function apiRequest<T>(
                      
         if (token && typeof token === 'string') {
           setCookie('jwt', token, 7);
-          console.log("Set JWT cookie from response data");
+          
         }
       }
       
@@ -187,11 +173,9 @@ export async function apiRequest<T>(
       }
       
       retryCount++;
-    }
-  }
+    }  }
   
   // If we get here, all retries have failed
-  console.error(`API request failed after ${retryCount} retries:`, lastError);
   
   // Don't show generic network errors for profile fetch
   if (!endpoint.includes("/Account/profile")) {
@@ -243,20 +227,10 @@ export async function apiFormRequest<T>(
 
   // Keep trying while we have retries left
   while (retryCount <= API_CONFIG.maxRetries) {
-    try {
-      // If this is a retry, add a delay with exponential backoff
+    try {      // If this is a retry, add a delay with exponential backoff
       if (retryCount > 0) {
         const backoffMs = calculateBackoff(retryCount - 1);
-        console.log(`Rate limited (429). Retry ${retryCount}/${API_CONFIG.maxRetries} after ${backoffMs}ms delay`);
         await sleep(backoffMs);
-      }
-      
-      // Debug output (first attempt only)
-      if (retryCount === 0) {
-        console.log(`Making API form request to: ${url}`, {
-          hasJwtCookie: hasJwtCookie(),
-          hasToken: !!jwtToken
-        });
       }
       
       const response = await fetch(url, { ...defaultOptions, ...options });
@@ -301,11 +275,9 @@ export async function apiFormRequest<T>(
       }
       
       retryCount++;
-    }
-  }
+    }  }
   
   // If we get here, all retries have failed
-  console.error(`API form request failed after ${retryCount} retries:`, lastError);
   
   let errorMessage = "Network error. Please check your connection or verify API server is accessible.";
   if (lastError instanceof Error) {

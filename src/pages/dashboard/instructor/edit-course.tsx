@@ -13,8 +13,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { BookOpen, BookText } from "lucide-react";
 
+import { DIRECT_API_URL } from "@/config/api-config";
+
 // Backend base URL for serving static content
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://elcentre-api.runasp.net";
+const API_BASE_URL = DIRECT_API_URL;
 
 export default function EditCourse() {
   const { id } = useParams<{ id: string }>();

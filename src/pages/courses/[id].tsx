@@ -154,7 +154,7 @@ export default function CourseDetail() {
     try {
       // In a real app, we would call the API
       // await API.courses.enroll(id);
-      console.log("Enrolling in course:", id);
+      
       setIsEnrolled(true);
     } catch (error) {
       console.error("Error enrolling in course:", error);

@@ -57,12 +57,10 @@ export const LessonService = {
   /**
    * Get all lessons for a specific module
    */
-  getLessonsByModuleId: async (moduleId: string | number): Promise<Lesson[]> => {
-    try {
+  getLessonsByModuleId: async (moduleId: string | number): Promise<Lesson[]> => {    try {
       const lessons = await API.lessons.getByModule(Number(moduleId));
       return Array.isArray(lessons) ? lessons : [];
     } catch (error) {
-      console.error(`Error fetching lessons for module ${moduleId}:`, error);
       return [];
     }
   },
@@ -74,9 +72,7 @@ export const LessonService = {
     try {
       const lesson = await API.lessons.getById(Number(id));
       // Check if the returned object has the required Lesson properties
-      return lesson && typeof lesson === 'object' && lesson !== null && 'id' in lesson ? lesson as Lesson : null;
-    } catch (error) {
-      console.error(`Error fetching lesson ${id}:`, error);
+      return lesson && typeof lesson === 'object' && lesson !== null && 'id' in lesson ? lesson as Lesson : null;    } catch (error) {
       return null;
     }
   },
@@ -120,12 +116,9 @@ export const LessonService = {
         DurationInMinutes: lessonData.durationInMinutes,
         IsPublished: lessonData.isPublished,
         ModuleId: lessonData.moduleId
-      };
-
-      const result = await API.lessons.add(formattedData);
+      };      const result = await API.lessons.add(formattedData);
       return result;
     } catch (error) {
-      console.error("Error adding lesson:", error);
       throw error; // Re-throw to handle in component
     }
   },
@@ -170,26 +163,14 @@ export const LessonService = {
           formattedData.Content = new File([blob], 'content.txt', { type: 'text/plain' });
         } else if (lessonData.content instanceof File) {
           formattedData.Content = lessonData.content;
-        }
-      } else {
+        }      } else {
         // When content is not provided, tell the backend not to update it
         formattedData.KeepExistingContent = true;
       }
       
-      console.log("Updating lesson with data:", {
-        id: lessonData.id,
-        title: lessonData.title,
-        contentType: lessonData.contentType,
-        durationInMinutes: lessonData.durationInMinutes,
-        isPublished: lessonData.isPublished,
-        hasContentProvided: !!lessonData.content,
-        keepingExistingContent: formattedData.KeepExistingContent
-      });
-      
       const result = await API.lessons.update(formattedData);
       return result;
     } catch (error) {
-      console.error("Error updating lesson:", error);
       throw error; // Re-throw to handle in component
     }
   },
@@ -198,11 +179,9 @@ export const LessonService = {
    * Delete a lesson by ID
    */
   deleteLesson: async (lessonId: number): Promise<boolean> => {
-    try {
-      await API.lessons.delete(lessonId);
+    try {      await API.lessons.delete(lessonId);
       return true;
     } catch (error) {
-      console.error("Error deleting lesson:", error);
       throw error; // Re-throw to handle in component
     }
   }

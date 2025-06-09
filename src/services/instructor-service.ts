@@ -7,12 +7,10 @@ export const InstructorService = {
    */
   getAllInstructors: async (): Promise<UserDTO[]> => {
     try {
-      console.log("Calling API.auth.getAllInstructors()...");
-      const instructors = await API.auth.getAllInstructors();
-      console.log("API response:", instructors);
+        const instructors = await API.auth.getAllInstructors();
+      
       return Array.isArray(instructors) ? instructors : [];
     } catch (error) {
-      console.error("Error fetching all instructors:", error);
       return [];
     }
   },
@@ -21,12 +19,10 @@ export const InstructorService = {
    */
   getInstructorById: async (instructorId: string | number): Promise<UserDTO | null> => {
     try {
-      console.log(`Fetching instructor by ID: ${instructorId}`);
+      
       const instructor = await API.auth.getInstructorById(instructorId) as UserDTO;
-      console.log("Found instructor:", instructor);
-      return instructor || null;
-    } catch (error) {
-      console.error(`Error fetching instructor ${instructorId}:`, error);
+      
+      return instructor || null;    } catch (error) {
       return null;
     }
   },
@@ -36,9 +32,9 @@ export const InstructorService = {
    */
   getInstructorCourses: async (instructorId: string | number): Promise<any[]> => {
     try {
-      console.log(`Calling API.courses.getInstructorCoursesById(${instructorId})...`);
+      
       const courses = await API.courses.getInstructorCoursesById(instructorId);
-      console.log("API response:", courses);
+      
       
       if (!Array.isArray(courses)) {
         return [];
@@ -51,20 +47,15 @@ export const InstructorService = {
             const studentsCount = await API.enrollments.getStudentsCount(course.id);            return {
               ...course,
               studentsCount: Number(studentsCount) || 0
-            };
-          } catch (error) {
-            console.error(`Error fetching enrollment count for course ${course.id}:`, error);
+            };          } catch (error) {
             return {
               ...course,
               studentsCount: 0
             };
           }
         })
-      );
-
-      return coursesWithRealStudentCount;
+      );      return coursesWithRealStudentCount;
     } catch (error) {
-      console.error(`Error fetching courses for instructor ${instructorId}:`, error);
       return [];
     }
   },
@@ -73,10 +64,8 @@ export const InstructorService = {
    * Get enrollment count for a specific course
    */  getCourseEnrollmentCount: async (courseId: number): Promise<number> => {
     try {
-      const count = await API.enrollments.getStudentsCount(courseId);
-      return Number(count) || 0;
+      const count = await API.enrollments.getStudentsCount(courseId);      return Number(count) || 0;
     } catch (error) {
-      console.error(`Error fetching enrollment count for course ${courseId}:`, error);
       return 0;
     }
   },

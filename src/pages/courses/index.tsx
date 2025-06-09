@@ -89,7 +89,7 @@ export default function CoursesIndex() {
     const instructorImage = course.instructorImage || course.instructor?.avatar || course.instructor?.image;
     
     // Debug logging for avatar issues
-    console.log('Course instructor debug:', {
+    ('Course instructor debug:', {
       courseId: course.id,
       instructorName,
       instructorImage,

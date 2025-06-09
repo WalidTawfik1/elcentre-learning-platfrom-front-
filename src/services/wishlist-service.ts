@@ -17,11 +17,10 @@ export const WishlistService = {
     if (userData) {
       try {
         const user = JSON.parse(userData);
-        if (user && user.id) {
-          return `${WISHLIST_STORAGE_BASE_KEY}_${user.id}`;
+        if (user && user.id) {        return `${WISHLIST_STORAGE_BASE_KEY}_${user.id}`;
         }
       } catch (error) {
-        console.error("Error parsing user data:", error);
+        // Silent error handling for parsing issues
       }
     }
     
@@ -36,9 +35,8 @@ export const WishlistService = {
     try {
       const storageKey = WishlistService.getStorageKey();
       const wishlistData = localStorage.getItem(storageKey);
-      return wishlistData ? JSON.parse(wishlistData) : [];
-    } catch (error) {
-      console.error("Error loading wishlist from localStorage:", error);
+      return wishlistData ? JSON.parse(wishlistData) : [];    } catch (error) {
+      // Silent error handling
       return [];
     }
   },
@@ -64,12 +62,10 @@ export const WishlistService = {
       // Show success notification
       toast({
         title: "Added to wishlist",
-        description: `${course.title} has been added to your wishlist.`,
-      });
+        description: `${course.title} has been added to your wishlist.`,      });
       
       return true;
     } catch (error) {
-      console.error("Error adding course to wishlist:", error);
       return false;
     }
   },
@@ -98,10 +94,8 @@ export const WishlistService = {
         title: "Removed from wishlist",
         description: `${courseToRemove.title} has been removed from your wishlist.`,
       });
-      
-      return true;
+        return true;
     } catch (error) {
-      console.error("Error removing course from wishlist:", error);
       return false;
     }
   },

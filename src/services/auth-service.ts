@@ -51,16 +51,7 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
     credentials: 'include', // Always include credentials for auth operations
     mode: 'cors'
   };
-
   try {
-    console.log('Direct API request options:', JSON.stringify({
-      url,
-      method: requestOptions.method || 'GET',
-      hasAuthHeader: !!headers["Authorization"]?.length,
-      credentials: requestOptions.credentials,
-      mode: requestOptions.mode
-    }));
-    
     const response = await fetch(url, requestOptions);
     
     // Extract JWT token from response headers if available
@@ -74,7 +65,6 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
       // Try to parse error response
       try {
         const errorData = await response.json();
-        console.error('Auth API error:', errorData);
         
         // Handle specific error cases
         if (response.status === 400) {
@@ -113,8 +103,7 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
         throw new Error(`API Error: ${response.status} - ${response.statusText}`);
       }
     }
-    
-    // For 204 No Content responses
+      // For 204 No Content responses
     if (response.status === 204) {
       return {} as T;
     }
@@ -122,7 +111,6 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error("API request failed:", error);
     throw error;
   }
 };
@@ -158,24 +146,14 @@ export const AuthService = {
                     response.data.jwt
                   ));
         }
-        
-        if (token) {
+          if (token) {
           // Remove any existing token cookie that might be present
           document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
           document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
           // Set the JWT as a cookie that expires in 7 days
           setCookie('jwt', token, 7);
-        } else {
-          console.warn("No JWT token found in login response");
         }
       }
-      
-      // Debug cookie
-      setTimeout(() => {
-        console.log("Checking for JWT cookie after login:", 
-          document.cookie.includes('jwt=') ? "Found" : "Not found",
-          "Cookie value:", getCookie('jwt')?.substring(0, 10) + "...");
-      }, 300);
       
       return response;
     } catch (error) {
@@ -225,12 +203,7 @@ export const AuthService = {
     // Clear client-side auth state if needed
     return response;
   },
-  
-  getProfile: async (): Promise<UserDTO> => {
-    // Debug JWT cookie presence
-    console.log("JWT cookie present before profile fetch:", 
-      document.cookie.includes('jwt='));
-    
+    getProfile: async (): Promise<UserDTO> => {
     return apiRequest<UserDTO>("/Account/profile", {
       credentials: "include" // Explicitly include credentials
     }, true);

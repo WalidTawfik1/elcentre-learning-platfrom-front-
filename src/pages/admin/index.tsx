@@ -25,9 +25,9 @@ export default function AdminDashboard() {
   const loadAdminData = async () => {
     try {
       setLoading(true);
-      console.log("Loading admin dashboard data...");
+      
       const stats = await AdminService.getAdminStatistics();
-      console.log("Admin dashboard stats received:", stats);
+      
       
       setPendingCount(stats.pendingCourses);
       setAdminStats({
@@ -37,7 +37,7 @@ export default function AdminDashboard() {
         totalEnrollments: stats.totalEnrollments
       });
       
-      console.log("Admin dashboard state updated - Pending count:", stats.pendingCourses);
+      
     } catch (error) {
       console.error("Error loading admin data:", error);
     } finally {

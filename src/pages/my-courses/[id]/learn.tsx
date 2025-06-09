@@ -19,8 +19,10 @@ import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
 
+import { DIRECT_API_URL } from "@/config/api-config";
+
 // Backend base URL for serving static content
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://elcentre-api.runasp.net";
+const API_BASE_URL = DIRECT_API_URL;
 
 export default function CourseLearn() {
   const { id } = useParams<{ id: string }>();
@@ -68,9 +70,9 @@ export default function CourseLearn() {
         const modulesData = await CourseService.getModules(id);
           // Fetch course quizzes
         try {
-          console.log('Fetching quizzes for course ID:', Number(id));
+          
           const quizzesData = await QuizService.getAllCourseQuizzes(Number(id));
-          console.log('Quizzes response:', quizzesData);
+          
           setCourseQuizzes(Array.isArray(quizzesData) ? quizzesData : []);
         } catch (error) {
           console.error("Error fetching course quizzes:", error);
@@ -350,15 +352,15 @@ export default function CourseLearn() {
       .find(row => row.startsWith('jwt='))
       ?.split('=')[1];
     
-    console.log('=== JWT TOKEN DEBUG ===');
-    console.log('Token present:', !!token);
+    
+    
     if (token) {
-      console.log('Token length:', token.length);
-      console.log('Token preview:', token.substring(0, 20) + '...');
+      
+      
       
       try {
         const parts = token.split('.');
-        console.log('Token parts count:', parts.length);
+        
         if (parts.length === 3) {
           const payload = JSON.parse(atob(parts[1]));
           console.log('Token payload:', {
@@ -370,11 +372,11 @@ export default function CourseLearn() {
           });
         }
       } catch (error) {
-        console.error('Error parsing token:', error);
+        // Silent error handling for token parsing
       }
     }
-    console.log('All cookies:', document.cookie);
-    console.log('=======================');
+    
+    
   };
 
   if (isLoading) {

@@ -3,21 +3,21 @@
 // Determine if we're running in a production environment
 const isProduction = import.meta.env.PROD;
 
-// The original API URL that should be used for direct connections when in development
-const ORIGIN_API_URL = "https://elcentre-api.runasp.net";
+// Get API URL from environment variable or use fallback
+const FALLBACK_API_URL = "https://elcentre-api.runasp.net";
 
 // Production Vercel deployment URL for images
 const PRODUCTION_URL = "https://elcentre.vercel.app";
 
-// Use relative URL in production (for Vercel proxy) and direct URL in development
+// Use relative URL in production (for Vercel proxy) and environment/fallback URL in development
 export const API_BASE_URL = isProduction 
   ? "/api" 
-  : (import.meta.env.VITE_API_BASE_URL || ORIGIN_API_URL);
+  : (import.meta.env.VITE_API_BASE_URL || FALLBACK_API_URL);
 
 // Direct API URL for images and auth operations that might need direct access
 export const DIRECT_API_URL = isProduction
   ? "/api"
-  : (import.meta.env.VITE_API_BASE_URL || ORIGIN_API_URL);
+  : (import.meta.env.VITE_API_BASE_URL || FALLBACK_API_URL);
 
 // For image URLs, we need to handle them differently in production vs development
 export const getImageUrl = (path: string | undefined): string => {
@@ -27,9 +27,8 @@ export const getImageUrl = (path: string | undefined): string => {
   if (path.startsWith('http')) {
     return path;
   }
-  
-  // If it already contains our API URL, don't double-prefix it
-  if (path.includes(ORIGIN_API_URL)) {
+    // If it already contains our API URL, don't double-prefix it
+  if (path.includes(FALLBACK_API_URL)) {
     return path;
   }
   
@@ -38,10 +37,9 @@ export const getImageUrl = (path: string | undefined): string => {
   
   if (isProduction) {
     // In production, all images go through the Vercel proxy
-    return `${PRODUCTION_URL}/api/${cleanPath}`;
-  } else {
+    return `${PRODUCTION_URL}/api/${cleanPath}`;  } else {
     // In local development, use the direct API URL
-    return `${ORIGIN_API_URL}/${cleanPath}`;
+    return `${FALLBACK_API_URL}/${cleanPath}`;
   }
 };
 

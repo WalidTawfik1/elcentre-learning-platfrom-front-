@@ -85,13 +85,13 @@ export default function ProfilePage() {
     }
   };  // Get the current profile picture URL
   const getCurrentProfilePictureUrl = () => {
-    console.log('getCurrentProfilePictureUrl called - user:', user);
-    console.log('user?.avatar:', user?.avatar);
-    console.log('user?.profilePicture:', user?.profilePicture);
+    
+    
+    
     
     // If we have a preview (user is editing and selected a new image)
     if (profilePicturePreview) {
-      console.log('Returning preview URL:', profilePicturePreview);
+      
       return profilePicturePreview;
     }
     
@@ -100,15 +100,15 @@ export default function ProfilePage() {
     if (profilePictureSource) {
       try {
         const imageUrl = getImageUrl(profilePictureSource);
-        console.log('Profile picture URL:', imageUrl, 'Original path:', profilePictureSource);
-        console.log('Is placeholder?', imageUrl === "/placeholder.svg");
+        
+        
         
         // Don't return placeholder URLs
         if (imageUrl === "/placeholder.svg") {
-          console.log('Returning empty string because of placeholder');
+          
           return "";
         }
-        console.log('Returning actual image URL:', imageUrl);
+        
         return imageUrl;
       } catch (error) {
         console.error('Error getting profile picture URL:', error);
@@ -116,7 +116,7 @@ export default function ProfilePage() {
       }
     }
     
-    console.log('No profile picture found, returning empty string');
+    
     return "";
   };
     // Handle form submission

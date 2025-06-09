@@ -41,9 +41,9 @@ export default function PendingCoursesPage() {
     try {
       setLoading(true);
       const response = await CourseService.getPendingCourses();
-      console.log("Raw API response:", response);
-      console.log("Response data:", response?.data);
-      console.log("Response items:", response?.items);
+      
+      
+      
       
       // Handle different possible response structures
       let coursesData = [];
@@ -57,9 +57,9 @@ export default function PendingCoursesPage() {
         // Normalize the status field - check for different possible status field names
       coursesData = coursesData.map(course => {
         // Log each course to debug
-        console.log("Processing course:", course);
+        
         const statusField = course.status || course.courseStatus || course.Status || course.CourseStatus;
-        console.log("Found status field:", statusField);
+        
         
         return {
           ...course,
@@ -67,8 +67,8 @@ export default function PendingCoursesPage() {
         };
       });
       
-      console.log("Processed courses data:", coursesData);
-      console.log("Courses with status:", coursesData.map(c => ({ id: c.id, title: c.title, status: c.status })));
+      
+      
       
       setPendingCourses(coursesData || []);
     } catch (error) {
@@ -164,10 +164,10 @@ export default function PendingCoursesPage() {
     }
   };
   const pendingCount = pendingCourses.filter(course => isPendingStatus(course.status)).length;
-  console.log("Pending count calculation:");
-  console.log("Total courses:", pendingCourses.length);
-  console.log("All course statuses:", pendingCourses.map(c => ({ id: c.id, title: c.title, status: c.status })));
-  console.log("Pending count:", pendingCount);
+  
+  
+  
+  
 
   if (loading) {
     return (
@@ -230,7 +230,7 @@ export default function PendingCoursesPage() {
         </Card>
       ) : (        <div className="grid gap-6">
           {pendingCourses.map((course) => {
-            console.log(`Rendering course ${course.id}: title="${course.title}", status="${course.status}"`);
+            
             return (
             <Card key={course.id} className="overflow-hidden">
               <CardContent className="p-0">

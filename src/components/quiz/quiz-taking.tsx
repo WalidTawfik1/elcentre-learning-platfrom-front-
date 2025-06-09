@@ -43,29 +43,19 @@ export function QuizTaking({ lessonId, courseId, onQuizComplete }: QuizTakingPro
       localStorage.setItem(`quiz-answers-${lessonId}`, JSON.stringify(localAnswers));
     }
   }, [localAnswers, lessonId]);
-
   const loadQuizzes = async () => {
     setIsLoading(true);
     try {
-      console.log('=== LOADING QUIZ DATA ===');
-      console.log('Lesson ID:', lessonId);
-      console.log('Course ID:', courseId);
-      
       // Load quizzes for this lesson
       const quizData = await QuizService.getQuizzesByLessonId(lessonId, courseId);
-      console.log('Quiz Data:', quizData);
-      console.log('Quiz Count:', quizData.length);
       setQuizzes(quizData);
 
       // Load existing answers
       const answered = await QuizService.getStudentQuizzesByLesson(lessonId);
-      console.log('Answered Quizzes:', answered);
-      console.log('Answered Count:', answered.length);
       setAnsweredQuizzes(answered);
 
       // Load current score
       const currentScore = await QuizService.getTotalScore(lessonId);
-      console.log('Current Score:', currentScore);
       setScore(currentScore);
       
       // Store debug information
@@ -80,15 +70,9 @@ export function QuizTaking({ lessonId, courseId, onQuizComplete }: QuizTakingPro
 
       // Check if all quizzes are completed
       if (quizData.length > 0 && answered.length >= quizData.length) {
-        console.log('All quizzes completed');
         setQuizCompleted(true);
-      } else {
-        console.log('Quiz not completed - quizzes:', quizData.length, 'answered:', answered.length);
       }
-      
-      console.log('========================');
     } catch (error) {
-      console.error('Error loading quizzes:', error);
       toast({
         title: 'Error',
         description: 'Failed to load quizzes. Please try again.',
@@ -121,21 +105,11 @@ export function QuizTaking({ lessonId, courseId, onQuizComplete }: QuizTakingPro
       for (const [quizIdStr, answer] of Object.entries(localAnswers)) {
         const quizId = parseInt(quizIdStr);
         const quiz = quizzes.find(q => q.id === quizId);
-        
-        if (quiz) {
+          if (quiz) {
           const result = await QuizService.submitQuizAnswer(quizId, answer);
-          
-          // Debug logging to understand the response
-          console.log('Quiz submission result:', result);
-          console.log('Selected answer:', answer);
-          console.log('Correct answer:', quiz.correctAnswer);
-          console.log('Result score:', result.score);
           
           // Check if the answer is correct by comparing the selected answer with the correct answer
           const isCorrect = answer === quiz.correctAnswer;
-          
-          console.log('Is correct (by comparison):', isCorrect);
-          console.log('Is correct (by score):', result.score === 1);
           
           submittedAnswers.push({
             quizId,
@@ -167,9 +141,7 @@ export function QuizTaking({ lessonId, courseId, onQuizComplete }: QuizTakingPro
       
       if (onQuizComplete) {
         onQuizComplete(finalScore);
-      }
-    } catch (error) {
-      console.error('Error submitting quiz answers:', error);
+      }    } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to submit quiz answers. Please try again.',

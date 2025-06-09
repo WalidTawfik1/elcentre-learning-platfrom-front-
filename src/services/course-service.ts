@@ -117,10 +117,8 @@ export const CourseService = {
       const totalProgress = enrollments.reduce((total, enrollment) => {
         return total + (enrollment.progress || 0);
       }, 0);
-      
-      return Math.round(totalProgress / enrollments.length);
+        return Math.round(totalProgress / enrollments.length);
     } catch (error) {
-      console.error(`Error calculating completion rate for course ${courseId}:`, error);
       return 0;
     }
   },
@@ -185,11 +183,9 @@ export const CourseService = {
   },
 
   deleteCourse: async (courseId: number): Promise<any> => {
-    try {
-      await API.courses.delete(courseId);
+    try {      await API.courses.delete(courseId);
       return true;
     } catch (error) {
-      console.error("Error deleting course:", error);
       throw error; // Re-throw to handle in component
     }
   },
