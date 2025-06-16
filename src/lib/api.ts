@@ -103,7 +103,6 @@ async function apiRequest<T>(
       }
     }
   }
-
   const config: RequestInit = {
     method,
     headers,
@@ -116,8 +115,7 @@ async function apiRequest<T>(
       config.body = data;
     } else if (method === "POST" || method === "PUT" || method === "PATCH") {
       config.body = JSON.stringify(data);
-    }
-  }
+    }  }
 
   // Initialize retry counter
   let retryCount = 0;
@@ -540,36 +538,26 @@ export const API = {
     
     getById: (id: number) => 
       apiRequest(`/Lesson/get-lesson-by-id/${id}`, 'GET', undefined, false),
-    
-    add: (data: {
+      add: (data: {
       Title: string;
       Content: File;
       ContentType: string;
       DurationInMinutes: number;
+      Description: string;
       IsPublished: boolean;
       ModuleId: number;
     }) => {
       const formData = createFormData(data);
       return apiRequest('/Lesson/add-lesson', 'POST', formData, true, true);
-    },
-    
-    update: (data: {
+    },    update: (data: {
       Id: number;
       Title?: string;
-      Content?: File;
-      ContentType?: string;
       DurationInMinutes?: number;
+      Description?: string;
       IsPublished?: boolean;
-      KeepExistingContent?: boolean;
     }) => {
-      const formData = createFormData(data);
-      
-      // If KeepExistingContent is true, add a special field to inform the backend
-      if (data.KeepExistingContent) {
-        formData.append("KeepExistingContent", "true");
-      }
-      
-      return apiRequest('/Lesson/update-lesson', 'PUT', formData, true, true);
+      // Send as JSON (backend expects JSON format, not FormData)
+      return apiRequest('/Lesson/update-lesson', 'PUT', data, true, false);
     },
     
     delete: (id: number) => 

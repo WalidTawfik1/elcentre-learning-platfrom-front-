@@ -69,6 +69,7 @@ export interface Lesson {
   content: string;
   contentType: string;
   durationInMinutes: number;
+  description: string;
   isPublished: boolean;
   moduleId: number;
   orderIndex: number;

@@ -12,6 +12,11 @@ const validateLesson = (lessonData: any): string | null => {
   if (lessonData.durationInMinutes !== undefined && lessonData.durationInMinutes <= 0) {
     return 'Duration must be greater than zero';
   }
+
+  // Description validation for new lessons
+  if (!lessonData.isUpdate && (!lessonData.description || lessonData.description.trim() === '')) {
+    return 'Lesson description is required';
+  }
   
   // For updates, we only validate the fields that are provided
   if (lessonData.isUpdate) {
@@ -76,8 +81,7 @@ export const LessonService = {
       return null;
     }
   },
-  
-  /**
+    /**
    * Add a new lesson to a module
    */
   addLesson: async (lessonData: {
@@ -85,6 +89,7 @@ export const LessonService = {
     content: File | string; // Can be a file for video or string for text
     contentType: string; // "video" or "text"
     durationInMinutes: number;
+    description: string;
     isPublished: boolean;
     moduleId: number;
   }): Promise<any> => {
@@ -114,6 +119,7 @@ export const LessonService = {
         Content: contentAsFile,
         ContentType: lessonData.contentType,
         DurationInMinutes: lessonData.durationInMinutes,
+        Description: lessonData.description,
         IsPublished: lessonData.isPublished,
         ModuleId: lessonData.moduleId
       };      const result = await API.lessons.add(formattedData);
@@ -122,16 +128,14 @@ export const LessonService = {
       throw error; // Re-throw to handle in component
     }
   },
-  
-  /**
+    /**
    * Update an existing lesson
    */
   updateLesson: async (lessonData: {
     id: number;
     title?: string;
-    content?: File | string;
-    contentType?: string;
     durationInMinutes?: number;
+    description?: string;
     isPublished?: boolean;
   }): Promise<any> => {
     try {
@@ -148,25 +152,11 @@ export const LessonService = {
       // Transform the data to match API expectations (PascalCase)
       const formattedData: any = {
         Id: lessonData.id
-      };
-      
-      // Add properties that are defined
+      };      // Add properties that are defined - content and contentType are not editable
       if (lessonData.title !== undefined) formattedData.Title = lessonData.title;
-      if (lessonData.contentType !== undefined) formattedData.ContentType = lessonData.contentType;
       if (lessonData.durationInMinutes !== undefined) formattedData.DurationInMinutes = lessonData.durationInMinutes;
+      if (lessonData.description !== undefined) formattedData.Description = lessonData.description;
       if (lessonData.isPublished !== undefined) formattedData.IsPublished = lessonData.isPublished;
-      
-      // Handle content separately based on type
-      if (lessonData.content !== undefined) {
-        if (typeof lessonData.content === 'string') {
-          const blob = new Blob([lessonData.content], { type: 'text/plain' });
-          formattedData.Content = new File([blob], 'content.txt', { type: 'text/plain' });
-        } else if (lessonData.content instanceof File) {
-          formattedData.Content = lessonData.content;
-        }      } else {
-        // When content is not provided, tell the backend not to update it
-        formattedData.KeepExistingContent = true;
-      }
       
       const result = await API.lessons.update(formattedData);
       return result;

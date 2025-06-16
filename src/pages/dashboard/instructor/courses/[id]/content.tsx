@@ -54,7 +54,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { CreateNotificationForm } from "@/components/notifications/create-notification-form";
-import {useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { CourseService } from "@/services/course-service";
 import { ModuleService } from "@/services/module-service";
@@ -101,9 +101,9 @@ export default function CourseContentManagement() {
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
   const [isEditingLesson, setIsEditingLesson] = useState(false);
   const [currentLessonId, setCurrentLessonId] = useState<number | null>(null);
-  const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
-  const [lessonFormData, setLessonFormData] = useState({
+  const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);  const [lessonFormData, setLessonFormData] = useState({
     title: "",
+    description: "",
     contentType: "text",
     content: null as File | null,
     contentText: "",
@@ -323,8 +323,7 @@ export default function CourseContentManagement() {
         description: "Failed to delete module. Please try again.",
         variant: "destructive"
       });
-    }
-  };
+    }  };
 
   // Lesson handlers
   const handleAddLesson = (moduleId: number) => {
@@ -333,6 +332,7 @@ export default function CourseContentManagement() {
     setSelectedModuleId(moduleId);
     setLessonFormData({
       title: "",
+      description: "",
       contentType: "text",
       content: null,
       contentText: "",
@@ -342,7 +342,6 @@ export default function CourseContentManagement() {
     });
     setLessonDialogOpen(true);
   };
-
   const handleEditLesson = async (lesson: Lesson) => {
     setIsEditingLesson(true);
     setCurrentLessonId(lesson.id);
@@ -353,6 +352,7 @@ export default function CourseContentManagement() {
     
     setLessonFormData({
       title: lesson.title,
+      description: lesson.description || "",
       contentType: lesson.contentType,
       content: null, // Can't pre-set file input
       contentText: lesson.contentType === "text" ? lesson.content || "" : "",
@@ -363,7 +363,6 @@ export default function CourseContentManagement() {
     
     setLessonDialogOpen(true);
   };
-
   const handleLessonSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedModuleId) return;
@@ -371,51 +370,14 @@ export default function CourseContentManagement() {
     setIsSavingLesson(true);
     try {
       if (isEditingLesson && currentLessonId) {
-        // Update existing lesson
+        // Update existing lesson - content and contentType are not editable
         const updateData: any = {
           id: currentLessonId,
           title: lessonFormData.title,
-          contentType: lessonFormData.contentType,
+          description: lessonFormData.description,
           durationInMinutes: lessonFormData.durationInMinutes,
           isPublished: lessonFormData.isPublished
         };
-        
-        // Handle content based on type
-        if (lessonFormData.contentType === 'text') {
-          // For text lessons, always provide the text content
-          updateData.content = lessonFormData.contentText;
-        } else if (lessonFormData.contentType === 'video') {
-          // For video lessons, only include content if a new file is provided
-          // Otherwise, we'll reuse the original content 
-          if (lessonFormData.content) {
-            // New video file uploaded - use it
-            updateData.content = lessonFormData.content;
-          } else if (lessonFormData.originalContent) {
-            // No new file uploaded but we have original content - reuse it
-            try {
-              // If the original content is a URL, fetch it and convert to File
-              // This mimics what's done in edit-course.tsx for thumbnails
-              const response = await fetch(lessonFormData.originalContent);
-              const blob = await response.blob();
-              const fileName = lessonFormData.originalContent.split('/').pop() || 'video.mp4';
-              updateData.content = new File([blob], fileName, { type: blob.type });
-            } catch (error) {
-              // If we can't fetch the original content, inform the user
-              console.error("Error fetching original video:", error);
-              
-              // Use the flag to keep existing content instead
-              updateData.keepExistingContent = true;
-            }
-          }
-        }
-        
-        ("Updating lesson with data:", {
-          id: updateData.id,
-          title: updateData.title,
-          contentType: updateData.contentType,
-          hasNewContent: !!updateData.content,
-          keepingExistingContent: !!updateData.keepExistingContent
-        });
         
         await LessonService.updateLesson(updateData);
         
@@ -437,6 +399,7 @@ export default function CourseContentManagement() {
         
         await LessonService.addLesson({
           title: lessonFormData.title,
+          description: lessonFormData.description,
           contentType: lessonFormData.contentType,
           content: content,
           durationInMinutes: lessonFormData.durationInMinutes,
@@ -505,10 +468,10 @@ export default function CourseContentManagement() {
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
-        </div>
-      </MainLayout>
+        </div>      </MainLayout>
     );
   }
+  
   return (
     <MainLayout>
       <div className="container py-8">
@@ -847,8 +810,7 @@ export default function CourseContentManagement() {
                 {isEditingLesson 
                   ? "Update the content of this lesson."
                   : "Create a new lesson for your module."}
-              </DialogDescription>
-            </DialogHeader>
+              </DialogDescription>            </DialogHeader>
             
             <form onSubmit={handleLessonSubmit}>
               <div className="grid gap-4 py-4">
@@ -863,57 +825,76 @@ export default function CourseContentManagement() {
                 </div>
                 
                 <div className="grid gap-2">
-                  <Label htmlFor="contentType">Content Type</Label>
-                  <Select
-                    value={lessonFormData.contentType}
-                    onValueChange={(value) => setLessonFormData({...lessonFormData, contentType: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select content type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="text">
-                        <div className="flex items-center">
-                          <FileText className="h-4 w-4 mr-2" />
-                          <span>Text/Article</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="video">
-                        <div className="flex items-center">
-                          <Video className="h-4 w-4 mr-2" />
-                          <span>Video</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="lesson-description">Description</Label>
+                  <Textarea
+                    id="lesson-description"
+                    value={lessonFormData.description}
+                    onChange={(e) => setLessonFormData({...lessonFormData, description: e.target.value})}
+                    rows={3}
+                    required
+                    placeholder="Enter lesson description"
+                  />
                 </div>
                 
-                {lessonFormData.contentType === 'text' ? (
-                  <div className="grid gap-2">
-                    <Label htmlFor="contentText">Content</Label>
-                    <Textarea
-                      id="contentText"
-                      value={lessonFormData.contentText}
-                      onChange={(e) => setLessonFormData({...lessonFormData, contentText: e.target.value})}
-                      rows={10}
-                      required={lessonFormData.contentType === 'text'}
-                    />
-                  </div>
-                ) : (
-                  <div className="grid gap-2">
-                    <Label htmlFor="videoContent">Video Content</Label>
-                    <Input
-                      id="videoContent"
-                      type="file"
-                      accept="video/*"
-                      onChange={handleLessonFileChange}
-                      required={isEditingLesson ? false : lessonFormData.contentType === 'video'}
-                    />
-                    {isEditingLesson && lessonFormData.contentType === 'video' && (
-                      <p className="text-sm text-muted-foreground">
-                        Upload a new video only if you want to replace the existing one.
-                      </p>
+                {!isEditingLesson && (
+                  <>
+                    <div className="grid gap-2">
+                      <Label htmlFor="contentType">Content Type</Label>
+                      <Select
+                        value={lessonFormData.contentType}
+                        onValueChange={(value) => setLessonFormData({...lessonFormData, contentType: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select content type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="text">
+                            <div className="flex items-center">
+                              <FileText className="h-4 w-4 mr-2" />
+                              <span>Text/Article</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="video">
+                            <div className="flex items-center">
+                              <Video className="h-4 w-4 mr-2" />
+                              <span>Video</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {lessonFormData.contentType === 'text' ? (
+                      <div className="grid gap-2">
+                        <Label htmlFor="contentText">Content</Label>
+                        <Textarea
+                          id="contentText"
+                          value={lessonFormData.contentText}
+                          onChange={(e) => setLessonFormData({...lessonFormData, contentText: e.target.value})}
+                          rows={10}
+                          required={lessonFormData.contentType === 'text'}
+                        />
+                      </div>
+                    ) : (
+                      <div className="grid gap-2">
+                        <Label htmlFor="videoContent">Video Content</Label>
+                        <Input
+                          id="videoContent"
+                          type="file"
+                          accept="video/*"
+                          onChange={handleLessonFileChange}
+                          required={lessonFormData.contentType === 'video'}
+                        />
+                      </div>
                     )}
+                  </>
+                )}
+                
+                {isEditingLesson && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <p className="text-sm text-blue-800">
+                      <strong>Note:</strong> Content and content type cannot be edited for existing lessons.
+                    </p>
                   </div>
                 )}
                 
