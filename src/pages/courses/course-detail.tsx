@@ -11,6 +11,7 @@ import { CourseService } from "@/services/course-service";
 import { WishlistService } from "@/services/wishlist-service";
 import { PaymentService } from "@/services/payment-service";
 import { PaymentMethodDialog } from "@/components/ui/payment-method-dialog";
+import { NotificationSubscriptionToggle } from "@/components/notifications/notification-subscription-toggle";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -584,16 +585,26 @@ export default function CourseDetail() {
                   <span>{enrollmentCount?.toLocaleString() || courseData.studentsCount?.toLocaleString() || 0} students</span>
                 </div>
               </div>
-              
-              <div className="hidden md:block">
+                <div className="hidden md:block">
                 {isEnrolled ? (
-                  <div className="flex gap-4">
-                    <Button asChild className="bg-eduBlue-500 hover:bg-eduBlue-600">
-                      <Link to={`/my-courses/${courseData.id}/learn`}>
-                        Continue Learning
-                      </Link>
-                    </Button>
-                    {/* Don't show wishlist button if enrolled */}
+                  <div className="space-y-4">
+                    <div className="flex gap-4">
+                      <Button asChild className="bg-eduBlue-500 hover:bg-eduBlue-600">
+                        <Link to={`/my-courses/${courseData.id}/learn`}>
+                          Continue Learning
+                        </Link>
+                      </Button>
+                      {/* Don't show wishlist button if enrolled */}
+                    </div>
+                    
+                    {/* Notification subscription toggle for enrolled students */}
+                    {user?.userType === "Student" && (
+                      <NotificationSubscriptionToggle
+                        courseId={parseInt(id!)}
+                        courseName={courseData.title}
+                        variant="card"
+                      />
+                    )}
                   </div>
                 ) : (
                   <div className="flex gap-4">
@@ -688,16 +699,23 @@ export default function CourseDetail() {
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="md:hidden mb-6">
+                    <div className="md:hidden mb-6">
                     {isEnrolled ? (
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-4">
                         <Button asChild className="w-full bg-eduBlue-500 hover:bg-eduBlue-600">
                           <Link to={`/my-courses/${courseData.id}/learn`}>
                             Continue Learning
                           </Link>
                         </Button>
-                        {/* Don't show wishlist button if enrolled */}
+                        
+                        {/* Notification subscription toggle for enrolled students */}
+                        {user?.userType === "Student" && (
+                          <NotificationSubscriptionToggle
+                            courseId={parseInt(id!)}
+                            courseName={courseData.title}
+                            variant="card"
+                          />
+                        )}
                       </div>
                     ) : (
                       <div className="flex flex-col gap-2">

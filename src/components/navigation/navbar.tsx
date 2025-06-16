@@ -4,6 +4,7 @@ import { Menu, Search, X } from "lucide-react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "@/hooks/use-auth"
 import { UserNav } from "./user-nav"
+import { NotificationBell } from "@/components/notifications/notification-bell"
 import { useEffect, useState } from "react"
 
 export function NavBar() {
@@ -180,12 +181,14 @@ export function NavBar() {
               </Button>
             )}
           </div>
-          
-          {/* Auth state dependent UI */}
+            {/* Auth state dependent UI */}
           {isLoading ? (
             <div className="h-8 w-8 rounded-full bg-muted animate-pulse"></div>
           ) : isAuthenticated ? (
-            <UserNav />
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              <UserNav />
+            </div>
           ) : (
             <div className="flex items-center gap-1 sm:gap-2">
               <Link to="/login">

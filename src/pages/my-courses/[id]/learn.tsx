@@ -8,16 +8,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { StarIcon, Play, Clock, Book, Video, CheckCircle, FileText, ArrowLeft, Check, HelpCircle, Trophy } from "lucide-react";
+import { StarIcon, Play, Clock, Book, Video, CheckCircle, FileText, ArrowLeft, Check, HelpCircle, Trophy, Bell } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { EnrollmentService } from "@/services/enrollment-service";
 import { InstructorService } from "@/services/instructor-service";
 import { QuizTaking } from "@/components/quiz/quiz-taking";
 import { QuizService } from "@/services/quiz-service";
+import { useNotifications } from "@/hooks/use-notifications";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 
 import { DIRECT_API_URL } from "@/config/api-config";
 
@@ -28,6 +30,7 @@ export default function CourseLearn() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
+  const { joinCourseGroup, leaveCourseGroup, isSubscribedToCourse, notifications, markAsRead, refreshNotifications } = useNotifications();
   const [course, setCourse] = useState<any>(null);
   const [modules, setModules] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +43,7 @@ export default function CourseLearn() {
   const [showQuizzes, setShowQuizzes] = useState(false);
   const [quizScore, setQuizScore] = useState<any>(null);
   const [courseQuizzes, setCourseQuizzes] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState('overview');
   
   useEffect(() => {
     // Don't redirect while auth is still loading
@@ -157,13 +161,41 @@ export default function CourseLearn() {
       setIsLoadingInstructor(false);
     }
   };
-  
-  // Fetch instructor details when course is loaded
+    // Fetch instructor details when course is loaded
   useEffect(() => {
     if (course?.instructorId && !instructor) {
       fetchInstructorDetails(course.instructorId);
     }
   }, [course?.instructorId, instructor]);
+  // Join course notification group when course is loaded and user is subscribed
+  useEffect(() => {
+    if (course?.id && isAuthenticated && user?.userType === "Student") {
+      // Auto-join if subscribed to notifications for this course
+      if (isSubscribedToCourse(course.id)) {
+        joinCourseGroup(course.id);
+      }
+      
+      // Leave the group when component unmounts or course changes
+      return () => {
+        leaveCourseGroup(course.id);
+      };
+    }
+  }, [course?.id, isAuthenticated, user?.userType, isSubscribedToCourse, joinCourseGroup, leaveCourseGroup]);
+
+  // Handle notification navigation
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.startsWith('#notification-')) {
+      setActiveTab('notifications');
+      // Scroll to the notification after a short delay to ensure the tab content is rendered
+      setTimeout(() => {
+        const element = document.querySelector(hash);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
+  }, []);
   
   // Fetch course reviews when the reviews tab is clicked
   const handleFetchReviews = async () => {
@@ -414,10 +446,10 @@ export default function CourseLearn() {
       
       {/* Main Content */}
       <div className="container py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar with Course Curriculum */}
-          <div className="lg:col-span-1 order-2 lg:order-1">
-            <div className="border rounded-lg bg-card overflow-hidden sticky top-24">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">          {/* Sidebar with Course Curriculum */}          <div className="lg:col-span-1 order-2 lg:order-1">
+            <div className="space-y-4">
+              {/* Course curriculum */}
+              <div className="border rounded-lg bg-card overflow-hidden sticky top-24">
               <div className="p-4 border-b bg-muted/50">
                 <h2 className="font-semibold">Course Content</h2>                <div className="text-xs text-muted-foreground mt-1">
                   {modules.length} modules • {getTotalLessons()} lessons • {courseQuizzes.length} quizzes • {calculateTotalDuration()} total
@@ -480,9 +512,9 @@ export default function CourseLearn() {
                         </ul>
                       </AccordionContent>
                     </AccordionItem>
-                  ))}
-                </Accordion>
+                  ))}                </Accordion>
               </div>
+            </div>
             </div>
           </div>
           
@@ -549,12 +581,12 @@ export default function CourseLearn() {
               </div>
             </div>
               {/* Course Tabs */}
-            <Tabs defaultValue="overview">
-              <TabsList className="w-full justify-start border-b rounded-none mb-6 px-0 h-auto">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>              <TabsList className="w-full justify-start border-b rounded-none mb-6 px-0 h-auto">
                 <TabsTrigger 
                   value="overview"
                   className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
                 >
+                  <Book className="h-4 w-4 mr-2" />
                   Overview
                 </TabsTrigger>
                 <TabsTrigger 
@@ -563,13 +595,20 @@ export default function CourseLearn() {
                 >
                   <HelpCircle className="h-4 w-4 mr-2" />
                   Quizzes
-                </TabsTrigger>
-                <TabsTrigger 
+                </TabsTrigger>                <TabsTrigger 
                   value="reviews"
                   className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
                   onClick={handleFetchReviews}
                 >
+                  <StarIcon className="h-4 w-4 mr-2" />
                   Reviews
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="notifications"
+                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+                >
+                  <Bell className="h-4 w-4 mr-2" />
+                  Announcements
                 </TabsTrigger>
               </TabsList>
               
@@ -825,13 +864,100 @@ export default function CourseLearn() {
                             </div>
                           </div>
                         ))
-                      ) : (
-                        <div className="text-center py-6 border rounded-lg">
+                      ) : (                        <div className="text-center py-6 border rounded-lg">
                           <p className="text-muted-foreground">No reviews yet. Be the first to review this course!</p>
                         </div>
                       )}
                     </div>
                   )}
+                </div>
+              </TabsContent>              <TabsContent value="notifications">
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-semibold">Course Announcements</h2>
+                  </div>
+                  
+                  {/* Notifications list */}
+                  <div className="space-y-4">
+                    {notifications
+                      .filter(notification => notification.courseId === parseInt(id!))
+                      .map((notification) => {
+                        const isTargetNotification = window.location.hash === `#notification-${notification.id}`;
+                        
+                        return (
+                          <Card 
+                            key={notification.id} 
+                            id={`notification-${notification.id}`}
+                            className={`transition-all duration-300 ${
+                              isTargetNotification 
+                                ? 'ring-2 ring-eduBlue-500 bg-eduBlue-50' 
+                                : notification.isRead 
+                                  ? 'opacity-70' 
+                                  : 'border-blue-200 bg-blue-50/30'
+                            }`}
+                          >
+                            <CardHeader>
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3 flex-1">
+                                  <div className="text-2xl">
+                                    {notification.notificationType === 'announcement' ? '📢' :
+                                     notification.notificationType === 'assignment' ? '📝' :
+                                     notification.notificationType === 'reminder' ? '⏰' :
+                                     notification.notificationType === 'update' ? '🔄' :
+                                     notification.notificationType === 'deadline' ? '📅' : '📬'}
+                                  </div>
+                                  <div className="flex-1">
+                                    <CardTitle className="text-lg">
+                                      {notification.title}
+                                    </CardTitle>
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                      <span>By {notification.createdByName}</span>
+                                      <span>•</span>
+                                      <span>{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
+                                      <span>•</span>
+                                      <Badge variant="outline" className="text-xs">
+                                        {notification.notificationType}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {!notification.isRead && (
+                                    <div className="w-3 h-3 bg-blue-500 rounded-full" />
+                                  )}
+                                  {!notification.isRead && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => markAsRead(notification.id)}
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-muted-foreground whitespace-pre-wrap">
+                                {notification.message}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    
+                    {notifications.filter(n => n.courseId === parseInt(id!)).length === 0 && (
+                      <div className="text-center py-12 border-2 border-dashed border-muted rounded-lg">
+                        <Bell className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                        <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                          No announcements yet
+                        </h3>
+                        <p className="text-muted-foreground">
+                          Your instructor hasn't posted any announcements for this course yet.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>

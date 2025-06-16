@@ -53,7 +53,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/use-toast";
+import { CreateNotificationForm } from "@/components/notifications/create-notification-form";
+import {useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { CourseService } from "@/services/course-service";
 import { ModuleService } from "@/services/module-service";
@@ -72,7 +73,8 @@ import {
   MoveDown,
   Play,
   BookOpen,
-  HelpCircle
+  HelpCircle,
+  Bell
 } from "lucide-react";
 
 export default function CourseContentManagement() {
@@ -519,10 +521,8 @@ export default function CourseContentManagement() {
             <ChevronLeft className="h-4 w-4 mr-1" /> Back to Course Preview
           </Button>
           <h1 className="text-3xl font-bold">{course?.title || "Course"}: Content Management</h1>
-        </div>
-
-        <Tabs defaultValue="modules" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        </div>        <Tabs defaultValue="modules" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="modules" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               Modules & Lessons
@@ -530,6 +530,10 @@ export default function CourseContentManagement() {
             <TabsTrigger value="quizzes" className="flex items-center gap-2">
               <HelpCircle className="h-4 w-4" />
               Quizzes
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              Notifications
             </TabsTrigger>
           </TabsList>
 
@@ -748,8 +752,26 @@ export default function CourseContentManagement() {
                   id: lesson.id,
                   title: lesson.title
                 })) || []
-              )}
-            />
+              )}            />
+          </TabsContent>
+
+          <TabsContent value="notifications" className="mt-6">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-medium">Course Notifications</h3>
+                  <p className="text-muted-foreground">
+                    Send notifications to all enrolled students about important updates, assignments, or announcements.
+                  </p>
+                </div>
+              </div>
+
+              <CreateNotificationForm
+                courseId={parseInt(id!)}
+                courseName={course?.title || "Course"}
+                variant="card"
+              />
+            </div>
           </TabsContent>
         </Tabs>
 

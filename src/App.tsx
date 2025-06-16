@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/use-auth";
+import { NotificationProvider } from "./hooks/use-notifications";
 import { API_BASE_URL } from "./config/api-config";
 
 // Pages
@@ -34,6 +35,8 @@ import AdminDashboardNew from "@/pages/admin/index";
 import RequireAdminAuth from "@/components/auth/require-admin-auth";
 import InstructorsPage from "@/pages/instructors/index";
 import InstructorCoursesPage from "@/pages/instructors/[id]/courses";
+import { NotificationDemo } from "@/components/notifications/notification-demo";
+import { MainLayout } from "@/components/layouts/main-layout";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -49,10 +52,11 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+      <NotificationProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
@@ -67,10 +71,18 @@ const App = () => (
             <Route path="/categories/:slug" element={<NotFound />} /> {/* Placeholder */}
             <Route path="/instructors" element={<InstructorsPage />} />
             <Route path="/instructors/:instructorId/courses" element={<InstructorCoursesPage />} />
-            
-            {/* Protected routes */}
+              {/* Protected routes */}
             <Route path="/dashboard" element={<StudentDashboard />} />
             <Route path="/profile" element={<ProfilePage />} />
+            
+            {/* Notification demo route */}
+            <Route path="/demo/notifications" element={
+              <MainLayout>
+                <div className="container py-8">
+                  <NotificationDemo />
+                </div>
+              </MainLayout>
+            } />
             
             {/* Dynamic My Courses redirection based on user role */}
             <Route path="/courses-redirect" element={<MyCoursesRedirect />} />
@@ -109,16 +121,16 @@ const App = () => (
             <Route path="/dashboard/admin/create-admin" element={
               <RequireAdminAuth>
                 <CreateAdminPage />
-              </RequireAdminAuth>
-            } />
+              </RequireAdminAuth>            } />
 
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+    </NotificationProvider>
+  </AuthProvider>
+</QueryClientProvider>
 );
 
 export default App;
