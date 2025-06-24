@@ -66,7 +66,6 @@ export function CreateNotificationForm({
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -81,11 +80,11 @@ export function CreateNotificationForm({
 
     try {
       setIsLoading(true);
-      
-      const notification: CreateNotificationRequest = {
+        const notification: CreateNotificationRequest = {
         title: formData.title.trim(),
         message: formData.message.trim(),
         courseId,
+        courseName,
         notificationType: formData.notificationType
       };
 
@@ -123,74 +122,6 @@ export function CreateNotificationForm({
       setIsLoading(false);
     }
   };
-
-  const NotificationForm = () => (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="title">Notification Title</Label>
-        <Input
-          id="title"
-          placeholder="Enter notification title..."
-          value={formData.title}
-          onChange={(e) => handleInputChange('title', e.target.value)}
-          maxLength={100}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="type">Notification Type</Label>
-        <Select
-          value={formData.notificationType}
-          onValueChange={(value) => handleInputChange('notificationType', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select notification type" />
-          </SelectTrigger>
-          <SelectContent>
-            {notificationTypes.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
-                <div className="flex items-center gap-2">
-                  <span>{type.icon}</span>
-                  <span>{type.label}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="message">Message</Label>
-        <Textarea
-          id="message"
-          placeholder="Enter your notification message..."
-          value={formData.message}
-          onChange={(e) => handleInputChange('message', e.target.value)}
-          rows={4}
-          maxLength={500}
-        />
-        <div className="text-xs text-muted-foreground text-right">
-          {formData.message.length}/500 characters
-        </div>
-      </div>
-
-      <div className="bg-muted/50 p-3 rounded-lg">
-        <p className="text-sm text-muted-foreground">
-          This notification will be sent to all students enrolled in "{courseName}".
-        </p>
-      </div>
-
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-        ) : (
-          <Send className="h-4 w-4 mr-2" />
-        )}
-        Send Notification
-      </Button>
-    </form>
-  );
-
   if (variant === 'card') {
     return (
       <Card className={className}>
@@ -204,12 +135,74 @@ export function CreateNotificationForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <NotificationForm />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Notification Title</Label>
+              <Input
+                id="title"
+                placeholder="Enter notification title..."
+                value={formData.title}
+                onChange={(e) => handleInputChange('title', e.target.value)}
+                maxLength={100}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="type">Notification Type</Label>
+              <Select
+                value={formData.notificationType}
+                onValueChange={(value) => handleInputChange('notificationType', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select notification type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {notificationTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      <div className="flex items-center gap-2">
+                        <span>{type.icon}</span>
+                        <span>{type.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="message">Message</Label>
+              <Textarea
+                id="message"
+                placeholder="Enter your notification message..."
+                value={formData.message}
+                onChange={(e) => handleInputChange('message', e.target.value)}
+                rows={4}
+                maxLength={500}
+              />
+              <div className="text-xs text-muted-foreground text-right">
+                {formData.message.length}/500 characters
+              </div>
+            </div>
+
+            <div className="bg-muted/50 p-3 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                This notification will be sent to all students enrolled in "{courseName}".
+              </p>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Send Notification
+            </Button>
+          </form>
         </CardContent>
       </Card>
     );
   }
-
   // dialog variant (default)
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -226,7 +219,70 @@ export function CreateNotificationForm({
             Send a notification to all students enrolled in "{courseName}".
           </DialogDescription>
         </DialogHeader>
-        <NotificationForm />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="dialog-title">Notification Title</Label>
+            <Input
+              id="dialog-title"
+              placeholder="Enter notification title..."
+              value={formData.title}
+              onChange={(e) => handleInputChange('title', e.target.value)}
+              maxLength={100}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="dialog-type">Notification Type</Label>
+            <Select
+              value={formData.notificationType}
+              onValueChange={(value) => handleInputChange('notificationType', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select notification type" />
+              </SelectTrigger>
+              <SelectContent>
+                {notificationTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    <div className="flex items-center gap-2">
+                      <span>{type.icon}</span>
+                      <span>{type.label}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="dialog-message">Message</Label>
+            <Textarea
+              id="dialog-message"
+              placeholder="Enter your notification message..."
+              value={formData.message}
+              onChange={(e) => handleInputChange('message', e.target.value)}
+              rows={4}
+              maxLength={500}
+            />
+            <div className="text-xs text-muted-foreground text-right">
+              {formData.message.length}/500 characters
+            </div>
+          </div>
+
+          <div className="bg-muted/50 p-3 rounded-lg">
+            <p className="text-sm text-muted-foreground">
+              This notification will be sent to all students enrolled in "{courseName}".
+            </p>
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Send className="h-4 w-4 mr-2" />
+            )}
+            Send Notification
+          </Button>
+        </form>
       </DialogContent>
     </Dialog>
   );

@@ -21,6 +21,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications } from '@/hooks/use-notifications';
 import { formatDistanceToNow } from 'date-fns';
+import { getImageUrl } from '@/config/api-config';
 
 export function NotificationBell() {
   const { 
@@ -134,32 +135,43 @@ export function NotificationBell() {
                   key={notification.id} 
                   className="p-0 cursor-pointer"
                   onClick={() => handleNotificationClick(notification)}
-                >
-                  <Card className={`w-full border-0 shadow-none ${
+                >                  <Card className={`w-full border-0 shadow-none ${
                     notification.isRead ? 'opacity-60' : 'bg-blue-50/50'
                   }`}>
                     <CardHeader className="p-3 pb-2">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-2 flex-1 min-w-0">
+                          <span className="text-lg flex-shrink-0">
                             {getNotificationIcon(notification.notificationType)}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <CardTitle className="text-sm font-medium line-clamp-1">
+                            <CardTitle className="text-sm font-medium line-clamp-1 mb-1">
                               {notification.title}
                             </CardTitle>
-                            <CardDescription className="text-xs">
-                              {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                            </CardDescription>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">                              <div className="flex items-center gap-1">
+                                {notification.creatorImage && (
+                                  <img 
+                                    src={getImageUrl(notification.creatorImage)} 
+                                    alt={notification.createdByName}
+                                    className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                                  />
+                                )}
+                                <span className="font-medium">{notification.createdByName}</span>
+                              </div>
+                              <span className="text-muted-foreground/60">•</span>
+                              <span className="truncate">{notification.courseName}</span>
+                              <span className="text-muted-foreground/60">•</span>
+                              <span className="whitespace-nowrap">{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
+                            </div>
                           </div>
                         </div>
                         {!notification.isRead && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
+                          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1" />
                         )}
                       </div>
                     </CardHeader>
                     <CardContent className="p-3 pt-0">
-                      <p className="text-sm text-muted-foreground line-clamp-2">
+                      <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                         {notification.message}
                       </p>
                     </CardContent>

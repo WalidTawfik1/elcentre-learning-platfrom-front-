@@ -909,11 +909,21 @@ export default function CourseLearn() {
                                   <div className="flex-1">
                                     <CardTitle className="text-lg">
                                       {notification.title}
-                                    </CardTitle>
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                                      <span>By {notification.createdByName}</span>
+                                    </CardTitle>                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                      <div className="flex items-center gap-1">
+                                        {notification.creatorImage && (
+                                          <img 
+                                            src={getImageUrl(notification.creatorImage)} 
+                                            alt={notification.createdByName}
+                                            className="w-6 h-6 rounded-full object-cover"
+                                          />
+                                        )}
+                                        <span>{notification.createdByName}</span>
+                                      </div>
                                       <span>•</span>
                                       <span>{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
+                                      <span>•</span>
+                                      <span>{notification.courseName}</span>
                                       <span>•</span>
                                       <Badge variant="outline" className="text-xs">
                                         {notification.notificationType}

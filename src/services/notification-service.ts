@@ -4,6 +4,7 @@ export interface CreateNotificationRequest {
   title: string;
   message: string;
   courseId: number;
+  courseName: string;
   notificationType: string;
   // Note: createdById and createdByName will be set by the backend based on the authenticated user
 }
@@ -13,8 +14,10 @@ export interface NotificationResponse {
   title: string;
   message: string;
   courseId: number;
+  courseName: string; // Course name for display
   createdById: string; // Creator ID (Instructor, Admin, System)
   createdByName: string; // Creator Name
+  creatorImage?: string; // Creator profile image URL
   createdAt: string;
   notificationType: string; // "NewLesson", "Announcement", "CourseApproved", "CourseRejected", etc.
   targetUserRole: string; // "Student", "Instructor", "All"

@@ -119,8 +119,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           const notificationResponse: NotificationResponse = {
             ...notification,
             isRead: notification.isRead ?? false, // Default to false if not provided
-            createdById: notification.createdById,
-            createdByName: notification.createdByName
           };
           setNotifications(prev => [notificationResponse, ...prev]);
         });
@@ -148,8 +146,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
               const convertedNotifications: NotificationResponse[] = courseNotifications.map(n => ({
                 ...n,
                 isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
-                createdById: n.createdById,
-                createdByName: n.createdByName
               }));
               allNotifications.push(...convertedNotifications);
             } catch (error) {
@@ -364,16 +360,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           user.id.toString(), 
           courseId
         );
-        
-        // Apply local read status cache
+          // Apply local read status cache
         const localReadStatuses = getLocalReadStatuses();
         
         // Convert and update notifications for this course
         const convertedNotifications: NotificationResponse[] = courseNotifications.map(n => ({
           ...n,
           isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
-          createdById: n.createdById,
-          createdByName: n.createdByName
         }));
         
         setNotifications(prev => {
@@ -386,8 +379,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const allNotifications: NotificationResponse[] = [];
         
         for (const subscription of subscriptions) {
-          if (subscription.isSubscribed) {
-            try {              const courseNotifications = await signalRService.getCourseNotifications(
+          if (subscription.isSubscribed) {            try {              const courseNotifications = await signalRService.getCourseNotifications(
                 user.id.toString(), 
                 subscription.courseId
               );
@@ -399,8 +391,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
               const convertedNotifications: NotificationResponse[] = courseNotifications.map(n => ({
                 ...n,
                 isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
-                createdById: n.createdById,
-                createdByName: n.createdByName
               }));
               allNotifications.push(...convertedNotifications);
             } catch (error) {
