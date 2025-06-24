@@ -88,21 +88,28 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       console.error('Error saving subscriptions to localStorage:', error);
     }
   };
-
   // Initialize SignalR connection when user is authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
       initializeSignalR();
     } else {
-      disconnectSignalR();
+      // Don't disconnect completely, just stop maintaining connection
+      signalRService.stopMaintainingConnection();
+      setIsConnected(false);
+      setNotifications([]);
     }
 
+    // Cleanup on unmount - but keep connection alive for other components
     return () => {
-      disconnectSignalR();
+      // Don't disconnect here as other components might need the connection
+      // Only clean up the notification callback
+      signalRService.setNotificationCallback(() => {});
     };
-  }, [isAuthenticated, user]);
-  const initializeSignalR = async () => {
+  }, [isAuthenticated, user]);  const initializeSignalR = async () => {
     try {
+      // Start maintaining connection globally
+      signalRService.startMaintainingConnection();
+      
       const connected = await signalRService.connect();
       setIsConnected(connected);
 
@@ -184,20 +191,22 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           saveLocalSubscriptions(updatedSubscriptions);
         }
       }
-    } catch (error) {
-      console.error('Error auto-subscribing to enrolled courses:', error);
+    } catch (error) {      console.error('Error auto-subscribing to enrolled courses:', error);
     }
   };
 
-  const disconnectSignalR = async () => {
-    try {
-      await signalRService.disconnect();
-      setIsConnected(false);
-      setNotifications([]);
-    } catch (error) {
-      console.error('Error disconnecting SignalR:', error);
-    }
-  };
+  // Monitor connection status changes
+  useEffect(() => {
+    const checkConnection = () => {
+      const connectionStatus = signalRService.getConnectionStatus();
+      if (connectionStatus !== isConnected) {
+        setIsConnected(connectionStatus);
+      }
+    };
+
+    const interval = setInterval(checkConnection, 1000);
+    return () => clearInterval(interval);
+  }, [isConnected]);
 
   const joinCourseGroup = useCallback(async (courseId: number): Promise<boolean> => {
     if (!isConnected) return false;
@@ -261,9 +270,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       // Update local read status cache
       const readStatuses = getLocalReadStatuses();
       readStatuses[notificationId] = true;
-      saveLocalReadStatuses(readStatuses);
-
-      // Mark via SignalR if connected (primary method)
+      saveLocalReadStatuses(readStatuses);      // Mark via SignalR if connected (primary method)
       if (isConnected && user) {
         await signalRService.markNotificationAsRead(notificationId, user.id.toString());
       } else {
@@ -313,15 +320,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       courseNotifications.forEach(notification => {
         readStatuses[notification.id] = true;
       });
-      saveLocalReadStatuses(readStatuses);
-
-      // Mark via SignalR if connected (primary method)
+      saveLocalReadStatuses(readStatuses);      // Mark via SignalR if connected (primary method)
       if (isConnected && user) {
         await signalRService.markAllNotificationsAsRead(user.id.toString(), courseId);
       } else {
         // Fallback to REST API if SignalR is not connected
         try {
-          await NotificationService.markAllNotificationsAsRead(courseId);
+          await NotificationService.markAllCourseNotificationsAsRead(courseId);
         } catch (apiError) {
           // If REST API fails with JSON parse error, it might still have worked
           // Log the error but don't throw since local state is already updated

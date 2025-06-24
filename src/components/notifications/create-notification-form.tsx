@@ -27,7 +27,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { NotificationService, CreateNotificationRequest } from '@/services/notification-service';
+import { NotificationService, CreateNotificationRequest, NotificationTypes } from '@/services/notification-service';
 
 interface CreateNotificationFormProps {
   courseId: number;
@@ -38,11 +38,12 @@ interface CreateNotificationFormProps {
 }
 
 const notificationTypes = [
-  { value: 'announcement', label: 'Announcement', icon: '📢' },
-  { value: 'assignment', label: 'Assignment', icon: '📝' },
-  { value: 'reminder', label: 'Reminder', icon: '⏰' },
-  { value: 'update', label: 'Course Update', icon: '🔄' },
-  { value: 'deadline', label: 'Deadline', icon: '📅' },
+  { value: NotificationTypes.Announcement, label: 'Announcement', icon: '📢' },
+  { value: NotificationTypes.AssignmentDue, label: 'Assignment Due', icon: '📝' },
+  { value: NotificationTypes.NewLesson, label: 'New Lesson', icon: '🎓' },
+  { value: NotificationTypes.CourseUpdate, label: 'Course Update', icon: '🔄' },
+  { value: NotificationTypes.QuizAvailable, label: 'Quiz Available', icon: '❓' },
+  { value: NotificationTypes.GradePosted, label: 'Grade Posted', icon: '�' },
   { value: 'general', label: 'General', icon: '📬' },
 ];
 

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Bell, Wifi, WifiOff, TestTube } from 'lucide-react';
 import { useNotifications } from '@/hooks/use-notifications';
 import { useAuth } from '@/hooks/use-auth';
-import { NotificationService } from '@/services/notification-service';
+import { NotificationService, NotificationTypes } from '@/services/notification-service';
 import { signalRService } from '@/services/signalr-service';
 import { toast } from '@/components/ui/use-toast';
 
@@ -89,12 +89,11 @@ export function NotificationDemo() {
       return;
     }
 
-    try {
-      await NotificationService.createCourseNotification({
+    try {      await NotificationService.createCourseNotification({
         title: "Test Notification",
         message: `This is a test notification sent at ${new Date().toLocaleTimeString()}`,
         courseId: testCourseId,
-        notificationType: "general"
+        notificationType: NotificationTypes.Announcement
       });
 
       toast({

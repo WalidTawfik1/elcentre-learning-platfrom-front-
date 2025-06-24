@@ -193,8 +193,13 @@ export const AuthService = {
       body: JSON.stringify({ email, code }),
     }, false);
   },
-  
-  logout: async (): Promise<any> => {
+    logout: async (): Promise<any> => {
+    // Import SignalR service here to avoid circular dependencies
+    const { signalRService } = await import('./signalr-service');
+    
+    // Disconnect SignalR before logout
+    signalRService.forceDisconnect();
+    
     const response = await apiRequest<any>("/Account/logout", {
       method: "POST",
       credentials: "include"
