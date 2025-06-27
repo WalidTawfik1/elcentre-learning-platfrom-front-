@@ -20,8 +20,10 @@ import {
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications } from '@/hooks/use-notifications';
+import { useAuth } from '@/hooks/use-auth';
 import { formatDistanceToNow } from 'date-fns';
 import { getImageUrl } from '@/config/api-config';
+import { NotificationTypes } from '@/services/signalr-service';
 
 export function NotificationBell() {
   const { 
@@ -32,6 +34,7 @@ export function NotificationBell() {
     markAllAsRead 
   } = useNotifications();
   
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -42,8 +45,33 @@ export function NotificationBell() {
     // Close the dropdown
     setIsOpen(false);
     
-    // Navigate to the course learn page with notification hash
-    navigate(`/my-courses/${notification.courseId}/learn#notification-${notification.id}`);
+    // Determine navigation based on notification type and user role
+    const navigateToNotification = () => {
+      const isInstructor = user?.userType === 'Instructor' || user?.userType === 'Admin';
+      const notificationType = notification.notificationType;
+      
+      // Course status notifications for instructors should go to course edit page
+      if (isInstructor && (
+        notificationType === NotificationTypes.CourseApproved ||
+        notificationType === NotificationTypes.CourseRejected ||
+        notificationType === NotificationTypes.CoursePendingReview
+      )) {
+        // Navigate to course edit page
+        navigate(`/dashboard/instructor/courses/${notification.courseId}/edit`);
+        return;
+      }
+      
+      // Course update notifications for instructors should also go to course edit
+      if (isInstructor && notificationType === NotificationTypes.CourseUpdate) {
+        navigate(`/dashboard/instructor/courses/${notification.courseId}/edit`);
+        return;
+      }
+      
+      // For other notifications or students, navigate to course learn page
+      navigate(`/my-courses/${notification.courseId}/learn#notification-${notification.id}`);
+    };
+    
+    navigateToNotification();
   };
 
   const handleMarkAsRead = async (notificationId: number, courseId: number) => {
@@ -73,10 +101,45 @@ export function NotificationBell() {
       case 'reminder':
         return '⏰';
       case 'update':
+      case 'courseupdate':
         return '🔄';
+      case 'courseapproved':
+        return '✅';
+      case 'courserejected':
+        return '❌';
+      case 'coursependingreview':
+        return '⏳';
+      case 'newlesson':
+        return '📚';
+      case 'quizavailable':
+        return '📝';
+      case 'gradeposted':
+        return '🎯';
+      case 'enrollmentconfirmed':
+        return '🎓';
+      case 'certificateready':
+        return '🏆';
+      case 'welcome':
+        return '👋';
       default:
         return '📬';
     }
+  };
+
+  const getNotificationActionHint = (notification: any) => {
+    const isInstructor = user?.userType === 'Instructor' || user?.userType === 'Admin';
+    const notificationType = notification.notificationType;
+    
+    if (isInstructor && (
+      notificationType === NotificationTypes.CourseApproved ||
+      notificationType === NotificationTypes.CourseRejected ||
+      notificationType === NotificationTypes.CoursePendingReview ||
+      notificationType === NotificationTypes.CourseUpdate
+    )) {
+      return 'Click to edit course';
+    }
+    
+    return 'Click to view course';
   };
 
   return (
@@ -171,8 +234,11 @@ export function NotificationBell() {
                       </div>
                     </CardHeader>
                     <CardContent className="p-3 pt-0">
-                      <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                      <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed mb-1">
                         {notification.message}
+                      </p>
+                      <p className="text-xs text-blue-600 font-medium">
+                        {getNotificationActionHint(notification)}
                       </p>
                     </CardContent>
                   </Card>

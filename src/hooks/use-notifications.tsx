@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { signalRService, CourseNotification } from '@/services/signalr-service';
 import { NotificationService, NotificationResponse } from '@/services/notification-service';
 import { EnrollmentService } from '@/services/enrollment-service';
+import { CourseService } from '@/services/course-service';
 import { useAuth } from './use-auth';
 
 // Local subscription management (stored in localStorage)
@@ -123,33 +124,66 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           setNotifications(prev => [notificationResponse, ...prev]);
         });
 
-        // Auto-subscribe students to their enrolled courses if they haven't manually set preferences
+        // Auto-subscribe users to their relevant courses if they haven't manually set preferences
         if (user?.userType === "Student") {
           await autoSubscribeToEnrolledCourses();
+        } else if (user?.userType === "Instructor") {
+          await autoSubscribeToInstructorCourses();
         }        // Auto-join all subscribed course groups and load notifications
         const subscriptions = getLocalSubscriptions();
         const allNotifications: NotificationResponse[] = [];
         
-        for (const subscription of subscriptions) {
-          if (subscription.isSubscribed) {
-            await signalRService.joinCourseGroup(subscription.courseId);            // Load existing notifications for this course
-            try {
-              const courseNotifications = await signalRService.getCourseNotifications(
-                user.id.toString(), 
-                subscription.courseId
-              );
-              
-              // Apply local read status cache
-              const localReadStatuses = getLocalReadStatuses();
-              
-              // Convert CourseNotification[] to NotificationResponse[]
-              const convertedNotifications: NotificationResponse[] = courseNotifications.map(n => ({
-                ...n,
-                isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
-              }));
-              allNotifications.push(...convertedNotifications);
-            } catch (error) {
-              console.error(`Error loading notifications for course ${subscription.courseId}:`, error);
+        // For instructors, prioritize loading ALL notifications to ensure course status updates are included
+        if (user?.userType === "Instructor") {
+          try {
+            const instructorNotifications = await NotificationService.getAllNotifications(false, 1, 100);
+            
+            // Apply local read status cache
+            const localReadStatuses = getLocalReadStatuses();
+            const convertedNotifications: NotificationResponse[] = instructorNotifications.map(n => ({
+              ...n,
+              isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
+            }));
+            
+            allNotifications.push(...convertedNotifications);
+          } catch (error) {
+            console.error('Error loading all instructor notifications:', error);
+            // Fall back to subscription-based loading below
+          }
+        }
+        
+        // Load course-specific notifications (for students or as fallback for instructors)
+        if (user?.userType === "Student" || (user?.userType === "Instructor" && allNotifications.length === 0)) {
+          for (const subscription of subscriptions) {
+            if (subscription.isSubscribed) {
+              await signalRService.joinCourseGroup(subscription.courseId);            // Load existing notifications for this course
+              try {
+                const courseNotifications = await signalRService.getCourseNotifications(
+                  user.id.toString(), 
+                  subscription.courseId
+                );
+                
+                // Apply local read status cache
+                const localReadStatuses = getLocalReadStatuses();
+                
+                // Convert CourseNotification[] to NotificationResponse[]
+                const convertedNotifications: NotificationResponse[] = courseNotifications.map(n => ({
+                  ...n,
+                  isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
+                }));
+                allNotifications.push(...convertedNotifications);
+              } catch (error) {
+                console.error(`Error loading notifications for course ${subscription.courseId}:`, error);
+              }
+            }
+          }
+        }
+        
+        // For instructors, still join course groups for real-time notifications
+        if (user?.userType === "Instructor") {
+          for (const subscription of subscriptions) {
+            if (subscription.isSubscribed) {
+              await signalRService.joinCourseGroup(subscription.courseId);
             }
           }
         }
@@ -188,6 +222,34 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
       }
     } catch (error) {      console.error('Error auto-subscribing to enrolled courses:', error);
+    }
+  };
+
+  const autoSubscribeToInstructorCourses = async () => {
+    try {
+      const instructorCourses = await CourseService.getInstructorCourses();
+      const currentSubscriptions = getLocalSubscriptions();
+      
+      for (const course of instructorCourses) {
+        const existingSubscription = currentSubscriptions.find(
+          sub => sub.courseId === course.id
+        );
+        
+        // If no subscription exists for this course, create one (subscribed by default)
+        if (!existingSubscription) {
+          const updatedSubscriptions = [
+            ...currentSubscriptions,
+            {
+              courseId: course.id,
+              isSubscribed: true,
+              courseName: course.title || `Course ${course.id}`
+            }
+          ];
+          saveLocalSubscriptions(updatedSubscriptions);
+        }
+      }
+    } catch (error) {
+      console.error('Error auto-subscribing to instructor courses:', error);
     }
   };
 
@@ -374,7 +436,29 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           return [...convertedNotifications, ...filtered];
         });
       } else {
-        // Get notifications for all subscribed courses
+        // For instructors, get ALL notifications to ensure course status updates are included
+        if (user?.userType === "Instructor") {
+          try {
+            const allNotifications = await NotificationService.getAllNotifications(false, 1, 100);
+            
+            // Apply local read status cache
+            const localReadStatuses = getLocalReadStatuses();
+            const convertedNotifications: NotificationResponse[] = allNotifications.map(n => ({
+              ...n,
+              isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
+            }));
+            
+            // Sort by creation date (newest first)
+            convertedNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setNotifications(convertedNotifications);
+            return;
+          } catch (error) {
+            console.error('Error loading all instructor notifications:', error);
+            // Fall back to subscription-based loading
+          }
+        }
+        
+        // Get notifications for all subscribed courses (students and fallback for instructors)
         const subscriptions = getLocalSubscriptions();
         const allNotifications: NotificationResponse[] = [];
         
