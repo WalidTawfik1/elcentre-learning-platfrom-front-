@@ -224,7 +224,7 @@ export const AuthService = {
   updateProfileWithPicture: async (userData: UserDTO, profilePicture?: File): Promise<any> => {
     const formData = new FormData();
     
-    // Add user data fields
+    // Add user data fields (always send as FormData since backend expects it)
     formData.append('firstName', userData.firstName);
     formData.append('lastName', userData.lastName);
     formData.append('phoneNumber', userData.phoneNumber);
@@ -234,10 +234,12 @@ export const AuthService = {
       formData.append('bio', userData.bio);
     }
     
-    // Add profile picture if provided
+    // Add profile picture only if provided (backend will keep existing if null)
     if (profilePicture) {
       formData.append('profilePicture', profilePicture);
     }
+    // Note: If no profilePicture is provided, we don't add the field at all
+    // Your backend will handle this case by keeping the existing profile picture
 
     // Use direct API request for form data
     const url = `${DIRECT_API_URL}/Account/edit-profile`;

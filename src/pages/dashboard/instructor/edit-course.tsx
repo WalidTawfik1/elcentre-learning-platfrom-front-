@@ -129,40 +129,23 @@ export default function EditCourse() {
     setIsSubmitting(true);
 
     try {
-      // If no new thumbnail is selected, fetch the original file
-      let thumbnailFile = formData.thumbnail;
-      
-      if (!thumbnailFile && formData.originalThumbnail) {
-        try {
-          const response = await fetch(formData.originalThumbnail);
-          const blob = await response.blob();
-          const fileName = formData.originalThumbnail.split('/').pop() || 'thumbnail.jpg';
-          thumbnailFile = new File([blob], fileName, { type: blob.type });
-        } catch (error) {
-          console.error("Error fetching original thumbnail:", error);
-          toast({
-            title: "Error",
-            description: "Failed to process thumbnail. Please select a new one.",
-            variant: "destructive"
-          });
-          return;
-        }
-      }
-
-      if (!thumbnailFile) {
-        toast({
-          title: "Error",
-          description: "Thumbnail is required. Please select an image.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      await CourseService.updateCourse({
+      // Create update payload - only include thumbnail if a new one is selected
+      const updateData: any = {
         id: Number(id),
-        ...formData,
-        thumbnail: thumbnailFile
-      });
+        title: formData.title,
+        description: formData.description,
+        price: formData.price,
+        isActive: formData.isActive,
+        categoryId: formData.categoryId,
+        durationInHours: formData.durationInHours
+      };
+
+      // Only include thumbnail if user selected a new one
+      if (formData.thumbnail) {
+        updateData.thumbnail = formData.thumbnail;
+      }
+
+      await CourseService.updateCourse(updateData);
 
       toast({
         title: "Success",

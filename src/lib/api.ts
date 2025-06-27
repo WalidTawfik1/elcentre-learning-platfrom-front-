@@ -250,16 +250,21 @@ const createFormData = (data: Record<string, any>): FormData => {
   const formData = new FormData();
   
   Object.entries(data).forEach(([key, value]) => {
+    // Skip undefined and null values entirely
+    if (value === undefined || value === null) {
+      return;
+    }
+    
     // If dealing with a file
     if (value instanceof File) {
       formData.append(key, value);
     } 
     // If dealing with an array of files
-    else if (Array.isArray(value) && value[0] instanceof File) {
+    else if (Array.isArray(value) && value.length > 0 && value[0] instanceof File) {
       value.forEach(file => formData.append(key, file));
     }
     // For boolean, number, and other primitive values
-    else if (value !== undefined && value !== null) {
+    else if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
       formData.append(key, String(value));
     }
   });

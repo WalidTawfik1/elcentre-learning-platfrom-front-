@@ -274,11 +274,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateProfile = async (userData: UserDTO, profilePicture?: File) => {
     setIsLoading(true);
     try {
-      if (profilePicture) {
-        await AuthService.updateProfileWithPicture(userData, profilePicture);
-      } else {
-        await AuthService.updateProfile(userData);
-      }
+      // Always use updateProfileWithPicture since backend expects FormData
+      // The backend will handle null profilePicture by keeping the existing one
+      await AuthService.updateProfileWithPicture(userData, profilePicture);
       
       // Refresh user data to get updated profile picture URL
       await fetchUser(true);
