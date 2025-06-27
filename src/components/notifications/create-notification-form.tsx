@@ -112,7 +112,6 @@ export function CreateNotificationForm({
         onNotificationCreated();
       }
     } catch (error) {
-      console.error('Error creating notification:', error);
       toast({
         title: "Error",
         description: "Failed to send notification. Please try again.",

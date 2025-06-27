@@ -59,7 +59,6 @@ export function NotificationSubscriptionToggle({
           : `You will no longer receive notifications for ${courseName}.`,
       });
     } catch (error) {
-      console.error('Error toggling notification subscription:', error);
       toast({
         title: "Error",
         description: "Failed to update notification preferences. Please try again.",

@@ -49,7 +49,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const stored = localStorage.getItem(key);
       return stored ? JSON.parse(stored) : {};
     } catch (error) {
-      console.error('Error reading read statuses from localStorage:', error);
       return {};
     }
   };
@@ -61,7 +60,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     try {
       localStorage.setItem(key, JSON.stringify(statuses));
     } catch (error) {
-      console.error('Error saving read statuses to localStorage:', error);
+      // Silent error handling
     }
   };
 
@@ -74,7 +73,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const stored = localStorage.getItem(key);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
-      console.error('Error reading subscriptions from localStorage:', error);
       return [];
     }
   };
@@ -86,7 +84,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     try {
       localStorage.setItem(key, JSON.stringify(subscriptions));
     } catch (error) {
-      console.error('Error saving subscriptions to localStorage:', error);
+      // Silent error handling
     }
   };
   // Initialize SignalR connection when user is authenticated
@@ -145,39 +143,37 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
               isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
             }));
             
-            allNotifications.push(...convertedNotifications);
-          } catch (error) {
-            console.error('Error loading all instructor notifications:', error);
-            // Fall back to subscription-based loading below
-          }
+            allNotifications.push(...convertedNotifications);        } catch (error) {
+          // Fall back to subscription-based loading below
         }
-        
-        // Load course-specific notifications (for students or as fallback for instructors)
-        if (user?.userType === "Student" || (user?.userType === "Instructor" && allNotifications.length === 0)) {
-          for (const subscription of subscriptions) {
-            if (subscription.isSubscribed) {
-              await signalRService.joinCourseGroup(subscription.courseId);            // Load existing notifications for this course
-              try {
-                const courseNotifications = await signalRService.getCourseNotifications(
-                  user.id.toString(), 
-                  subscription.courseId
-                );
-                
-                // Apply local read status cache
-                const localReadStatuses = getLocalReadStatuses();
-                
-                // Convert CourseNotification[] to NotificationResponse[]
-                const convertedNotifications: NotificationResponse[] = courseNotifications.map(n => ({
-                  ...n,
-                  isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
-                }));
-                allNotifications.push(...convertedNotifications);
-              } catch (error) {
-                console.error(`Error loading notifications for course ${subscription.courseId}:`, error);
-              }
+      }
+      
+      // Load course-specific notifications (for students or as fallback for instructors)
+      if (user?.userType === "Student" || (user?.userType === "Instructor" && allNotifications.length === 0)) {
+        for (const subscription of subscriptions) {
+          if (subscription.isSubscribed) {
+            await signalRService.joinCourseGroup(subscription.courseId);            // Load existing notifications for this course
+            try {
+              const courseNotifications = await signalRService.getCourseNotifications(
+                user.id.toString(), 
+                subscription.courseId
+              );
+              
+              // Apply local read status cache
+              const localReadStatuses = getLocalReadStatuses();
+              
+              // Convert CourseNotification[] to NotificationResponse[]
+              const convertedNotifications: NotificationResponse[] = courseNotifications.map(n => ({
+                ...n,
+                isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
+              }));
+              allNotifications.push(...convertedNotifications);
+            } catch (error) {
+              // Silent error handling
             }
           }
         }
+      }
         
         // For instructors, still join course groups for real-time notifications
         if (user?.userType === "Instructor") {
@@ -193,7 +189,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         setNotifications(allNotifications);
       }
     } catch (error) {
-      console.error('Failed to initialize SignalR:', error);
       setIsConnected(false);
     }
   };
@@ -221,7 +216,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           saveLocalSubscriptions(updatedSubscriptions);
         }
       }
-    } catch (error) {      console.error('Error auto-subscribing to enrolled courses:', error);
+    } catch (error) {
+      // Silent error handling
     }
   };
 
@@ -249,7 +245,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
       }
     } catch (error) {
-      console.error('Error auto-subscribing to instructor courses:', error);
+      // Silent error handling
     }
   };
 
@@ -338,7 +334,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         } catch (apiError) {
           // If REST API fails with JSON parse error, it might still have worked
           // Log the error but don't throw since local state is already updated
-          console.warn('REST API for marking notification as read returned non-JSON response, but operation may have succeeded:', apiError);
         }
       }
     } catch (error) {
@@ -356,7 +351,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       readStatuses[notificationId] = false;
       saveLocalReadStatuses(readStatuses);
       
-      console.error('Error marking notification as read:', error);
       throw error; // Re-throw so UI can show error message
     }
   }, [isConnected, user]);  const markAllAsRead = useCallback(async (courseId: number): Promise<void> => {
@@ -388,7 +382,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         } catch (apiError) {
           // If REST API fails with JSON parse error, it might still have worked
           // Log the error but don't throw since local state is already updated
-          console.warn('REST API for marking all notifications as read returned non-JSON response, but operation may have succeeded:', apiError);
         }
       }
     } catch (error) {
@@ -409,7 +402,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       });
       saveLocalReadStatuses(readStatuses);
       
-      console.error('Error marking all notifications as read:', error);
       throw error; // Re-throw so UI can show error message
     }
   }, [isConnected, user, notifications]);
@@ -453,7 +445,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             setNotifications(convertedNotifications);
             return;
           } catch (error) {
-            console.error('Error loading all instructor notifications:', error);
             // Fall back to subscription-based loading
           }
         }
@@ -478,7 +469,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
               }));
               allNotifications.push(...convertedNotifications);
             } catch (error) {
-              console.error(`Error loading notifications for course ${subscription.courseId}:`, error);
+              // Silent error handling
             }
           }
         }
@@ -488,7 +479,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         setNotifications(allNotifications);
       }
     } catch (error) {
-      console.error('Error refreshing notifications:', error);
+      // Silent error handling
     }
   }, [isAuthenticated, user, isConnected, getLocalSubscriptions]);
 
