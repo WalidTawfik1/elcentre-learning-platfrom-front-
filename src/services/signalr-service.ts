@@ -120,6 +120,11 @@ class SignalRService {
       return;
     }
 
+    const hubUrl = `${DIRECT_API_URL}/hubs/notifications`;
+    console.log("Initializing SignalR connection to:", hubUrl);
+    console.log("Environment - Production:", import.meta.env.PROD);
+    console.log("API Config - DIRECT_API_URL:", DIRECT_API_URL);
+
     try {
       // Build the SignalR connection with authentication and fallback transports
       this.connection = new signalR.HubConnectionBuilder()
@@ -128,7 +133,7 @@ class SignalRService {
           transport: signalR.HttpTransportType.WebSockets | 
                     signalR.HttpTransportType.ServerSentEvents | 
                     signalR.HttpTransportType.LongPolling, // Enable all transports
-          withCredentials: false, // Set to false to avoid CORS issues
+          withCredentials: false, // Set to false to avoid CORS issues in production
           skipNegotiation: false // Allow negotiation to determine best transport
         })
         .withAutomaticReconnect({
@@ -257,7 +262,7 @@ class SignalRService {
       await this.connection.start();
       this.isConnected = true;
       this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
-      console.log("SignalR connected successfully");
+      console.log("SignalR connected successfully to:", `${DIRECT_API_URL}/hubs/notifications`);
       
       // Set up automatic reconnection monitoring
       this.setupReconnectionMonitoring();
@@ -265,6 +270,14 @@ class SignalRService {
       return true;
     } catch (error) {
       console.error("SignalR connection failed:", error);
+      console.error("Attempted connection to:", `${DIRECT_API_URL}/hubs/notifications`);
+      console.error("Connection state:", this.connection?.state);
+      console.error("Error details:", {
+        name: error?.name,
+        message: error?.message,
+        statusCode: error?.statusCode,
+        transport: error?.transport
+      });
       this.isConnected = false;
       
       // If connection failed, clean up

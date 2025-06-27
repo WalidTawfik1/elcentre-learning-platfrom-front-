@@ -14,10 +14,9 @@ export const API_BASE_URL = isProduction
   ? "/api" 
   : (import.meta.env.VITE_API_BASE_URL || FALLBACK_API_URL);
 
-// Direct API URL for images and auth operations that might need direct access
-export const DIRECT_API_URL = isProduction
-  ? "/api"
-  : (import.meta.env.VITE_API_BASE_URL || FALLBACK_API_URL);
+// Direct API URL for SignalR and operations that need direct access (bypassing proxy)
+// SignalR WebSocket connections cannot go through Vercel proxy, so always use direct URL
+export const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || FALLBACK_API_URL;
 
 // For image URLs, we need to handle them differently in production vs development
 export const getImageUrl = (path: string | undefined): string => {
