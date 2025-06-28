@@ -29,7 +29,7 @@ export function NotificationDemo() {
     // Monitor connection status
     const checkConnection = () => {
       const status = signalRService.getConnectionStatus();
-      setConnectionStatus(status ? 'Connected' : 'Disconnected');
+      setConnectionStatus(status.isConnected ? 'Connected' : 'Disconnected');
     };
 
     const interval = setInterval(checkConnection, 1000);
@@ -90,11 +90,12 @@ export function NotificationDemo() {
     }
 
     try {      await NotificationService.createCourseNotification({
-        title: "Test Notification",
-        message: `This is a test notification sent at ${new Date().toLocaleTimeString()}`,
-        courseId: testCourseId,
-        notificationType: NotificationTypes.Announcement
-      });
+      title: "Test Notification",
+      message: `This is a test notification sent at ${new Date().toLocaleTimeString()}`,
+      courseId: testCourseId,
+      notificationType: NotificationTypes.Announcement,
+      courseName: ''
+    });
 
       toast({
         title: "Test Notification Sent",

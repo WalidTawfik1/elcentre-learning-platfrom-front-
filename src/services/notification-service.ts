@@ -123,6 +123,34 @@ export const NotificationService = {
     );
   },
 
+  // Get notification summary (lighter payload for faster loading)
+  getNotificationSummary: async (): Promise<{ unreadCount: number; recentNotifications: Array<{ id: number; title: string; createdAt: string; isRead: boolean }> }> => {
+    return apiRequest<{ unreadCount: number; recentNotifications: Array<{ id: number; title: string; createdAt: string; isRead: boolean }> }>(
+      `/Notifications/summary`,
+      {
+        method: 'GET',
+      },
+      true
+    );
+  },
+
+  // Get all notifications with optimized defaults for faster loading
+  getAllNotificationsOptimized: async (): Promise<NotificationResponse[]> => {
+    const params = new URLSearchParams({
+      unreadOnly: 'false',
+      page: '1',
+      pageSize: '200' // Higher limit for better performance
+    });
+    
+    return apiRequest<NotificationResponse[]>(
+      `/Notifications/all?${params}`,
+      {
+        method: 'GET',
+      },
+      true
+    );
+  },
+
   // Get unread count
   getUnreadCount: async (): Promise<{ unreadCount: number }> => {
     return apiRequest<{ unreadCount: number }>(

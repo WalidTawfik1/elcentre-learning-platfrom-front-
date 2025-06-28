@@ -4,6 +4,7 @@ import { NotificationService, NotificationResponse } from '@/services/notificati
 import { EnrollmentService } from '@/services/enrollment-service';
 import { CourseService } from '@/services/course-service';
 import { useAuth } from './use-auth';
+import { SIGNALR_CONFIG } from '@/config/api-config';
 
 // Local subscription management (stored in localStorage)
 interface LocalNotificationSubscription {
@@ -15,7 +16,10 @@ interface LocalNotificationSubscription {
 interface NotificationContextType {
   notifications: NotificationResponse[];
   unreadCount: number;
+  fastUnreadCount: number; // Immediate unread count via REST API
   isConnected: boolean;
+  isRateLimited: boolean;
+  connectionStatus: { isConnected: boolean; isRateLimited: boolean; reconnectAttempts: number };
   joinCourseGroup: (courseId: number) => Promise<boolean>;
   leaveCourseGroup: (courseId: number) => Promise<boolean>;
   markAsRead: (notificationId: number) => Promise<void>;
@@ -33,6 +37,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState({ isConnected: false, isRateLimited: false, reconnectAttempts: 0 });
   const { user, isAuthenticated } = useAuth();
   // Local storage key for subscriptions
   const getSubscriptionsKey = () => user ? `notifications_subscriptions_${user.id}` : null;
@@ -87,9 +92,119 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       // Silent error handling
     }
   };
-  // Initialize SignalR connection when user is authenticated
+
+  // FAST PATH: Load notifications immediately via REST API (no SignalR dependency)
+  const loadNotificationsImmediate = async () => {
+    if (!user) return;
+
+    try {
+      let allNotifications: NotificationResponse[] = [];
+
+      // For instructors, prioritize loading ALL notifications to ensure course status updates are included
+      if (user?.userType === "Instructor") {
+        try {
+          const instructorNotifications = await NotificationService.getAllNotificationsOptimized();
+          
+          // Apply local read status cache
+          const localReadStatuses = getLocalReadStatuses();
+          const convertedNotifications: NotificationResponse[] = instructorNotifications.map(n => ({
+            ...n,
+            isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
+          }));
+          
+          allNotifications.push(...convertedNotifications);
+        } catch (error) {
+          console.warn("Failed to load instructor notifications immediately:", error);
+          // Fall back to course-based loading below
+        }
+      }
+
+      // For students or as fallback for instructors, load course-specific notifications
+      if (user?.userType === "Student" || (user?.userType === "Instructor" && allNotifications.length === 0)) {
+        // Auto-subscribe to courses first
+        if (user?.userType === "Student") {
+          await autoSubscribeToEnrolledCourses();
+        } else if (user?.userType === "Instructor") {
+          await autoSubscribeToInstructorCourses();
+        }
+
+        const subscriptions = getLocalSubscriptions();
+        
+        // Use REST API to load notifications for subscribed courses
+        const courseNotificationPromises = subscriptions
+          .filter(sub => sub.isSubscribed)
+          .map(async (subscription) => {
+            try {
+              const courseNotifications = await NotificationService.getCourseNotifications(subscription.courseId, false);
+              
+              // Apply local read status cache
+              const localReadStatuses = getLocalReadStatuses();
+              return courseNotifications.map(n => ({
+                ...n,
+                isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
+              }));
+            } catch (error) {
+              console.warn(`Failed to load notifications for course ${subscription.courseId}:`, error);
+              return [];
+            }
+          });
+
+        const courseNotificationResults = await Promise.allSettled(courseNotificationPromises);
+        
+        courseNotificationResults.forEach(result => {
+          if (result.status === 'fulfilled') {
+            allNotifications.push(...result.value);
+          }
+        });
+      }
+
+      // Sort by creation date (newest first) and set notifications immediately
+      allNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setNotifications(allNotifications);
+
+    } catch (error) {
+      console.warn("Failed to load notifications immediately:", error);
+    }
+  };
+
+  // FAST PATH: Get unread count immediately via REST API (no SignalR dependency)
+  const [fastUnreadCount, setFastUnreadCount] = useState<number>(0);
+
+  const updateUnreadCountImmediate = useCallback(async () => {
+    if (!isAuthenticated || !user) return;
+
+    try {
+      const result = await NotificationService.getUnreadCount();
+      setFastUnreadCount(result.unreadCount);
+    } catch (error) {
+      // Fallback to local calculation
+      const localUnreadCount = notifications.filter(n => !n.isRead).length;
+      setFastUnreadCount(localUnreadCount);
+    }
+  }, [isAuthenticated, user, notifications]);
+
+  // Update unread count immediately when user changes
   useEffect(() => {
     if (isAuthenticated && user) {
+      updateUnreadCountImmediate();
+    } else {
+      setFastUnreadCount(0);
+    }
+  }, [isAuthenticated, user, updateUnreadCountImmediate]);
+
+  // Also update when notifications change
+  useEffect(() => {
+    const localUnreadCount = notifications.filter(n => !n.isRead).length;
+    setFastUnreadCount(localUnreadCount);
+  }, [notifications]);
+
+  // Initialize notifications and SignalR connection when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // FAST PATH: Load notifications immediately via REST API (don't wait for SignalR)
+      loadNotificationsImmediate();
+      
+      // PARALLEL: Initialize SignalR for real-time updates
       initializeSignalR();
     } else {
       // Don't disconnect completely, just stop maintaining connection
@@ -106,13 +221,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     };
   }, [isAuthenticated, user]);  const initializeSignalR = async () => {
     try {
+      // Check if already rate limited before attempting connection
+      if (signalRService.isRateLimitActive()) {
+        console.log("SignalR initialization skipped - rate limited");
+        setIsConnected(false);
+        return;
+      }
+
       // Start maintaining connection globally
       signalRService.startMaintainingConnection();
       
       const connected = await signalRService.connect();
       setIsConnected(connected);
 
-      if (connected) {        // Set up callback for new notifications
+      if (connected) {
+        // Set up callback for new notifications (real-time updates)
         signalRService.setNotificationCallback((notification: CourseNotification) => {
           // Convert CourseNotification to NotificationResponse format
           const notificationResponse: NotificationResponse = {
@@ -127,66 +250,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           await autoSubscribeToEnrolledCourses();
         } else if (user?.userType === "Instructor") {
           await autoSubscribeToInstructorCourses();
-        }        // Auto-join all subscribed course groups and load notifications
-        const subscriptions = getLocalSubscriptions();
-        const allNotifications: NotificationResponse[] = [];
-        
-        // For instructors, prioritize loading ALL notifications to ensure course status updates are included
-        if (user?.userType === "Instructor") {
-          try {
-            const instructorNotifications = await NotificationService.getAllNotifications(false, 1, 100);
-            
-            // Apply local read status cache
-            const localReadStatuses = getLocalReadStatuses();
-            const convertedNotifications: NotificationResponse[] = instructorNotifications.map(n => ({
-              ...n,
-              isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
-            }));
-            
-            allNotifications.push(...convertedNotifications);        } catch (error) {
-          // Fall back to subscription-based loading below
         }
-      }
-      
-      // Load course-specific notifications (for students or as fallback for instructors)
-      if (user?.userType === "Student" || (user?.userType === "Instructor" && allNotifications.length === 0)) {
+
+        // Auto-join all subscribed course groups for real-time notifications
+        const subscriptions = getLocalSubscriptions();
         for (const subscription of subscriptions) {
           if (subscription.isSubscribed) {
-            await signalRService.joinCourseGroup(subscription.courseId);            // Load existing notifications for this course
-            try {
-              const courseNotifications = await signalRService.getCourseNotifications(
-                user.id.toString(), 
-                subscription.courseId
-              );
-              
-              // Apply local read status cache
-              const localReadStatuses = getLocalReadStatuses();
-              
-              // Convert CourseNotification[] to NotificationResponse[]
-              const convertedNotifications: NotificationResponse[] = courseNotifications.map(n => ({
-                ...n,
-                isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
-              }));
-              allNotifications.push(...convertedNotifications);
-            } catch (error) {
-              // Silent error handling
-            }
+            await signalRService.joinCourseGroup(subscription.courseId);
           }
         }
-      }
-        
-        // For instructors, still join course groups for real-time notifications
-        if (user?.userType === "Instructor") {
-          for (const subscription of subscriptions) {
-            if (subscription.isSubscribed) {
-              await signalRService.joinCourseGroup(subscription.courseId);
-            }
-          }
-        }
-        
-        // Sort by creation date (newest first) and set initial notifications
-        allNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setNotifications(allNotifications);
       }
     } catch (error) {
       setIsConnected(false);
@@ -252,13 +324,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Monitor connection status changes
   useEffect(() => {
     const checkConnection = () => {
-      const connectionStatus = signalRService.getConnectionStatus();
-      if (connectionStatus !== isConnected) {
-        setIsConnected(connectionStatus);
+      const status = signalRService.getConnectionStatus();
+      setConnectionStatus(status);
+      if (status.isConnected !== isConnected) {
+        setIsConnected(status.isConnected);
       }
     };
 
-    const interval = setInterval(checkConnection, 1000);
+    const interval = setInterval(checkConnection, SIGNALR_CONFIG.connectionCheckInterval);
     return () => clearInterval(interval);
   }, [isConnected]);
 
@@ -406,82 +479,55 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [isConnected, user, notifications]);
   const refreshNotifications = useCallback(async (courseId?: number): Promise<void> => {
-    if (!isAuthenticated || !user || !isConnected) return;
+    if (!isAuthenticated || !user) return;
 
     try {
-      if (courseId) {        // Get notifications for specific course via SignalR
-        const courseNotifications = await signalRService.getCourseNotifications(
-          user.id.toString(), 
-          courseId
-        );
+      if (courseId) {
+        // Get notifications for specific course via REST API (faster, no SignalR dependency)
+        try {
+          const courseNotifications = await NotificationService.getCourseNotifications(courseId, false);
+          
           // Apply local read status cache
-        const localReadStatuses = getLocalReadStatuses();
-        
-        // Convert and update notifications for this course
-        const convertedNotifications: NotificationResponse[] = courseNotifications.map(n => ({
-          ...n,
-          isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
-        }));
-        
-        setNotifications(prev => {
-          const filtered = prev.filter(n => n.courseId !== courseId);
-          return [...convertedNotifications, ...filtered];
-        });
-      } else {
-        // For instructors, get ALL notifications to ensure course status updates are included
-        if (user?.userType === "Instructor") {
-          try {
-            const allNotifications = await NotificationService.getAllNotifications(false, 1, 100);
+          const localReadStatuses = getLocalReadStatuses();
+          
+          // Convert and update notifications for this course
+          const convertedNotifications: NotificationResponse[] = courseNotifications.map(n => ({
+            ...n,
+            isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
+          }));
+          
+          setNotifications(prev => {
+            const filtered = prev.filter(n => n.courseId !== courseId);
+            return [...convertedNotifications, ...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          });
+        } catch (error) {
+          // Fallback to SignalR if available
+          if (isConnected) {
+            const courseNotifications = await signalRService.getCourseNotifications(
+              user.id.toString(), 
+              courseId
+            );
             
-            // Apply local read status cache
             const localReadStatuses = getLocalReadStatuses();
-            const convertedNotifications: NotificationResponse[] = allNotifications.map(n => ({
+            const convertedNotifications: NotificationResponse[] = courseNotifications.map(n => ({
               ...n,
               isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
             }));
             
-            // Sort by creation date (newest first)
-            convertedNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-            setNotifications(convertedNotifications);
-            return;
-          } catch (error) {
-            // Fall back to subscription-based loading
+            setNotifications(prev => {
+              const filtered = prev.filter(n => n.courseId !== courseId);
+              return [...convertedNotifications, ...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            });
           }
         }
-        
-        // Get notifications for all subscribed courses (students and fallback for instructors)
-        const subscriptions = getLocalSubscriptions();
-        const allNotifications: NotificationResponse[] = [];
-        
-        for (const subscription of subscriptions) {
-          if (subscription.isSubscribed) {            try {              const courseNotifications = await signalRService.getCourseNotifications(
-                user.id.toString(), 
-                subscription.courseId
-              );
-              
-              // Apply local read status cache
-              const localReadStatuses = getLocalReadStatuses();
-              
-              // Convert CourseNotification[] to NotificationResponse[]
-              const convertedNotifications: NotificationResponse[] = courseNotifications.map(n => ({
-                ...n,
-                isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
-              }));
-              allNotifications.push(...convertedNotifications);
-            } catch (error) {
-              // Silent error handling
-            }
-          }
-        }
-        
-        // Sort by creation date (newest first)
-        allNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setNotifications(allNotifications);
+      } else {
+        // Refresh all notifications - use the fast immediate loading method
+        await loadNotificationsImmediate();
       }
     } catch (error) {
-      // Silent error handling
+      console.warn("Failed to refresh notifications:", error);
     }
-  }, [isAuthenticated, user, isConnected, getLocalSubscriptions]);
+  }, [isAuthenticated, user, isConnected, getLocalReadStatuses, saveLocalReadStatuses, getLocalSubscriptions, loadNotificationsImmediate]);
 
   const clearNotifications = useCallback(() => {
     setNotifications([]);
@@ -493,7 +539,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const value: NotificationContextType = {
     notifications,
     unreadCount,
+    fastUnreadCount,
     isConnected,
+    isRateLimited: connectionStatus.isRateLimited,
+    connectionStatus,
     joinCourseGroup,
     leaveCourseGroup,
     markAsRead,

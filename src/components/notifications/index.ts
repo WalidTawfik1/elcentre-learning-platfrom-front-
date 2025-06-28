@@ -3,6 +3,7 @@ export { NotificationBell } from './notification-bell';
 export { NotificationSubscriptionToggle } from './notification-subscription-toggle';
 export { CreateNotificationForm } from './create-notification-form';
 export { NotificationDemo } from './notification-demo';
+export { ConnectionStatus } from './connection-status';
 
 // Re-export types and constants
 export type { CourseNotification } from '@/services/signalr-service';

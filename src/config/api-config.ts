@@ -18,29 +18,71 @@ export const API_BASE_URL = isProduction
 // SignalR WebSocket connections cannot go through Vercel proxy, so always use direct URL
 export const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || FALLBACK_API_URL;
 
+// SignalR Configuration for rate limiting prevention
+export const SIGNALR_CONFIG = {
+  // Connection settings
+  minConnectionInterval: isProduction ? 10000 : 5000, // 10s in prod, 5s in dev
+  maxReconnectAttempts: isProduction ? 3 : 5, // Fewer attempts in production
+  rateLimitRetryDelay: isProduction ? 120000 : 60000, // 2 minutes in prod, 1 minute in dev
+  
+  // Monitoring settings
+  connectionCheckInterval: isProduction ? 30000 : 10000, // 30s in prod, 10s in dev
+  
+  // Transport preferences (prefer more stable transports in production)
+  transportPriority: isProduction 
+    ? ['WebSockets', 'ServerSentEvents', 'LongPolling']
+    : ['WebSockets', 'LongPolling', 'ServerSentEvents'],
+};
+
 // For image URLs, we need to handle them differently in production vs development
 export const getImageUrl = (path: string | undefined): string => {
   if (!path) return "/placeholder.svg";
-  
-  // If it's a complete URL, return it directly
-  if (path.startsWith('http')) {
+
+  // Handle Google Drive links
+  if (path.includes("drive.google.com")) {
+    // If it's already in uc?export=view format
+    if (path.includes("uc?export=view&id=")) {
+      return path;
+    }
+
+    let fileId = "";
+
+    // Format 1: https://drive.google.com/open?id=FILE_ID
+    const openMatch = path.match(/open\?id=([^&]+)/);
+    if (openMatch) {
+      fileId = openMatch[1];
+    }
+
+    // Format 2: https://drive.google.com/file/d/FILE_ID/view or similar
+    const fileMatch = path.match(/\/file\/d\/([^/]+)/);
+    if (fileMatch) {
+      fileId = fileMatch[1];
+    }
+
+    if (fileId) {
+      return `https://drive.google.com/uc?export=view&id=${fileId}`;
+    }
+  }
+
+  // Non-Google-Drive URLs
+  if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
   }
-    // If it already contains our API URL, don't double-prefix it
+
+  // Avoid double prefix
   if (path.includes(FALLBACK_API_URL)) {
     return path;
   }
-  
-  // Clean the path - remove any leading slashes
-  const cleanPath = path.replace(/^\//, '');
-  
+
+  const cleanPath = path.replace(/^\//, "");
+
   if (isProduction) {
-    // In production, all images go through the Vercel proxy
-    return `${PRODUCTION_URL}/api/${cleanPath}`;  } else {
-    // In local development, use the direct API URL
+    return `${PRODUCTION_URL}/api/${cleanPath}`;
+  } else {
     return `${FALLBACK_API_URL}/${cleanPath}`;
   }
 };
+
 
 // Helper function to check if the API is reachable 
 export const checkApiConnection = async (): Promise<boolean> => {

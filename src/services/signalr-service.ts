@@ -1,5 +1,5 @@
 import * as signalR from "@microsoft/signalr";
-import { DIRECT_API_URL } from "@/config/api-config";
+import { DIRECT_API_URL, SIGNALR_CONFIG } from "@/config/api-config";
 import { AuthService } from "./auth-service";
 import { toast } from "@/components/ui/use-toast";
 
@@ -72,7 +72,13 @@ class SignalRService {
   private connectionPromise: Promise<boolean> | null = null;
   private shouldMaintainConnection = false;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 10;
+  private maxReconnectAttempts = SIGNALR_CONFIG.maxReconnectAttempts;
+  private lastConnectionAttempt = 0;
+  private minConnectionInterval = SIGNALR_CONFIG.minConnectionInterval;
+  private isRateLimited = false;
+  private rateLimitRetryDelay = SIGNALR_CONFIG.rateLimitRetryDelay;
+  private connectionQueue: Array<{ resolve: (value: boolean) => void; reject: (error: any) => void }> = [];
+  private isProcessingQueue = false;
 
   constructor() {
     // Set up global connection management
@@ -89,7 +95,6 @@ class SignalRService {
     // Listen for visibility changes to maintain connection
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.shouldMaintainConnection && !this.isConnected) {
-        console.log('Page became visible, attempting to reconnect SignalR...');
         this.connect();
       }
     });
@@ -97,7 +102,6 @@ class SignalRService {
     // Listen for online/offline events
     window.addEventListener('online', () => {
       if (this.shouldMaintainConnection && !this.isConnected) {
-        console.log('Network came online, attempting to reconnect SignalR...');
         this.connect();
       }
     });
@@ -115,15 +119,13 @@ class SignalRService {
     const token = AuthService.getAuthToken();
     
     if (!token) {
-      console.warn("No authentication token found for SignalR connection");
       this.isInitializing = false;
       return;
     }
 
     const hubUrl = `${DIRECT_API_URL}/hubs/notifications`;
-    console.log("Initializing SignalR connection to:", hubUrl);
-    console.log("Environment - Production:", import.meta.env.PROD);
-    console.log("API Config - DIRECT_API_URL:", DIRECT_API_URL);
+    if (!import.meta.env.PROD) {
+    }
 
     try {
       // Build the SignalR connection with authentication and fallback transports
@@ -134,24 +136,28 @@ class SignalRService {
                     signalR.HttpTransportType.ServerSentEvents | 
                     signalR.HttpTransportType.LongPolling, // Enable all transports
           withCredentials: false, // Set to false to avoid CORS issues in production
-          skipNegotiation: false // Allow negotiation to determine best transport
+          skipNegotiation: false, // Allow negotiation to determine best transport
+          headers: {
+            // Add rate limiting headers to help server identify clients
+            'X-Client-Type': 'webapp',
+            'X-Client-Version': '1.0.0'
+          }
         })
         .withAutomaticReconnect({
           nextRetryDelayInMilliseconds: retryContext => {
-            // Exponential backoff: 0, 2, 10, 30 seconds then every 30 seconds
-            if (retryContext.previousRetryCount === 0) return 0;
-            if (retryContext.previousRetryCount === 1) return 2000;
-            if (retryContext.previousRetryCount === 2) return 10000;
-            return 30000;
+            // More aggressive exponential backoff to prevent rate limiting
+            const baseDelay = this.isRateLimited ? this.rateLimitRetryDelay : 2000;
+            const delay = Math.min(baseDelay * Math.pow(2, retryContext.previousRetryCount), 300000); // Max 5 minutes
+            
+            return delay;
           }
         })
-        .configureLogging(signalR.LogLevel.Information) // Add logging for debugging
+        .configureLogging(import.meta.env.PROD ? signalR.LogLevel.Warning : signalR.LogLevel.Information)
         .build();
 
       // Set up event handlers
       this.setupEventHandlers();
     } catch (error) {
-      console.error("Error initializing SignalR connection:", error);
       this.connection = null;
     } finally {
       this.isInitializing = false;
@@ -162,7 +168,6 @@ class SignalRService {
 
     // Handle incoming course notifications
     this.connection.on("ReceiveCourseNotification", (notification: CourseNotification) => {
-      console.log("New notification received:", notification);
       
       // Show toast notification
       toast({
@@ -179,43 +184,85 @@ class SignalRService {
 
     // Handle notification marked as read
     this.connection.on("NotificationMarkedAsRead", (notificationId: number) => {
-      console.log("Notification marked as read:", notificationId);
     });
 
     // Handle all course notifications marked as read
     this.connection.on("AllCourseNotificationsMarkedAsRead", (courseId: number) => {
-      console.log("All course notifications marked as read for course:", courseId);
     });
 
     // Handle all notifications marked as read
     this.connection.on("AllNotificationsMarkedAsRead", () => {
-      console.log("All notifications marked as read");
     });
 
     // Handle notification deleted
     this.connection.on("NotificationDeleted", (notificationId: number) => {
-      console.log("Notification deleted:", notificationId);
     });
 
     // Handle connection events
     this.connection.onclose((error) => {
       this.isConnected = false;
-      console.log("SignalR connection closed:", error);
+      
+      // Check if this is a rate limiting error
+      if (error && error.message && error.message.includes('429')) {
+        this.handleRateLimitError();
+      }
     });
 
     this.connection.onreconnecting((error) => {
-      console.log("SignalR reconnecting:", error);
       this.isConnected = false;
+      
+      // Check if this is a rate limiting error
+      if (error && error.message && error.message.includes('429')) {
+        this.handleRateLimitError();
+      }
     });
 
     this.connection.onreconnected((connectionId) => {
-      console.log("SignalR reconnected:", connectionId);
       this.isConnected = true;
+      this.isRateLimited = false; // Reset rate limit flag on successful reconnection
+      this.reconnectAttempts = 0; // Reset reconnect attempts
     });
+  }
+
+  private handleRateLimitError() {
+    this.isRateLimited = true;
+    
+    // Clear any existing reconnection attempts
+    this.reconnectAttempts = 0;
+    
+    // Stop maintaining connection temporarily
+    const wasMaintaining = this.shouldMaintainConnection;
+    this.shouldMaintainConnection = false;
+    
+    // Schedule a reconnection after rate limit delay
+    setTimeout(() => {
+      if (wasMaintaining && !this.isConnected) {
+        this.isRateLimited = false;
+        this.shouldMaintainConnection = true;
+        this.connect();
+      }
+    }, this.rateLimitRetryDelay);
   }  async connect(): Promise<boolean> {
-    // If already connecting, return the existing promise
+    // If rate limited, don't allow new connections
+    if (this.isRateLimited) {
+      return false;
+    }
+
+    // Implement minimum interval between connection attempts
+    const now = Date.now();
+    if (now - this.lastConnectionAttempt < this.minConnectionInterval) {
+      const waitTime = this.minConnectionInterval - (now - this.lastConnectionAttempt);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+
+    this.lastConnectionAttempt = Date.now();
+
+    // If already connecting, add to queue instead of creating new connection
     if (this.connectionPromise) {
-      return this.connectionPromise;
+      return new Promise((resolve, reject) => {
+        this.connectionQueue.push({ resolve, reject });
+        this.processConnectionQueue();
+      });
     }
 
     // Set flag to maintain connection
@@ -231,10 +278,36 @@ class SignalRService {
     
     try {
       const result = await this.connectionPromise;
+      this.processConnectionQueue(); // Process any queued connection requests
       return result;
+    } catch (error) {
+      this.processConnectionQueue(); // Process queue even on error
+      throw error;
     } finally {
       this.connectionPromise = null;
     }
+  }
+
+  private async processConnectionQueue() {
+    if (this.isProcessingQueue || this.connectionQueue.length === 0) {
+      return;
+    }
+
+    this.isProcessingQueue = true;
+    const queue = [...this.connectionQueue];
+    this.connectionQueue = [];
+
+    const isConnected = this.connection && this.isConnected;
+
+    queue.forEach(({ resolve, reject }) => {
+      if (isConnected) {
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    });
+
+    this.isProcessingQueue = false;
   }
 
   private async performConnection(): Promise<boolean> {
@@ -243,7 +316,6 @@ class SignalRService {
       try {
         await this.connection.stop();
       } catch (error) {
-        console.warn("Error stopping existing connection:", error);
       }
       this.connection = null;
     }
@@ -254,7 +326,6 @@ class SignalRService {
     }
 
     if (!this.connection) {
-      console.error("Failed to initialize SignalR connection");
       return false;
     }
 
@@ -262,16 +333,15 @@ class SignalRService {
       await this.connection.start();
       this.isConnected = true;
       this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
-      console.log("SignalR connected successfully to:", `${DIRECT_API_URL}/hubs/notifications`);
+      this.isRateLimited = false; // Reset rate limit flag on successful connection
       
       // Set up automatic reconnection monitoring
       this.setupReconnectionMonitoring();
       
       return true;
-    } catch (error) {
-      console.error("SignalR connection failed:", error);
-      console.error("Attempted connection to:", `${DIRECT_API_URL}/hubs/notifications`);
-      console.error("Connection state:", this.connection?.state);
+    } catch (error: any) {
+      if (!import.meta.env.PROD) {
+      }
       console.error("Error details:", {
         name: error?.name,
         message: error?.message,
@@ -280,18 +350,25 @@ class SignalRService {
       });
       this.isConnected = false;
       
+      // Check if this is a 429 rate limiting error
+      if (error?.message?.includes('429') || error?.statusCode === 429) {
+        this.handleRateLimitError();
+        return false;
+      }
+      
       // If connection failed, clean up
       if (this.connection) {
         try {
           await this.connection.stop();
         } catch (stopError) {
-          console.warn("Error stopping failed connection:", stopError);
         }
         this.connection = null;
       }
       
-      // Attempt automatic reconnection if we should maintain connection
-      this.scheduleReconnection();
+      // Attempt automatic reconnection if we should maintain connection and not rate limited
+      if (!this.isRateLimited) {
+        this.scheduleReconnection();
+      }
       
       return false;
     }
@@ -300,33 +377,35 @@ class SignalRService {
   private setupReconnectionMonitoring() {
     if (!this.connection) return;
 
-    // Monitor connection state periodically
+    // Monitor connection state periodically with configurable intervals
     const connectionMonitor = setInterval(() => {
-      if (!this.shouldMaintainConnection) {
+      if (!this.shouldMaintainConnection || this.isRateLimited) {
         clearInterval(connectionMonitor);
         return;
       }
 
       if (this.connection && this.connection.state === signalR.HubConnectionState.Disconnected) {
-        console.log('SignalR connection lost, attempting to reconnect...');
         this.isConnected = false;
         this.connect();
       }
-    }, 5000); // Check every 5 seconds
+    }, SIGNALR_CONFIG.connectionCheckInterval);
   }
 
   private scheduleReconnection() {
-    if (!this.shouldMaintainConnection || this.reconnectAttempts >= this.maxReconnectAttempts) {
+    if (!this.shouldMaintainConnection || this.reconnectAttempts >= this.maxReconnectAttempts || this.isRateLimited) {
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      }
       return;
     }
 
     this.reconnectAttempts++;
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000); // Exponential backoff, max 30 seconds
+    // More conservative exponential backoff to avoid rate limiting
+    const baseDelay = 5000; // Start with 5 seconds
+    const delay = Math.min(baseDelay * Math.pow(2, this.reconnectAttempts), 300000); // Max 5 minutes
     
-    console.log(`Scheduling reconnection attempt ${this.reconnectAttempts} in ${delay}ms`);
     
     setTimeout(() => {
-      if (this.shouldMaintainConnection && !this.isConnected) {
+      if (this.shouldMaintainConnection && !this.isConnected && !this.isRateLimited) {
         this.connect();
       }
     }, delay);
@@ -338,9 +417,7 @@ class SignalRService {
       try {
         await this.connection.stop();
         this.isConnected = false;
-        console.log("SignalR disconnected");
       } catch (error) {
-        console.error("Error disconnecting SignalR:", error);
       } finally {
         this.connection = null;
         this.reconnectAttempts = 0;
@@ -365,42 +442,60 @@ class SignalRService {
   // Stop maintaining connection (call this when user logs out)
   stopMaintainingConnection(): void {
     this.shouldMaintainConnection = false;
-  }// Join a course group to receive notifications
+  }  // Check if we're currently rate limited
+  isRateLimitActive(): boolean {
+    return this.isRateLimited;
+  }
+
+  // Get connection status with rate limit info
+  getConnectionStatus(): { isConnected: boolean; isRateLimited: boolean; reconnectAttempts: number } {
+    return {
+      isConnected: this.isConnected,
+      isRateLimited: this.isRateLimited,
+      reconnectAttempts: this.reconnectAttempts
+    };
+  }
+
+// Join a course group to receive notifications
   async joinCourseGroup(courseId: number): Promise<boolean> {
-    if (!this.isReady()) {
-      console.warn("SignalR not ready when trying to join course group");
+    if (!this.isReady() || this.isRateLimited) {
+      if (this.isRateLimited) {
+      } else {
+      }
       return false;
     }
 
     try {
       await this.connection!.invoke("JoinCourseGroup", courseId.toString());
-      console.log(`Joined course group ${courseId}`);
       return true;
-    } catch (error) {
-      console.error(`Error joining course group ${courseId}:`, error);
+    } catch (error: any) {
+      
+      // Check if this is a rate limiting error
+      if (error?.message?.includes('429') || error?.statusCode === 429) {
+        this.handleRateLimitError();
+      }
       return false;
     }
   }
 
   // Leave a course group
   async leaveCourseGroup(courseId: number): Promise<boolean> {
-    if (!this.isReady()) {
-      console.warn("SignalR not ready when trying to leave course group");
+    if (!this.isReady() || this.isRateLimited) {
+      if (this.isRateLimited) {
+      } else {
+      }
       return false;
     }
 
     try {
       await this.connection!.invoke("LeaveCourseGroup", courseId.toString());
-      console.log(`Left course group ${courseId}`);
       return true;
     } catch (error) {
-      console.error(`Error leaving course group ${courseId}:`, error);
       return false;
     }
   }  // Get existing notifications
   async getCourseNotifications(userId: string, courseId: number, unreadOnly: boolean = false): Promise<CourseNotification[]> {
     if (!this.isReady()) {
-      console.warn("SignalR not ready when trying to get notifications");
       return [];
     }
 
@@ -408,7 +503,6 @@ class SignalRService {
       const notifications = await this.connection!.invoke("GetCourseNotifications", userId, courseId, unreadOnly);
       return notifications || [];
     } catch (error) {
-      console.error("Error getting course notifications:", error);
       return [];
     }
   }
@@ -416,7 +510,6 @@ class SignalRService {
   // Get all notifications for user
   async getAllNotifications(userId: string, unreadOnly: boolean = false, page: number = 1, pageSize: number = 20): Promise<CourseNotification[]> {
     if (!this.isReady()) {
-      console.warn("SignalR not connected when trying to get all notifications");
       return [];
     }
 
@@ -424,7 +517,6 @@ class SignalRService {
       const notifications = await this.connection.invoke("GetAllNotifications", userId, unreadOnly, page, pageSize);
       return notifications || [];
     } catch (error) {
-      console.error("Error getting all notifications:", error);
       return [];
     }
   }
@@ -432,7 +524,6 @@ class SignalRService {
   // Get unread count
   async getUnreadCount(userId: string): Promise<number> {
     if (!this.isReady()) {
-      console.warn("SignalR not connected when trying to get unread count");
       return 0;
     }
 
@@ -440,7 +531,6 @@ class SignalRService {
       const count = await this.connection.invoke("GetUnreadCount", userId);
       return count || 0;
     } catch (error) {
-      console.error("Error getting unread count:", error);
       return 0;
     }
   }
@@ -448,7 +538,6 @@ class SignalRService {
   // Get course unread count
   async getCourseUnreadCount(userId: string, courseId: number): Promise<number> {
     if (!this.isReady()) {
-      console.warn("SignalR not connected when trying to get course unread count");
       return 0;
     }
 
@@ -456,7 +545,6 @@ class SignalRService {
       const count = await this.connection.invoke("GetCourseUnreadCount", userId, courseId);
       return count || 0;
     } catch (error) {
-      console.error("Error getting course unread count:", error);
       return 0;
     }
   }
@@ -464,7 +552,6 @@ class SignalRService {
   // Mark notification as read
   async markNotificationAsRead(notificationId: number, userId: string): Promise<boolean> {
     if (!this.isReady()) {
-      console.warn("SignalR not connected when trying to mark notification as read");
       return false;
     }
 
@@ -472,14 +559,12 @@ class SignalRService {
       await this.connection.invoke("MarkCourseNotificationAsRead", notificationId, userId);
       return true;
     } catch (error) {
-      console.error("Error marking notification as read:", error);
       return false;
     }
   }
   // Mark all notifications as read
   async markAllNotificationsAsRead(userId: string, courseId: number): Promise<boolean> {
     if (!this.isReady()) {
-      console.warn("SignalR not connected when trying to mark all notifications as read");
       return false;
     }
 
@@ -487,7 +572,6 @@ class SignalRService {
       await this.connection.invoke("MarkAllCourseNotificationsAsRead", userId, courseId);
       return true;
     } catch (error) {
-      console.error("Error marking all notifications as read:", error);
       return false;
     }
   }
@@ -495,7 +579,6 @@ class SignalRService {
   // Mark all notifications as read (global)
   async markAllNotificationsAsReadGlobal(userId: string): Promise<boolean> {
     if (!this.isReady()) {
-      console.warn("SignalR not connected when trying to mark all notifications as read globally");
       return false;
     }
 
@@ -503,7 +586,6 @@ class SignalRService {
       await this.connection.invoke("MarkAllNotificationsAsRead", userId);
       return true;
     } catch (error) {
-      console.error("Error marking all notifications as read globally:", error);
       return false;
     }
   }
@@ -511,7 +593,6 @@ class SignalRService {
   // Create course notification (for instructors)
   async createCourseNotification(notification: Omit<CourseNotification, 'id' | 'createdAt' | 'createdById' | 'createdByName'>): Promise<CourseNotification | null> {
     if (!this.isReady()) {
-      console.warn("SignalR not connected when trying to create notification");
       return null;
     }
 
@@ -519,7 +600,6 @@ class SignalRService {
       const result = await this.connection.invoke("CreateCourseNotification", notification);
       return result;
     } catch (error) {
-      console.error("Error creating course notification:", error);
       return null;
     }
   }
@@ -527,7 +607,6 @@ class SignalRService {
   // Get notification history
   async getNotificationHistory(userId: string, fromDate?: Date, toDate?: Date): Promise<CourseNotification[]> {
     if (!this.isReady()) {
-      console.warn("SignalR not connected when trying to get notification history");
       return [];
     }
 
@@ -535,7 +614,6 @@ class SignalRService {
       const notifications = await this.connection.invoke("GetNotificationHistory", userId, fromDate, toDate);
       return notifications || [];
     } catch (error) {
-      console.error("Error getting notification history:", error);
       return [];
     }
   }
@@ -543,7 +621,6 @@ class SignalRService {
   // Notify new lesson (for instructors)
   async notifyNewLesson(courseId: number, lessonTitle: string): Promise<boolean> {
     if (!this.isReady()) {
-      console.warn("SignalR not connected when trying to notify new lesson");
       return false;
     }
 
@@ -551,7 +628,6 @@ class SignalRService {
       await this.connection.invoke("NotifyNewLesson", courseId, lessonTitle);
       return true;
     } catch (error) {
-      console.error("Error notifying new lesson:", error);
       return false;
     }
   }
@@ -559,7 +635,6 @@ class SignalRService {
   // Notify course status (for admins)
   async notifyCourseStatus(courseId: number, status: string, instructorId: string, reason?: string): Promise<boolean> {
     if (!this.isReady()) {
-      console.warn("SignalR not connected when trying to notify course status");
       return false;
     }
 
@@ -567,7 +642,6 @@ class SignalRService {
       await this.connection.invoke("NotifyCourseStatus", courseId, status, instructorId, reason);
       return true;
     } catch (error) {
-      console.error("Error notifying course status:", error);
       return false;
     }
   }
@@ -575,7 +649,6 @@ class SignalRService {
   // Delete notification
   async deleteNotification(notificationId: number): Promise<boolean> {
     if (!this.isReady()) {
-      console.warn("SignalR not connected when trying to delete notification");
       return false;
     }
 
@@ -583,7 +656,6 @@ class SignalRService {
       await this.connection.invoke("DeleteNotification", notificationId);
       return true;
     } catch (error) {
-      console.error("Error deleting notification:", error);
       return false;
     }
   }
@@ -591,16 +663,13 @@ class SignalRService {
   // Join multiple course groups at once
   async joinCourseGroups(courseIds: number[]): Promise<boolean> {
     if (!this.isReady()) {
-      console.warn("SignalR not connected when trying to join course groups");
       return false;
     }
 
     try {
       await this.connection.invoke("JoinCourseGroups", courseIds.map(id => id.toString()));
-      console.log(`Joined course groups: ${courseIds.join(', ')}`);
       return true;
     } catch (error) {
-      console.error(`Error joining course groups:`, error);
       return false;
     }
   }
@@ -608,16 +677,13 @@ class SignalRService {
   // Leave multiple course groups at once
   async leaveCourseGroups(courseIds: number[]): Promise<boolean> {
     if (!this.isReady()) {
-      console.warn("SignalR not connected when trying to leave course groups");
       return false;
     }
 
     try {
       await this.connection.invoke("LeaveCourseGroups", courseIds.map(id => id.toString()));
-      console.log(`Left course groups: ${courseIds.join(', ')}`);
       return true;
     } catch (error) {
-      console.error(`Error leaving course groups:`, error);
       return false;
     }
   }
@@ -627,10 +693,7 @@ class SignalRService {
     this.onNotificationReceived = callback;
   }
 
-  // Get connection status
-  getConnectionStatus(): boolean {
-    return this.isConnected;
-  }  // Reinitialize connection (useful when user logs in/out)
+  // Reinitialize connection (useful when user logs in/out)
   reinitialize(): void {
     this.disconnect().then(() => {
       // Reset state
@@ -638,11 +701,23 @@ class SignalRService {
       this.isConnected = false;
       this.isInitializing = false;
       this.reconnectAttempts = 0;
+      this.isRateLimited = false; // Reset rate limiting on reinitialize
       // If we should maintain connection, reconnect
       if (this.shouldMaintainConnection) {
         this.connect();
       }
     });
+  }
+
+  // Manually reset rate limiting (for admin/debugging purposes)
+  resetRateLimit(): void {
+    this.isRateLimited = false;
+    this.reconnectAttempts = 0;
+    
+    // Attempt to reconnect if we should be maintaining connection
+    if (this.shouldMaintainConnection && !this.isConnected) {
+      this.connect();
+    }
   }
 
   // Check if connection is ready for operations
