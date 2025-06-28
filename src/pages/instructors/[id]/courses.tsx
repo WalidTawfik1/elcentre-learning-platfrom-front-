@@ -35,6 +35,7 @@ interface InstructorCourse {
   categoryName?: string;
   createdAt?: string;
   isActive: boolean;
+  courseStatus?: string;
 }
 
 export default function InstructorCoursesPage() {
@@ -58,7 +59,14 @@ export default function InstructorCoursesPage() {
         ]);
         
         setInstructor(instructorData);
-        setCourses(coursesData);
+        
+        // Filter courses to show only active and approved courses
+        const filteredCourses = coursesData.filter((course: any) => 
+          course.isActive && 
+          (course.courseStatus === "Approved" || !course.courseStatus) // Include courses without status for backward compatibility
+        );
+        
+        setCourses(filteredCourses);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
