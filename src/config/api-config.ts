@@ -21,17 +21,21 @@ export const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || FALLBACK_API_
 // SignalR Configuration for rate limiting prevention
 export const SIGNALR_CONFIG = {
   // Connection settings
-  minConnectionInterval: isProduction ? 10000 : 5000, // 10s in prod, 5s in dev
-  maxReconnectAttempts: isProduction ? 3 : 5, // Fewer attempts in production
-  rateLimitRetryDelay: isProduction ? 120000 : 60000, // 2 minutes in prod, 1 minute in dev
+  minConnectionInterval: isProduction ? 15000 : 10000, // 15s in prod, 10s in dev (increased for better rate limiting)
+  maxReconnectAttempts: isProduction ? 5 : 8, // More attempts but with better backoff
+  rateLimitRetryDelay: isProduction ? 180000 : 90000, // 3 minutes in prod, 1.5 minutes in dev (increased)
   
   // Monitoring settings
-  connectionCheckInterval: isProduction ? 30000 : 10000, // 30s in prod, 10s in dev
+  connectionCheckInterval: isProduction ? 45000 : 20000, // 45s in prod, 20s in dev (increased)
   
   // Transport preferences (prefer more stable transports in production)
   transportPriority: isProduction 
     ? ['WebSockets', 'ServerSentEvents', 'LongPolling']
     : ['WebSockets', 'LongPolling', 'ServerSentEvents'],
+    
+  // Recovery settings
+  maxRecoveryAttempts: 4, // Number of progressive recovery attempts
+  recoveryBaseDelay: isProduction ? 120000 : 60000, // Base delay for recovery attempts
 };
 
 // For image URLs, we need to handle them differently in production vs development

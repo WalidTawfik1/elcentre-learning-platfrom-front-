@@ -26,6 +26,8 @@ interface NotificationContextType {
   markAllAsRead: (courseId: number) => Promise<void>;
   refreshNotifications: (courseId?: number) => Promise<void>;
   clearNotifications: () => void;
+  // Rate limit recovery
+  forceReconnect: () => Promise<void>;
   // Local subscription management
   isSubscribedToCourse: (courseId: number) => boolean;
   toggleCourseSubscription: (courseId: number, courseName?: string) => Promise<void>;
@@ -223,8 +225,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     try {
       // Check if already rate limited before attempting connection
       if (signalRService.isRateLimitActive()) {
-        console.log("SignalR initialization skipped - rate limited");
         setIsConnected(false);
+        // Attempt to force recovery when initializing
+        signalRService.forceRateLimitRecovery();
         return;
       }
 
@@ -533,6 +536,30 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setNotifications([]);
   }, []);
 
+  // Force reconnect function
+  const forceReconnect = useCallback(async () => {
+    
+    try {
+      // First try force rate limit recovery if rate limited
+      if (connectionStatus.isRateLimited) {
+        signalRService.forceRateLimitRecovery();
+      } else {
+        // If not rate limited, try a full reinitialize
+        signalRService.reinitialize();
+      }
+      
+      // Wait a moment and check connection status
+      setTimeout(() => {
+        const newStatus = signalRService.getConnectionStatus();
+        setConnectionStatus(newStatus);
+        setIsConnected(newStatus.isConnected);
+      }, 2000);
+      
+    } catch (error) {
+      console.error("Failed to force reconnect:", error);
+    }
+  }, [connectionStatus.isRateLimited]);
+
   // Calculate unread count
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -549,6 +576,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     markAllAsRead,
     refreshNotifications,
     clearNotifications,
+    forceReconnect,
     isSubscribedToCourse,
     toggleCourseSubscription,
     getAllSubscriptions,

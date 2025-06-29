@@ -79,6 +79,7 @@ class SignalRService {
   private rateLimitRetryDelay = SIGNALR_CONFIG.rateLimitRetryDelay;
   private connectionQueue: Array<{ resolve: (value: boolean) => void; reject: (error: any) => void }> = [];
   private isProcessingQueue = false;
+  private rateLimitHealthCheckInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     // Set up global connection management
@@ -95,14 +96,24 @@ class SignalRService {
     // Listen for visibility changes to maintain connection
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.shouldMaintainConnection && !this.isConnected) {
-        this.connect();
+        // If rate limited, schedule a recovery attempt
+        if (this.isRateLimited) {
+          this.scheduleRateLimitRecovery();
+        } else {
+          this.connect();
+        }
       }
     });
 
     // Listen for online/offline events
     window.addEventListener('online', () => {
       if (this.shouldMaintainConnection && !this.isConnected) {
-        this.connect();
+        // If rate limited, schedule a recovery attempt
+        if (this.isRateLimited) {
+          this.scheduleRateLimitRecovery();
+        } else {
+          this.connect();
+        }
       }
     });
   }
@@ -203,7 +214,7 @@ class SignalRService {
       this.isConnected = false;
       
       // Check if this is a rate limiting error
-      if (error && error.message && error.message.includes('429')) {
+      if (this.isRateLimitingError(error)) {
         this.handleRateLimitError();
       }
     });
@@ -212,7 +223,7 @@ class SignalRService {
       this.isConnected = false;
       
       // Check if this is a rate limiting error
-      if (error && error.message && error.message.includes('429')) {
+      if (this.isRateLimitingError(error)) {
         this.handleRateLimitError();
       }
     });
@@ -230,18 +241,67 @@ class SignalRService {
     // Clear any existing reconnection attempts
     this.reconnectAttempts = 0;
     
-    // Stop maintaining connection temporarily
-    const wasMaintaining = this.shouldMaintainConnection;
-    this.shouldMaintainConnection = false;
+    console.warn("SignalR rate limited - scheduling recovery attempts");
     
-    // Schedule a reconnection after rate limit delay
-    setTimeout(() => {
-      if (wasMaintaining && !this.isConnected) {
-        this.isRateLimited = false;
-        this.shouldMaintainConnection = true;
-        this.connect();
+    // Start health check to detect when rate limiting expires
+    this.startRateLimitHealthCheck();
+    
+    // Schedule progressive recovery attempts
+    this.scheduleRateLimitRecovery();
+  }
+
+  private scheduleRateLimitRecovery() {
+    const baseDelay = SIGNALR_CONFIG.recoveryBaseDelay;
+    const recoveryAttempts = [
+      baseDelay, // First attempt after base delay
+      baseDelay * 1.5, // Second attempt with 50% longer delay
+      baseDelay * 2, // Third attempt with double delay
+      baseDelay * 3, // Fourth attempt with triple delay
+    ];
+
+    let attemptIndex = 0;
+
+    const attemptRecovery = () => {
+      if (!this.isRateLimited || !this.shouldMaintainConnection) {
+        return; // Stop if rate limit cleared or connection no longer needed
       }
-    }, this.rateLimitRetryDelay);
+      
+      // Temporarily clear rate limit flag to allow connection attempt
+      this.isRateLimited = false;
+      
+      this.connect().then(connected => {
+        if (connected) {
+          this.reconnectAttempts = 0; // Reset on successful recovery
+        } else {
+          // Connection failed, restore rate limit flag and schedule next attempt
+          this.isRateLimited = true;
+          attemptIndex++;
+          
+          if (attemptIndex < recoveryAttempts.length) {
+            setTimeout(attemptRecovery, recoveryAttempts[attemptIndex]);
+          } else {
+            console.warn("SignalR rate limit recovery failed after all attempts");
+            // Schedule a final attempt after a longer delay
+            setTimeout(() => {
+              if (this.isRateLimited && this.shouldMaintainConnection) {
+                this.scheduleRateLimitRecovery();
+              }
+            }, baseDelay * 5); // 5x longer delay for final retry cycle
+          }
+        }
+      }).catch(error => {
+        console.error("SignalR rate limit recovery error:", error);
+        this.isRateLimited = true;
+        attemptIndex++;
+        
+        if (attemptIndex < recoveryAttempts.length) {
+          setTimeout(attemptRecovery, recoveryAttempts[attemptIndex]);
+        }
+      });
+    };
+
+    // Start first recovery attempt
+    setTimeout(attemptRecovery, recoveryAttempts[0]);
   }  async connect(): Promise<boolean> {
     // If rate limited, don't allow new connections
     if (this.isRateLimited) {
@@ -350,8 +410,8 @@ class SignalRService {
       });
       this.isConnected = false;
       
-      // Check if this is a 429 rate limiting error
-      if (error?.message?.includes('429') || error?.statusCode === 429) {
+      // Check if this is a rate limiting error
+      if (this.isRateLimitingError(error)) {
         this.handleRateLimitError();
         return false;
       }
@@ -379,8 +439,13 @@ class SignalRService {
 
     // Monitor connection state periodically with configurable intervals
     const connectionMonitor = setInterval(() => {
-      if (!this.shouldMaintainConnection || this.isRateLimited) {
+      if (!this.shouldMaintainConnection) {
         clearInterval(connectionMonitor);
+        return;
+      }
+
+      // If rate limited, don't attempt immediate reconnection but check if we should schedule recovery
+      if (this.isRateLimited) {
         return;
       }
 
@@ -389,6 +454,40 @@ class SignalRService {
         this.connect();
       }
     }, SIGNALR_CONFIG.connectionCheckInterval);
+  }
+
+  // Add periodic health check for rate limit recovery
+  private startRateLimitHealthCheck() {
+    // Only start if we don't already have a health check running
+    if (this.rateLimitHealthCheckInterval) {
+      return;
+    }
+
+    this.rateLimitHealthCheckInterval = setInterval(() => {
+      // Only check if rate limited and should maintain connection
+      if (!this.isRateLimited || !this.shouldMaintainConnection) {
+        if (this.rateLimitHealthCheckInterval) {
+          clearInterval(this.rateLimitHealthCheckInterval);
+          this.rateLimitHealthCheckInterval = null;
+        }
+        return;
+      }
+
+      // Try a very light connection test after a reasonable delay
+      // This helps detect when rate limiting has been lifted
+      const now = Date.now();
+      if (now - this.lastConnectionAttempt > this.minConnectionInterval * 2) {
+        this.isRateLimited = false; // Temporarily clear to test
+        
+        this.connect().then(connected => {
+          if (!connected) {
+            this.isRateLimited = true; // Restore if failed
+          }
+        }).catch(() => {
+          this.isRateLimited = true; // Restore if failed
+        });
+      }
+    }, SIGNALR_CONFIG.connectionCheckInterval * 2); // Check less frequently than normal monitoring
   }
 
   private scheduleReconnection() {
@@ -412,6 +511,12 @@ class SignalRService {
   }
   async disconnect(): Promise<void> {
     this.shouldMaintainConnection = false; // Stop maintaining connection
+    
+    // Clear health check interval
+    if (this.rateLimitHealthCheckInterval) {
+      clearInterval(this.rateLimitHealthCheckInterval);
+      this.rateLimitHealthCheckInterval = null;
+    }
     
     if (this.connection) {
       try {
@@ -471,7 +576,7 @@ class SignalRService {
     } catch (error: any) {
       
       // Check if this is a rate limiting error
-      if (error?.message?.includes('429') || error?.statusCode === 429) {
+      if (this.isRateLimitingError(error)) {
         this.handleRateLimitError();
       }
       return false;
@@ -695,6 +800,12 @@ class SignalRService {
 
   // Reinitialize connection (useful when user logs in/out)
   reinitialize(): void {
+    // Clear health check interval
+    if (this.rateLimitHealthCheckInterval) {
+      clearInterval(this.rateLimitHealthCheckInterval);
+      this.rateLimitHealthCheckInterval = null;
+    }
+    
     this.disconnect().then(() => {
       // Reset state
       this.connection = null;
@@ -720,6 +831,13 @@ class SignalRService {
     }
   }
 
+  // Force rate limit recovery attempt
+  forceRateLimitRecovery(): void {
+    if (this.isRateLimited && this.shouldMaintainConnection) {
+      this.scheduleRateLimitRecovery();
+    }
+  }
+
   // Check if connection is ready for operations
   isReady(): boolean {
     return this.connection !== null && this.isConnected && this.connection.state === signalR.HubConnectionState.Connected;
@@ -729,8 +847,42 @@ class SignalRService {
   getConnectionState(): signalR.HubConnectionState | null {
     return this.connection ? this.connection.state : null;
   }
+
+  private isRateLimitingError(error: any): boolean {
+    if (!error) return false;
+    
+    // Check for HTTP 429 status code
+    if (error.statusCode === 429) return true;
+    
+    // Check for rate limiting messages
+    const message = error.message || error.toString() || '';
+    const rateLimitIndicators = [
+      '429',
+      'rate limit',
+      'too many requests',
+      'rate exceeded',
+      'throttled',
+      'quota exceeded'
+    ];
+    
+    return rateLimitIndicators.some(indicator => 
+      message.toLowerCase().includes(indicator.toLowerCase())
+    );
+  }
 }
 
 // Export a singleton instance
 export const signalRService = new SignalRService();
 export default signalRService;
+
+// Debug utilities for SignalR (available in browser console)
+if (typeof window !== 'undefined') {
+  (window as any).signalRDebug = {
+    getStatus: () => signalRService.getConnectionStatus(),
+    forceReconnect: () => signalRService.reinitialize(),
+    resetRateLimit: () => signalRService.resetRateLimit(),
+    forceRecovery: () => signalRService.forceRateLimitRecovery(),
+    getState: () => signalRService.getConnectionState(),
+    isReady: () => signalRService.isReady(),
+  };
+}
