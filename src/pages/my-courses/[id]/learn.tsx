@@ -739,7 +739,7 @@ export default function CourseLearn() {
                 <TabsContent value="quizzes">
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold">Course Quizzes</h2>
+                    <h2 className="text-2xl font-bold">Quizzes</h2>
                     {quizScore && (
                       <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
                         <Trophy className="h-5 w-5 text-green-600" />
@@ -795,7 +795,7 @@ export default function CourseLearn() {
                       <HelpCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                       <h3 className="text-lg font-medium mb-2">No Quizzes Available</h3>
                       <p className="text-muted-foreground">
-                        This course doesn't have any quizzes yet. Check back later!
+                        This lesson doesn't have any quizzes yet. Check back later!
                       </p>
                     </div>
                   )}
