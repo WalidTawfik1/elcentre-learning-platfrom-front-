@@ -426,10 +426,31 @@ export function QAComponent({
           questions
             .filter(question => question && question.id)
             .sort((a, b) => {
-              // Sort pinned questions first, then by creation date (newest first)
-              if (a.isPinned && !b.isPinned) return -1;
-              if (!a.isPinned && b.isPinned) return 1;
-              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              // Priority sorting:
+              // 1. Pinned questions by instructors (highest priority)
+              // 2. Pinned questions by students 
+              // 3. Unpinned questions (lowest priority)
+              
+              const aIsInstructorPinned = a.isPinned && a.isInstructor;
+              const bIsInstructorPinned = b.isPinned && b.isInstructor;
+              const aIsStudentPinned = a.isPinned && !a.isInstructor;
+              const bIsStudentPinned = b.isPinned && !b.isInstructor;
+              
+              // If one is instructor pinned and the other is not
+              if (aIsInstructorPinned && !bIsInstructorPinned) return -1;
+              if (!aIsInstructorPinned && bIsInstructorPinned) return 1;
+              
+              // If both are instructor pinned or both are not instructor pinned
+              if (aIsInstructorPinned === bIsInstructorPinned) {
+                // Then check if one is student pinned and the other is not
+                if (aIsStudentPinned && !bIsStudentPinned) return -1;
+                if (!aIsStudentPinned && bIsStudentPinned) return 1;
+                
+                // If both have the same pin status, sort by creation date (newest first)
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              }
+              
+              return 0;
             })
             .map((question) => {
             const isExpanded = expandedQuestions.has(question.id);

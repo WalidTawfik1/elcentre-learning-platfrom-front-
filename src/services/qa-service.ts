@@ -33,14 +33,19 @@ export const QAService = {
    */
   getAllLessonQuestions: async (lessonId: number): Promise<Question[]> => {
     try {
-      const questions = await apiRequest<Question[]>(`/Q_A/get-all-lesson-questions/${lessonId}`);
-      // Validate and clean the data
-      const validQuestions = Array.isArray(questions) ? questions.filter(question => 
-        question && 
-        typeof question.id === 'number' && 
-        typeof question.question === 'string' &&
-        typeof question.lessonId === 'number'
-      ) : [];
+      const questions = await apiRequest<Question[]>(`/Q_A/get-all-lesson-questions/${lessonId}?isPinned=true`);
+      // Validate and clean the data, ensuring isPinned defaults to false if not provided
+      const validQuestions = Array.isArray(questions) ? questions
+        .filter(question => 
+          question && 
+          typeof question.id === 'number' && 
+          typeof question.question === 'string' &&
+          typeof question.lessonId === 'number'
+        )
+        .map(question => ({
+          ...question,
+          isPinned: typeof question.isPinned === 'boolean' ? question.isPinned : false
+        })) : [];
       return validQuestions;
     } catch (error) {
       console.error("Error fetching lesson questions:", error);
@@ -126,9 +131,8 @@ export const QAService = {
    * Pin or unpin a question (instructor only)
    */
   pinQuestion: async (questionId: number, isPinned: boolean): Promise<void> => {
-    return apiRequest<void>(`/Q_A/pin-question/${questionId}`, {
+    return apiRequest<void>(`/Q_A/pin-question/${questionId}?isPinned=${isPinned}`, {
       method: "PUT",
-      body: JSON.stringify({ isPinned }),
     });
   },
 };

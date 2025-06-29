@@ -790,13 +790,15 @@ export default function CourseLearn() {
                   <StarIcon className="h-4 w-4 mr-2" />
                   Reviews
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="notifications"
-                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
-                >
-                  <Bell className="h-4 w-4 mr-2" />
-                  Announcements
-                </TabsTrigger>
+                {!isInstructorViewing && (
+                  <TabsTrigger 
+                    value="notifications"
+                    className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+                  >
+                    <Bell className="h-4 w-4 mr-2" />
+                    Announcements
+                  </TabsTrigger>
+                )}
               </TabsList>
               
               <TabsContent value="overview">
@@ -1084,8 +1086,11 @@ export default function CourseLearn() {
                     </div>
                   )}
                 </div>
-              </TabsContent>              <TabsContent value="notifications">
-                <div className="space-y-6">
+              </TabsContent>
+
+              {!isInstructorViewing && (
+                <TabsContent value="notifications">
+                  <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold">Course Announcements</h2>
                     {isInstructorViewing && (
@@ -1217,6 +1222,7 @@ export default function CourseLearn() {
                   </div>
                 </div>
               </TabsContent>
+              )}
             </Tabs>
           </div>
         </div>
