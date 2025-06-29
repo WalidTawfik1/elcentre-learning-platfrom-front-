@@ -39,6 +39,7 @@ export function NotificationBell() {
   const navigate = useNavigate();
 
   const handleNotificationClick = async (notification: any) => {
+    const isInstructor = user?.userType === 'Instructor' || user?.userType === 'Admin'; 
     // Mark as read first
     await markAsRead(notification.id);
     
@@ -47,8 +48,8 @@ export function NotificationBell() {
     
     // Determine navigation based on notification type and user role
     const navigateToNotification = () => {
-      const isInstructor = user?.userType === 'Instructor' || user?.userType === 'Admin';
       const notificationType = notification.notificationType;
+      
       
       // Course status notifications for instructors should go to course edit page
       if (isInstructor && (
@@ -67,23 +68,50 @@ export function NotificationBell() {
         return;
       }
       
-      // Q&A notifications should go to Q&A section
+      // Q&A notifications should go to appropriate Q&A section based on user type
       if (notificationType === 'NewQuestion' || notificationType === 'NewAnswer' || 
           notificationType === NotificationTypes.NewQuestion || notificationType === NotificationTypes.NewAnswer) {
-        console.log('Q&A notification detected:', { notificationType, questionId: notification.questionId, answerId: notification.answerId });
-        if (notification.questionId) {
-          navigate(`/my-courses/${notification.courseId}/learn#question-${notification.questionId}`, { state: { activeTab: 'qa' } });
-        } else if (notification.answerId) {
-          navigate(`/my-courses/${notification.courseId}/learn#answer-${notification.answerId}`, { state: { activeTab: 'qa' } });
+        
+        if (isInstructor) {
+          // Instructors should go to course viewing mode (like students but read-only)
+          if (notification.questionId) {
+            const url = `/my-courses/${notification.courseId}/learn?instructor=true#question-${notification.questionId}`;
+            navigate(url, { state: { activeTab: 'qa' } });
+          } else if (notification.answerId) {
+            const url = `/my-courses/${notification.courseId}/learn?instructor=true#answer-${notification.answerId}`;
+            navigate(url, { state: { activeTab: 'qa' } });
+          } else {
+            // Fallback to course viewing page with Q&A tab
+            const url = `/my-courses/${notification.courseId}/learn?instructor=true`;
+            navigate(url, { state: { activeTab: 'qa' } });
+          }
         } else {
-          // Fallback to Q&A tab if no specific ID
-          navigate(`/my-courses/${notification.courseId}/learn`, { state: { activeTab: 'qa' } });
+          // Students go to learn page Q&A section
+          if (notification.questionId) {
+            const url = `/my-courses/${notification.courseId}/learn#question-${notification.questionId}`;
+            navigate(url, { state: { activeTab: 'qa' } });
+          } else if (notification.answerId) {
+            const url = `/my-courses/${notification.courseId}/learn#answer-${notification.answerId}`;
+            navigate(url, { state: { activeTab: 'qa' } });
+          } else {
+            // Fallback to Q&A tab if no specific ID
+            const url = `/my-courses/${notification.courseId}/learn`;
+            navigate(url, { state: { activeTab: 'qa' } });
+          }
         }
         return;
       }
       
-      // For other notifications, navigate to course learn page announcements
-      navigate(`/my-courses/${notification.courseId}/learn#notification-${notification.id}`);
+      // For other notifications, navigate based on user type
+      if (isInstructor) {
+        // Instructors go to course viewing mode for general notifications
+        const url = `/my-courses/${notification.courseId}/learn?instructor=true#notification-${notification.id}`;
+        navigate(url, { state: { activeTab: 'notifications' } });
+      } else {
+        // Students go to course learn page announcements
+        const url = `/my-courses/${notification.courseId}/learn#notification-${notification.id}`;
+        navigate(url, { state: { activeTab: 'notifications' } });
+      }
     };
     
     navigateToNotification();

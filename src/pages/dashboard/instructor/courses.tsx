@@ -249,16 +249,29 @@ export default function InstructorCourses() {
                         </AlertDialogContent>
                       </AlertDialog>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      className="hover:bg-blue-100 hover:text-blue-600" 
-                      asChild
-                    >
-                      <Link to={`/courses/${course.id}`}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Preview & Manage
-                      </Link>
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="hover:bg-blue-100 hover:text-blue-600" 
+                        asChild
+                      >
+                        <Link to={`/my-courses/${course.id}/learn?instructor=true`}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Course
+                        </Link>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="hover:bg-gray-100" 
+                        asChild
+                      >
+                        <Link to={`/courses/${course.id}`}>
+                          Preview & Manage
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
                 </CardFooter>
               </Card>

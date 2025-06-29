@@ -22,6 +22,7 @@ import { getInitials } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { SecureVideoPlayer } from "@/components/ui/secure-video-player";
 import { QAComponent } from "@/components/qa";
+import { CreateNotificationForm } from "@/components/notifications/create-notification-form";
 import "@/styles/secure-video.css";
 
 import { DIRECT_API_URL } from "@/config/api-config";
@@ -51,13 +52,17 @@ export default function CourseLearn() {
   const [qaTargetQuestionId, setQaTargetQuestionId] = useState<number | undefined>(undefined);
   const [qaTargetAnswerId, setQaTargetAnswerId] = useState<number | undefined>(undefined);
   
+  // Check if instructor is viewing the course
+  const isInstructorViewing = new URLSearchParams(location.search).get('instructor') === 'true' && user?.userType === 'Instructor';
+  
   useEffect(() => {
     // Don't redirect while auth is still loading
     if (authLoading) return;
     
     // Redirect to login if user is not authenticated after loading is complete
     if (!isAuthenticated) {
-      navigate(`/login?redirect=/my-courses/${id}/learn`, { replace: true });
+      const currentUrl = `/my-courses/${id}/learn${location.search}`;
+      navigate(`/login?redirect=${encodeURIComponent(currentUrl)}`, { replace: true });
       return;
     }
     
@@ -69,15 +74,17 @@ export default function CourseLearn() {
         const courseData = await CourseService.getCourseById(id);
         setCourse(courseData);
         
-        // Get user's enrollment ID for this course
-        try {
-          const enrollments = await EnrollmentService.getStudentEnrollments();
-          const currentEnrollment = enrollments.find((enrollment: any) => enrollment.courseId === Number(id));
-          if (currentEnrollment) {
-            setEnrollmentId(currentEnrollment.id);
+        // Get user's enrollment ID for this course (skip for instructor viewing)
+        if (!isInstructorViewing) {
+          try {
+            const enrollments = await EnrollmentService.getStudentEnrollments();
+            const currentEnrollment = enrollments.find((enrollment: any) => enrollment.courseId === Number(id));
+            if (currentEnrollment) {
+              setEnrollmentId(currentEnrollment.id);
+            }
+          } catch (error) {
+            console.error("Error fetching enrollment ID:", error);
           }
-        } catch (error) {
-          console.error("Error fetching enrollment ID:", error);
         }
           // Get modules and lessons for this course
         const modulesData = await CourseService.getModules(id);
@@ -121,23 +128,29 @@ export default function CourseLearn() {
             setActiveLesson(modulesWithLessons[0].lessons[0]);
           }
           
-          // Get completed lessons
-          try {
-            const completed = await EnrollmentService.getCompletedLessons(Number(id));
-            setCompletedLessons(Array.isArray(completed) ? completed : []);
-            
-            // Calculate progress
-            const totalLessons = modulesWithLessons.reduce(
-              (total, module) => total + (module.lessons?.length || 0),
-              0
-            );
-            
-            if (totalLessons > 0 && Array.isArray(completed)) {
-              const progress = Math.round((completed.length / totalLessons) * 100);
-              setCourseProgress(progress);
+          // Get completed lessons (skip for instructor viewing)
+          if (!isInstructorViewing) {
+            try {
+              const completed = await EnrollmentService.getCompletedLessons(Number(id));
+              setCompletedLessons(Array.isArray(completed) ? completed : []);
+              
+              // Calculate progress
+              const totalLessons = modulesWithLessons.reduce(
+                (total, module) => total + (module.lessons?.length || 0),
+                0
+              );
+              
+              if (totalLessons > 0 && Array.isArray(completed)) {
+                const progress = Math.round((completed.length / totalLessons) * 100);
+                setCourseProgress(progress);
+              }
+            } catch (error) {
+              console.error("Error fetching completed lessons:", error);
             }
-          } catch (error) {
-            console.error("Error fetching completed lessons:", error);
+          } else {
+            // For instructor viewing, show all lessons as viewable but not completed
+            setCompletedLessons([]);
+            setCourseProgress(0);
           }
         }
       } catch (error) {
@@ -151,7 +164,7 @@ export default function CourseLearn() {
         setIsLoading(false);
       }
     };    
-    fetchCourse();  }, [id, isAuthenticated, authLoading, navigate]);
+    fetchCourse();  }, [id, isAuthenticated, authLoading, navigate, isInstructorViewing]);
   
   // Fetch detailed instructor information
   const fetchInstructorDetails = async (instructorId: string) => {
@@ -175,7 +188,7 @@ export default function CourseLearn() {
   }, [course?.instructorId, instructor]);
   // Join course notification group when course is loaded and user is subscribed
   useEffect(() => {
-    if (course?.id && isAuthenticated && user?.userType === "Student") {
+    if (course?.id && isAuthenticated && (user?.userType === "Student" || isInstructorViewing)) {
       // Auto-join if subscribed to notifications for this course
       if (isSubscribedToCourse(course.id)) {
         joinCourseGroup(course.id);
@@ -186,7 +199,7 @@ export default function CourseLearn() {
         leaveCourseGroup(course.id);
       };
     }
-  }, [course?.id, isAuthenticated, user?.userType, isSubscribedToCourse, joinCourseGroup, leaveCourseGroup]);
+  }, [course?.id, isAuthenticated, user?.userType, isSubscribedToCourse, joinCourseGroup, leaveCourseGroup, isInstructorViewing]);
 
   // Global keyboard protection
   useEffect(() => {
@@ -244,7 +257,6 @@ export default function CourseLearn() {
   // Handle notification navigation
   useEffect(() => {
     const hash = window.location.hash;
-    console.log('Navigation hash detected:', hash);
     if (hash.startsWith('#notification-')) {
       setActiveTab('notifications');
       // Scroll to the notification after a short delay to ensure the tab content is rendered
@@ -256,14 +268,12 @@ export default function CourseLearn() {
       }, 100);
     } else if (hash.startsWith('#question-')) {
       // Navigate to Q&A tab for question notifications
-      console.log('Navigating to Q&A tab for question');
       setActiveTab('qa');
       const questionId = parseInt(hash.split('#question-')[1]);
       setQaTargetQuestionId(questionId);
       setQaTargetAnswerId(undefined);
     } else if (hash.startsWith('#answer-')) {
       // Navigate to Q&A tab for answer notifications
-      console.log('Navigating to Q&A tab for answer');
       setActiveTab('qa');
       const answerId = parseInt(hash.split('#answer-')[1]);
       setQaTargetAnswerId(answerId);
@@ -282,12 +292,11 @@ export default function CourseLearn() {
   // Handle state-based navigation from notification bell (higher priority)
   useEffect(() => {
     if (location.state?.activeTab) {
-      console.log('State-based navigation:', location.state.activeTab);
       setActiveTab(location.state.activeTab);
-      // Clear the state to prevent repeated navigation
-      navigate(location.pathname + location.hash, { replace: true, state: {} });
+      // Clear the state to prevent repeated navigation, but preserve search params and hash
+      navigate(location.pathname + location.search + location.hash, { replace: true, state: {} });
     }
-  }, [location.state, navigate, location.pathname, location.hash]);
+  }, [location.state, navigate, location.pathname, location.search, location.hash]);
   
   // Fetch course reviews when the reviews tab is clicked
   const handleFetchReviews = async () => {
@@ -311,6 +320,7 @@ export default function CourseLearn() {
 
   // Handle notification click for Q&A navigation
   const handleNotificationClick = (notification: any) => {
+
     if (notification.notificationType === 'NewQuestion' || notification.notificationType === 'NewAnswer') {
       // Navigate to Q&A tab
       setActiveTab('qa');
@@ -337,12 +347,37 @@ export default function CourseLearn() {
           window.location.hash = `#answer-${notification.answerId}`;
         }, 100);
       }
+    } else {
+      // For non-Q&A notifications, if instructor is viewing, preserve instructor mode
+      if (isInstructorViewing) {
+        // Stay in instructor viewing mode for announcements
+        setActiveTab('notifications');
+        setTimeout(() => {
+          window.location.hash = `#notification-${notification.id}`;
+        }, 100);
+      } else {
+        // For students, normal navigation
+        setActiveTab('notifications');
+        setTimeout(() => {
+          window.location.hash = `#notification-${notification.id}`;
+        }, 100);
+      }
     }
     
     // Mark as read when clicked
     if (!notification.isRead) {
       markAsRead(notification.id);
     }
+  };
+
+  // Handle notification creation success (for instructors)
+  const handleNotificationCreated = () => {
+    // Refresh notifications to show the new announcement
+    refreshNotifications();
+    toast({
+      title: "Announcement Created",
+      description: "Your announcement has been sent to all students.",
+    });
   };
   
   // Handle lesson completion
@@ -480,7 +515,7 @@ export default function CourseLearn() {
               ) : (
                 <div className="aspect-video bg-black rounded-lg flex items-center justify-center text-white">
                   <div className="text-center p-8">
-                    <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                    <div className="h-16 w-16 mx-auto mb-4 opacity-50" />
                     <p>Video content unavailable</p>
                   </div>
                 </div>
@@ -531,13 +566,6 @@ export default function CourseLearn() {
         
         if (parts.length === 3) {
           const payload = JSON.parse(atob(parts[1]));
-          console.log('Token payload:', {
-            userId: payload.sub || payload.id,
-            email: payload.email,
-            exp: new Date(payload.exp * 1000).toISOString(),
-            iat: new Date(payload.iat * 1000).toISOString(),
-            isExpired: payload.exp < Math.floor(Date.now() / 1000)
-          });
         }
       } catch (error) {
         // Silent error handling for token parsing
@@ -567,10 +595,24 @@ export default function CourseLearn() {
               <Link to="/my-courses" className="text-sm text-eduBlue-500 mb-2 inline-flex items-center">
                 <ArrowLeft className="h-4 w-4 mr-1" /> Back to My Courses
               </Link>
-              <h1 className="text-2xl font-bold">{course?.title || "Course"}</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold">{course?.title || "Course"}</h1>
+                {isInstructorViewing && (
+                  <Badge variant="secondary" className="text-xs">
+                    Instructor View
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Progress value={courseProgress} className="w-32 h-2" />
-                <span>{courseProgress}% complete</span>
+                {!isInstructorViewing && (
+                  <>
+                    <Progress value={courseProgress} className="w-32 h-2" />
+                    <span>{courseProgress}% complete</span>
+                  </>
+                )}
+                {isInstructorViewing && (
+                  <span>Viewing course as instructor</span>
+                )}
               </div>
             </div>
           </div>
@@ -694,20 +736,22 @@ export default function CourseLearn() {
                         )}
                       </div>
                       
-                      <Button
-                        variant={completedLessons.includes(activeLesson.id) ? "outline" : "default"}
-                        onClick={() => handleCompleteLesson(activeLesson.id)}
-                        disabled={completedLessons.includes(activeLesson.id)}
-                        className={completedLessons.includes(activeLesson.id) ? "border-eduBlue-500 text-eduBlue-500" : ""}
-                      >
-                        {completedLessons.includes(activeLesson.id) ? (
-                          <>
-                            <Check className="h-4 w-4 mr-2" /> Completed
-                          </>
-                        ) : (
-                          "Mark as Completed"
-                        )}
-                      </Button>
+                      {!isInstructorViewing && (
+                        <Button
+                          variant={completedLessons.includes(activeLesson.id) ? "outline" : "default"}
+                          onClick={() => handleCompleteLesson(activeLesson.id)}
+                          disabled={completedLessons.includes(activeLesson.id)}
+                          className={completedLessons.includes(activeLesson.id) ? "border-eduBlue-500 text-eduBlue-500" : ""}
+                        >
+                          {completedLessons.includes(activeLesson.id) ? (
+                            <>
+                              <Check className="h-4 w-4 mr-2" /> Completed
+                            </>
+                          ) : (
+                            "Mark as Completed"
+                          )}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -722,13 +766,15 @@ export default function CourseLearn() {
                   <Book className="h-4 w-4 mr-2" />
                   Overview
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="quizzes"
-                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
-                >
-                  <HelpCircle className="h-4 w-4 mr-2" />
-                  Quizzes
-                </TabsTrigger>
+                {!isInstructorViewing && (
+                  <TabsTrigger 
+                    value="quizzes"
+                    className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+                  >
+                    <HelpCircle className="h-4 w-4 mr-2" />
+                    Quizzes
+                  </TabsTrigger>
+                )}
                 <TabsTrigger 
                   value="qa"
                   className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
@@ -836,38 +882,40 @@ export default function CourseLearn() {
                   
                   {/* Course Progress Summary */}
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">Your Progress</h3>
+                    <h3 className="text-lg font-semibold mb-4">{isInstructorViewing ? 'Course Overview' : 'Your Progress'}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-blue-700">Lessons</p>
+                            <p className="text-sm text-blue-700">Total Lessons</p>
                             <p className="text-2xl font-bold text-blue-900">
-                              {completedLessons.length}/{getTotalLessons()}
+                              {isInstructorViewing ? getTotalLessons() : `${completedLessons.length}/${getTotalLessons()}`}
                             </p>
                           </div>
                           <CheckCircle className="h-8 w-8 text-blue-600" />
                         </div>
                       </div>
                       
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-green-700">Quizzes Available</p>
-                            <p className="text-2xl font-bold text-green-900">
-                              {courseQuizzes.length}
-                            </p>
+                      {!isInstructorViewing && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-green-700">Quizzes Available</p>
+                              <p className="text-2xl font-bold text-green-900">
+                                {courseQuizzes.length}
+                              </p>
+                            </div>
+                            <HelpCircle className="h-8 w-8 text-green-600" />
                           </div>
-                          <HelpCircle className="h-8 w-8 text-green-600" />
                         </div>
-                      </div>
+                      )}
                       
                       <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-purple-700">Overall Progress</p>
+                            <p className="text-sm text-purple-700">{isInstructorViewing ? 'Modules' : 'Overall Progress'}</p>
                             <p className="text-2xl font-bold text-purple-900">
-                              {courseProgress}%
+                              {isInstructorViewing ? modules.length : `${courseProgress}%`}
                             </p>
                           </div>
                           <Trophy className="h-8 w-8 text-purple-600" />
@@ -877,6 +925,8 @@ export default function CourseLearn() {
                   </div>
                 </div>
               </TabsContent>
+              
+              {!isInstructorViewing && (
                 <TabsContent value="quizzes">
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
@@ -942,6 +992,7 @@ export default function CourseLearn() {
                   )}
                 </div>
               </TabsContent>
+              )}
               
               <TabsContent value="qa">
                 <div className="max-w-4xl">
@@ -1035,9 +1086,26 @@ export default function CourseLearn() {
                 </div>
               </TabsContent>              <TabsContent value="notifications">
                 <div className="space-y-6">
-                  <div>
+                  <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold">Course Announcements</h2>
+                    {isInstructorViewing && (
+                      <Badge variant="secondary" className="text-xs">
+                        Instructor View
+                      </Badge>
+                    )}
                   </div>
+                  
+                  {/* Create announcement form for instructors */}
+                  {isInstructorViewing && (
+                    <div className="mb-6">
+                      <CreateNotificationForm
+                        courseId={parseInt(id!)}
+                        courseName={course?.title || "Course"}
+                        variant="card"
+                        onNotificationCreated={handleNotificationCreated}
+                      />
+                    </div>
+                  )}
                   
                   {/* Notifications list */}
                   <div className="space-y-4">
@@ -1128,14 +1196,21 @@ export default function CourseLearn() {
                         );
                       })}
                     
-                    {notifications.filter(n => n.courseId === parseInt(id!)).length === 0 && (
+                    {notifications.filter(n => 
+                      n.courseId === parseInt(id!) && 
+                      n.notificationType !== 'NewQuestion' && 
+                      n.notificationType !== 'NewAnswer'
+                    ).length === 0 && (
                       <div className="text-center py-12 border-2 border-dashed border-muted rounded-lg">
                         <Bell className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
                         <h3 className="text-lg font-medium text-muted-foreground mb-2">
                           No announcements yet
                         </h3>
                         <p className="text-muted-foreground">
-                          Your instructor hasn't posted any announcements for this course yet.
+                          {isInstructorViewing 
+                            ? "Create your first announcement to communicate with your students." 
+                            : "Your instructor hasn't posted any announcements for this course yet."
+                          }
                         </p>
                       </div>
                     )}

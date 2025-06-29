@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { MainLayout } from "@/components/layouts/main-layout";
@@ -113,35 +112,43 @@ const MOCK_COURSE = {
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, user } = useAuth();
-  const [course, setCourse] = useState(MOCK_COURSE);
-  const [isLoading, setIsLoading] = useState(false);
+  const [course, setCourse] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
 
-  // In a real app, we would fetch the course from the API
-  // useEffect(() => {
-  //   if (!id) return;
-  //   
-  //   const fetchCourse = async () => {
-  //     setIsLoading(true);
-  //     try {
-  //       const courseData = await API.courses.getById(id);
-  //       setCourse(courseData);
-  //       
-  //       // Check if user is enrolled
-  //       if (isAuthenticated) {
-  //         const enrollments = await API.courses.getEnrollments();
-  //         setIsEnrolled(enrollments.some(enrollment => enrollment.courseId === id));
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching course:", error);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-  //   
-  //   fetchCourse();
-  // }, [id, isAuthenticated]);
+  // Determine if current user is the instructor of this course
+  const isInstructor = user?.userType === 'Instructor' && course?.instructorId === user?.id;
+
+  // Fetch real course data
+  useEffect(() => {
+    if (!id) return;
+    
+    const fetchCourse = async () => {
+      setIsLoading(true);
+      try {
+        // Import CourseService
+        const { CourseService } = await import('@/services/course-service');
+        const courseData = await CourseService.getCourseById(id);
+        setCourse(courseData);
+        
+        // Check if user is enrolled (only for students)
+        if (isAuthenticated && user?.userType === 'Student') {
+          const { EnrollmentService } = await import('@/services/enrollment-service');
+          const enrollments = await EnrollmentService.getStudentEnrollments();
+          setIsEnrolled(enrollments.some((enrollment: any) => enrollment.courseId === parseInt(id)));
+        }
+      } catch (error) {
+        console.error("Error fetching course:", error);
+        // Fallback to mock data if API fails
+        setCourse(MOCK_COURSE);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCourse();
+  }, [id, isAuthenticated, user]);
 
   const handleEnroll = async () => {
     if (!isAuthenticated) {
@@ -246,7 +253,20 @@ export default function CourseDetail() {
               </div>
               
               <div className="hidden md:block">
-                {isEnrolled ? (
+                {isInstructor ? (
+                  <div className="flex gap-4">
+                    <Button asChild>
+                      <Link to={`/my-courses/${course.id}/learn?instructor=true`}>
+                        View Course
+                      </Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <Link to={`/dashboard/instructor/courses/${course.id}/content`}>
+                        Manage Content
+                      </Link>
+                    </Button>
+                  </div>
+                ) : isEnrolled ? (
                   <div className="flex gap-4">
                     <Button asChild>
                       <Link to={`/my-courses/${course.id}/learn`}>
@@ -299,14 +319,14 @@ export default function CourseDetail() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Book className="h-5 w-5 text-muted-foreground shrink-0" />
+                      <Book className="h-5 w-5 text-primary mb-2" />
                       <div>
                         <p className="font-medium">Total Lessons</p>
                         <p className="text-sm text-muted-foreground">{getTotalLessons()} lessons</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <User className="h-5 w-5 text-muted-foreground shrink-0" />
+                      <User className="h-5 w-5 text-primary mb-2" />
                       <div>
                         <p className="font-medium">Students Enrolled</p>
                         <p className="text-sm text-muted-foreground">{course.studentsCount.toLocaleString()} students</p>
@@ -315,7 +335,20 @@ export default function CourseDetail() {
                   </div>
                   
                   <div className="md:hidden mb-6">
-                    {isEnrolled ? (
+                    {isInstructor ? (
+                      <div className="flex flex-col gap-2">
+                        <Button asChild className="w-full">
+                          <Link to={`/my-courses/${course.id}/learn?instructor=true`}>
+                            View Course
+                          </Link>
+                        </Button>
+                        <Button variant="outline" asChild className="w-full">
+                          <Link to={`/dashboard/instructor/courses/${course.id}/content`}>
+                            Manage Content
+                          </Link>
+                        </Button>
+                      </div>
+                    ) : isEnrolled ? (
                       <div className="flex flex-col gap-2">
                         <Button asChild className="w-full">
                           <Link to={`/my-courses/${course.id}/learn`}>
