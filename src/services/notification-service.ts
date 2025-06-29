@@ -47,6 +47,10 @@ export const NotificationTypes = {
   GradePosted: "GradePosted",
   AssignmentDue: "AssignmentDue",
   
+  // Q&A notifications
+  NewQuestion: "NewQuestion",
+  NewAnswer: "NewAnswer",
+  
   // Admin/Course status notifications
   CourseApproved: "CourseApproved",
   CourseRejected: "CourseRejected",

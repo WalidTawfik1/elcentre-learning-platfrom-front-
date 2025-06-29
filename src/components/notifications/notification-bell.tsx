@@ -23,7 +23,7 @@ import { useNotifications } from '@/hooks/use-notifications';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDistanceToNow } from 'date-fns';
 import { getImageUrl } from '@/config/api-config';
-import { NotificationTypes } from '@/services/signalr-service';
+import { NotificationTypes } from '@/services/notification-service';
 
 export function NotificationBell() {
   const { 
@@ -67,7 +67,22 @@ export function NotificationBell() {
         return;
       }
       
-      // For other notifications or students, navigate to course learn page
+      // Q&A notifications should go to Q&A section
+      if (notificationType === 'NewQuestion' || notificationType === 'NewAnswer' || 
+          notificationType === NotificationTypes.NewQuestion || notificationType === NotificationTypes.NewAnswer) {
+        console.log('Q&A notification detected:', { notificationType, questionId: notification.questionId, answerId: notification.answerId });
+        if (notification.questionId) {
+          navigate(`/my-courses/${notification.courseId}/learn#question-${notification.questionId}`, { state: { activeTab: 'qa' } });
+        } else if (notification.answerId) {
+          navigate(`/my-courses/${notification.courseId}/learn#answer-${notification.answerId}`, { state: { activeTab: 'qa' } });
+        } else {
+          // Fallback to Q&A tab if no specific ID
+          navigate(`/my-courses/${notification.courseId}/learn`, { state: { activeTab: 'qa' } });
+        }
+        return;
+      }
+      
+      // For other notifications, navigate to course learn page announcements
       navigate(`/my-courses/${notification.courseId}/learn#notification-${notification.id}`);
     };
     
@@ -111,6 +126,10 @@ export function NotificationBell() {
         return '⏳';
       case 'newlesson':
         return '📚';
+      case 'newquestion':
+        return '❓';
+      case 'newanswer':
+        return '💬';
       case 'quizavailable':
         return '📝';
       case 'gradeposted':
@@ -139,7 +158,16 @@ export function NotificationBell() {
       return 'Click to edit course';
     }
     
-    return 'Click to view course';
+    // Q&A specific hints
+    if (notificationType === 'NewQuestion' || notificationType === NotificationTypes.NewQuestion) {
+      return 'Click to view question';
+    }
+    
+    if (notificationType === 'NewAnswer' || notificationType === NotificationTypes.NewAnswer) {
+      return 'Click to view answer';
+    }
+    
+    return 'Click to view';
   };
 
   return (

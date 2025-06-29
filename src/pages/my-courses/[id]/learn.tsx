@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { StarIcon, Play, Clock, Book, Video, CheckCircle, FileText, ArrowLeft, Check, HelpCircle, Trophy, Bell } from "lucide-react";
+import { StarIcon, Play, Clock, Book, Video, CheckCircle, FileText, ArrowLeft, Check, HelpCircle, Trophy, Bell, MessageSquare } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { EnrollmentService } from "@/services/enrollment-service";
 import { InstructorService } from "@/services/instructor-service";
@@ -21,6 +21,7 @@ import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { SecureVideoPlayer } from "@/components/ui/secure-video-player";
+import { QAComponent } from "@/components/qa";
 import "@/styles/secure-video.css";
 
 import { DIRECT_API_URL } from "@/config/api-config";
@@ -31,6 +32,7 @@ const API_BASE_URL = DIRECT_API_URL;
 export default function CourseLearn() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const { joinCourseGroup, leaveCourseGroup, isSubscribedToCourse, notifications, markAsRead, refreshNotifications } = useNotifications();
   const [course, setCourse] = useState<any>(null);
@@ -46,6 +48,8 @@ export default function CourseLearn() {
   const [quizScore, setQuizScore] = useState<any>(null);
   const [courseQuizzes, setCourseQuizzes] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [qaTargetQuestionId, setQaTargetQuestionId] = useState<number | undefined>(undefined);
+  const [qaTargetAnswerId, setQaTargetAnswerId] = useState<number | undefined>(undefined);
   
   useEffect(() => {
     // Don't redirect while auth is still loading
@@ -240,6 +244,7 @@ export default function CourseLearn() {
   // Handle notification navigation
   useEffect(() => {
     const hash = window.location.hash;
+    console.log('Navigation hash detected:', hash);
     if (hash.startsWith('#notification-')) {
       setActiveTab('notifications');
       // Scroll to the notification after a short delay to ensure the tab content is rendered
@@ -249,8 +254,40 @@ export default function CourseLearn() {
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }, 100);
+    } else if (hash.startsWith('#question-')) {
+      // Navigate to Q&A tab for question notifications
+      console.log('Navigating to Q&A tab for question');
+      setActiveTab('qa');
+      const questionId = parseInt(hash.split('#question-')[1]);
+      setQaTargetQuestionId(questionId);
+      setQaTargetAnswerId(undefined);
+    } else if (hash.startsWith('#answer-')) {
+      // Navigate to Q&A tab for answer notifications
+      console.log('Navigating to Q&A tab for answer');
+      setActiveTab('qa');
+      const answerId = parseInt(hash.split('#answer-')[1]);
+      setQaTargetAnswerId(answerId);
+      setQaTargetQuestionId(undefined);
     }
-  }, []);
+  }, [location.hash]);
+
+  // Clear Q&A navigation targets when switching tabs
+  useEffect(() => {
+    if (activeTab !== 'qa') {
+      setQaTargetQuestionId(undefined);
+      setQaTargetAnswerId(undefined);
+    }
+  }, [activeTab]);
+
+  // Handle state-based navigation from notification bell (higher priority)
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      console.log('State-based navigation:', location.state.activeTab);
+      setActiveTab(location.state.activeTab);
+      // Clear the state to prevent repeated navigation
+      navigate(location.pathname + location.hash, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname, location.hash]);
   
   // Fetch course reviews when the reviews tab is clicked
   const handleFetchReviews = async () => {
@@ -271,7 +308,44 @@ export default function CourseLearn() {
       setIsLoadingReviews(false);
     }
   };
-    // Handle lesson completion
+
+  // Handle notification click for Q&A navigation
+  const handleNotificationClick = (notification: any) => {
+    if (notification.notificationType === 'NewQuestion' || notification.notificationType === 'NewAnswer') {
+      // Navigate to Q&A tab
+      setActiveTab('qa');
+      
+      // Set the target IDs for navigation
+      if (notification.questionId) {
+        setQaTargetQuestionId(notification.questionId);
+        setQaTargetAnswerId(undefined);
+      } else if (notification.answerId) {
+        setQaTargetAnswerId(notification.answerId);
+        setQaTargetQuestionId(undefined);
+      }
+      
+      // Extract question/answer ID from notification
+      // The backend should include questionId or answerId in the notification data
+      if (notification.questionId) {
+        // Navigate to specific question
+        setTimeout(() => {
+          window.location.hash = `#question-${notification.questionId}`;
+        }, 100);
+      } else if (notification.answerId) {
+        // Navigate to specific answer
+        setTimeout(() => {
+          window.location.hash = `#answer-${notification.answerId}`;
+        }, 100);
+      }
+    }
+    
+    // Mark as read when clicked
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+  };
+  
+  // Handle lesson completion
   const handleCompleteLesson = async (lessonId: number) => {
     if (completedLessons.includes(lessonId)) {
       // Lesson already completed
@@ -654,7 +728,15 @@ export default function CourseLearn() {
                 >
                   <HelpCircle className="h-4 w-4 mr-2" />
                   Quizzes
-                </TabsTrigger>                <TabsTrigger 
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="qa"
+                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Q&A
+                </TabsTrigger>
+                <TabsTrigger 
                   value="reviews"
                   className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
                   onClick={handleFetchReviews}
@@ -861,6 +943,27 @@ export default function CourseLearn() {
                 </div>
               </TabsContent>
               
+              <TabsContent value="qa">
+                <div className="max-w-4xl">
+                  {activeLesson ? (
+                    <QAComponent 
+                      lessonId={activeLesson.id}
+                      lessonTitle={activeLesson.title}
+                      targetQuestionId={qaTargetQuestionId}
+                      targetAnswerId={qaTargetAnswerId}
+                    />
+                  ) : (
+                    <div className="text-center py-12 border border-dashed rounded-lg">
+                      <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Select a Lesson</h3>
+                      <p className="text-muted-foreground">
+                        Please select a lesson from the sidebar to view its Q&A section.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+              
               <TabsContent value="reviews">
                 <div className="max-w-3xl">                  <div className="flex items-center justify-between mb-8">
                     <h2 className="text-2xl font-bold">Student Reviews</h2>
@@ -939,7 +1042,11 @@ export default function CourseLearn() {
                   {/* Notifications list */}
                   <div className="space-y-4">
                     {notifications
-                      .filter(notification => notification.courseId === parseInt(id!))
+                      .filter(notification => 
+                        notification.courseId === parseInt(id!) && 
+                        notification.notificationType !== 'NewQuestion' && 
+                        notification.notificationType !== 'NewAnswer'
+                      )
                       .map((notification) => {
                         const isTargetNotification = window.location.hash === `#notification-${notification.id}`;
                         
@@ -947,13 +1054,14 @@ export default function CourseLearn() {
                           <Card 
                             key={notification.id} 
                             id={`notification-${notification.id}`}
-                            className={`transition-all duration-300 ${
+                            className={`transition-all duration-300 cursor-pointer hover:shadow-md ${
                               isTargetNotification 
                                 ? 'ring-2 ring-eduBlue-500 bg-eduBlue-50' 
                                 : notification.isRead 
                                   ? 'opacity-70' 
                                   : 'border-blue-200 bg-blue-50/30'
                             }`}
+                            onClick={() => handleNotificationClick(notification)}
                           >
                             <CardHeader>
                               <div className="flex items-start justify-between">
@@ -963,7 +1071,9 @@ export default function CourseLearn() {
                                      notification.notificationType === 'assignment' ? '📝' :
                                      notification.notificationType === 'reminder' ? '⏰' :
                                      notification.notificationType === 'update' ? '🔄' :
-                                     notification.notificationType === 'deadline' ? '📅' : '📬'}
+                                     notification.notificationType === 'deadline' ? '📅' :
+                                     notification.notificationType === 'NewQuestion' ? '❓' :
+                                     notification.notificationType === 'NewAnswer' ? '💬' : '📬'}
                                   </div>
                                   <div className="flex-1">
                                     <CardTitle className="text-lg">
@@ -998,7 +1108,10 @@ export default function CourseLearn() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => markAsRead(notification.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        markAsRead(notification.id);
+                                      }}
                                     >
                                       <Check className="h-4 w-4" />
                                     </Button>
