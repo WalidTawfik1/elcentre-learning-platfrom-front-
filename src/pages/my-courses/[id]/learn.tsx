@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,8 @@ import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { SecureVideoPlayer } from "@/components/ui/secure-video-player";
+import "@/styles/secure-video.css";
 
 import { DIRECT_API_URL } from "@/config/api-config";
 
@@ -182,6 +184,59 @@ export default function CourseLearn() {
     }
   }, [course?.id, isAuthenticated, user?.userType, isSubscribedToCourse, joinCourseGroup, leaveCourseGroup]);
 
+  // Global keyboard protection
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Disable common shortcuts that could be used to save or inspect content
+      // but allow some video control shortcuts
+      if (
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) || // Ctrl+Shift+I (Developer Tools)
+        (e.key === 'F12') || // F12 (Developer Tools)
+        (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c')) || // Ctrl+Shift+C (Inspect Element)
+        (e.ctrlKey && (e.key === 'U' || e.key === 'u')) || // Ctrl+U (View Source)
+        (e.ctrlKey && (e.key === 'S' || e.key === 's')) || // Ctrl+S (Save)
+        (e.ctrlKey && (e.key === 'P' || e.key === 'p')) // Ctrl+P (Print)
+      ) {
+        // Only prevent if not in a video container
+        const target = e.target as HTMLElement;
+        if (!target.closest('.secure-video-container')) {
+          e.preventDefault();
+          e.stopPropagation();
+          toast({
+            title: "Action Restricted",
+            description: "This action is not allowed on protected content.",
+            variant: "destructive",
+          });
+          return false;
+        }
+      }
+    };
+
+    const handleRightClick = (e: MouseEvent) => {
+      // Check if the target is within a video element or its container
+      const target = e.target as HTMLElement;
+      if (target.closest('.secure-video-container') || target.tagName === 'VIDEO') {
+        e.preventDefault();
+        toast({
+          title: "Action Restricted",
+          description: "Right-click is disabled on video content.",
+          variant: "destructive",
+        });
+        return false;
+      }
+    };
+
+    // Add event listeners
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('contextmenu', handleRightClick);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('contextmenu', handleRightClick);
+    };
+  }, []);
+
   // Handle notification navigation
   useEffect(() => {
     const hash = window.location.hash;
@@ -339,17 +394,21 @@ export default function CourseLearn() {
       case 'video':
         return (
           <div className="space-y-6">
-            <div className="aspect-video bg-black rounded-lg flex items-center justify-center">
+            <div className="rounded-lg overflow-hidden border border-border">
               {lesson.content ? (
-                <video 
-                  src={lesson.content} 
-                  controls 
-                  className="w-full h-full rounded-lg"
+                <SecureVideoPlayer 
+                  src={lesson.content}
+                  title={lesson.title}
+                  allowFullscreen={true}
+                  allowQualityChange={true}
+                  theme="light"
                 />
               ) : (
-                <div className="text-white text-center p-8">
-                  <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                  <p>Video content unavailable</p>
+                <div className="aspect-video bg-black rounded-lg flex items-center justify-center text-white">
+                  <div className="text-center p-8">
+                    <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                    <p>Video content unavailable</p>
+                  </div>
                 </div>
               )}
             </div>
