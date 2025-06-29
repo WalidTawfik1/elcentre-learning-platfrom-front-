@@ -701,8 +701,8 @@ export default function CourseLearn() {
                 {renderLessonContent(activeLesson)}
                   {activeLesson && (
                   <div className="mt-8 space-y-4">
-                    {/* Quiz indicator for current lesson */}
-                    {lessonHasQuizzes(activeLesson.id) && (
+                    {/* Quiz indicator for current lesson - Hidden for instructor view */}
+                    {!isInstructorViewing && lessonHasQuizzes(activeLesson.id) && (
                       <div className="flex items-center gap-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                         <HelpCircle className="h-5 w-5 text-blue-600" />
                         <div className="flex-1">
