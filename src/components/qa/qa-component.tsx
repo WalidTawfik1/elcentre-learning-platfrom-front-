@@ -24,7 +24,9 @@ import {
   X,
   Send,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Pin,
+  PinOff
 } from "lucide-react";
 import { QAService, Question, Answer } from "@/services/qa-service";
 import { useAuth } from "@/hooks/use-auth";
@@ -303,6 +305,29 @@ export function QAComponent({
     }
   };
 
+  const handlePinQuestion = async (questionId: number, isPinned: boolean) => {
+    try {
+      await QAService.pinQuestion(questionId, isPinned);
+      setQuestions(prev => prev.map(q => 
+        q.id === questionId ? { ...q, isPinned } : q
+      ));
+      toast({
+        title: "Success",
+        description: isPinned ? "Question pinned successfully!" : "Question unpinned successfully!",
+      });
+    } catch (error) {
+      console.error("Error pinning/unpinning question:", error);
+      toast({
+        title: "Error",
+        description: "Failed to pin/unpin question. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Check if user is instructor (can pin questions)
+  const isInstructor = user?.userType === 'Instructor';
+
   const toggleQuestionExpansion = (questionId: number) => {
     setExpandedQuestions(prev => {
       const newSet = new Set(prev);
@@ -398,7 +423,15 @@ export function QAComponent({
             </CardContent>
           </Card>
         ) : (
-          questions.filter(question => question && question.id).map((question) => {
+          questions
+            .filter(question => question && question.id)
+            .sort((a, b) => {
+              // Sort pinned questions first, then by creation date (newest first)
+              if (a.isPinned && !b.isPinned) return -1;
+              if (!a.isPinned && b.isPinned) return 1;
+              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            })
+            .map((question) => {
             const isExpanded = expandedQuestions.has(question.id);
             const answers = questionAnswers[question.id] || [];
             const isTargetQuestion = targetQuestionId === question.id;
@@ -409,7 +442,7 @@ export function QAComponent({
                 id={`question-${question.id}`}
                 className={`transition-all duration-300 ${
                   isTargetQuestion ? 'ring-2 ring-eduBlue-500 bg-eduBlue-50' : ''
-                }`}
+                } ${question.isPinned ? 'border-l-4 border-l-blue-500' : ''}`}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -422,6 +455,9 @@ export function QAComponent({
                       </Avatar>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
+                          {question.isPinned && (
+                            <Pin className="h-4 w-4 text-blue-500" />
+                          )}
                           <span className="font-medium">{question.createdByName}</span>
                           {question.isInstructor && (
                             <Badge variant="secondary" className="text-xs">
@@ -470,6 +506,17 @@ export function QAComponent({
                     </div>
                     
                     <div className="flex items-center gap-1">
+                      {isInstructor && !editingQuestion && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePinQuestion(question.id, !question.isPinned)}
+                          className={question.isPinned ? "text-blue-500 hover:text-blue-700" : ""}
+                          title={question.isPinned ? "Unpin question" : "Pin question"}
+                        >
+                          {question.isPinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+                        </Button>
+                      )}
                       {canEditOrDelete(question.createdById) && !editingQuestion && (
                         <>
                           <Button

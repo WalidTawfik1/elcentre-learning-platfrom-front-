@@ -11,6 +11,7 @@ export interface Question {
   isEdited: boolean;
   editedAt?: string;
   lessonId: number;
+  isPinned: boolean;
 }
 
 export interface Answer {
@@ -118,6 +119,16 @@ export const QAService = {
   updateAnswer: async (answerId: number, answer: string): Promise<Answer> => {
     return apiRequest<Answer>(`/Q_A/update-answer/${answerId}?answer=${encodeURIComponent(answer)}`, {
       method: "PUT",
+    });
+  },
+
+  /**
+   * Pin or unpin a question (instructor only)
+   */
+  pinQuestion: async (questionId: number, isPinned: boolean): Promise<void> => {
+    return apiRequest<void>(`/Q_A/pin-question/${questionId}`, {
+      method: "PUT",
+      body: JSON.stringify({ isPinned }),
     });
   },
 };
