@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Maximize, Minimize, Settings, Play, Pause, Volume2, VolumeX, SkipBack, SkipForward } from 'lucide-react';
+import { Maximize, Minimize, Expand, Shrink, Settings, Play, Pause, Volume2, VolumeX, SkipBack, SkipForward } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -13,6 +13,7 @@ interface SecureVideoPlayerProps {
   allowFullscreen?: boolean;
   allowQualityChange?: boolean;
   theme?: 'light' | 'dark';
+  cloudinaryPublicId?: string; // Add this for Cloudinary support
 }
 
 export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({ 
@@ -21,7 +22,8 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
   className = "w-full h-full rounded-lg object-cover",
   allowFullscreen = true,
   allowQualityChange = true,
-  theme = 'light'
+  theme = 'light',
+  cloudinaryPublicId // Add this prop
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -36,6 +38,37 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [currentVideoSrc, setCurrentVideoSrc] = useState(src);
+  const [originalDuration, setOriginalDuration] = useState(0);
+
+  // Extract Cloudinary public ID from URL if not provided as prop
+  const getPublicIdFromUrl = (url: string): string | null => {
+    // Match Cloudinary video URL pattern and extract public ID (with or without extension)
+    const match = url.match(/\/video\/upload\/(?:v\d+\/)?([^\/]+?)(?:\.[^.]+)?$/);
+    return match ? match[1] : null;
+  };
+
+  const publicId = cloudinaryPublicId || getPublicIdFromUrl(src);
+
+  // Cloudinary video quality configurations
+  const getCloudinaryUrl = (publicId: string, quality: string) => {
+    // Use your actual Cloudinary cloud name
+    const baseUrl = "https://res.cloudinary.com/dybdj1qiw/video/upload";
+    
+    switch (quality) {
+      case '1080p':
+        return `${baseUrl}/q_auto,h_1080/${publicId}.mp4`;
+      case '720p':
+        return `${baseUrl}/q_auto,h_720/${publicId}.mp4`;
+      case '480p':
+        return `${baseUrl}/q_auto,h_480/${publicId}.mp4`;
+      case '360p':
+        return `${baseUrl}/q_auto,h_360/${publicId}.mp4`;
+      case 'auto':
+      default:
+        return `${baseUrl}/q_auto/${publicId}.mp4`;
+    }
+  };
 
   // Available quality options (you can modify based on your video sources)
   const qualityOptions = [
@@ -64,7 +97,13 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
 
     // Video event handlers
     const handleTimeUpdate = () => setCurrentTime(video.currentTime);
-    const handleDurationChange = () => setDuration(video.duration);
+    const handleDurationChange = () => {
+      setDuration(video.duration);
+      // Store original duration only once
+      if (originalDuration === 0) {
+        setOriginalDuration(video.duration);
+      }
+    };
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
     const handleVolumeChange = () => {
@@ -244,7 +283,8 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
 
   const seekForward = () => {
     if (videoRef.current) {
-      videoRef.current.currentTime = Math.min(duration, videoRef.current.currentTime + 10);
+      const totalDuration = originalDuration || duration;
+      videoRef.current.currentTime = Math.min(totalDuration, videoRef.current.currentTime + 10);
     }
   };
 
@@ -273,8 +313,88 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
 
   const handleQualityChange = (quality: string) => {
     setSelectedQuality(quality);
-    // Here you would typically change the video source based on quality
-    // For now, we'll just update the state
+    
+    if (publicId) {
+      // Store current playback state
+      const currentTimeBeforeSwitch = videoRef.current?.currentTime || 0;
+      const wasPlaying = isPlaying;
+      
+      // Generate new Cloudinary URL with quality transformation
+      const newSrc = getCloudinaryUrl(publicId, quality);
+      
+      // Update video source
+      if (videoRef.current) {
+        const video = videoRef.current;
+        
+        // Pause the video first to avoid issues
+        video.pause();
+        
+        // Set new source
+        video.src = newSrc;
+        setCurrentVideoSrc(newSrc);
+        
+        // Load the new video
+        video.load();
+        
+        // Handle successful loading and seeking
+        const handleCanPlay = () => {
+          if (video && currentTimeBeforeSwitch > 0) {
+            // Set the time when video can play
+            video.currentTime = currentTimeBeforeSwitch;
+            
+            // Listen for when seeking is complete
+            const handleSeeked = () => {
+              // Update UI state
+              setCurrentTime(currentTimeBeforeSwitch);
+              
+              // Resume playing if it was playing before
+              if (wasPlaying) {
+                video.play().catch(error => {
+                  console.error('Error resuming playback:', error);
+                });
+              }
+              
+              // Cleanup
+              video.removeEventListener('seeked', handleSeeked);
+            };
+            
+            video.addEventListener('seeked', handleSeeked);
+            video.removeEventListener('canplay', handleCanPlay);
+          } else {
+            // If starting from beginning or no previous time
+            setCurrentTime(0);
+            if (wasPlaying) {
+              video.play().catch(error => {
+                console.error('Error resuming playback:', error);
+              });
+            }
+            video.removeEventListener('canplay', handleCanPlay);
+          }
+        };
+        
+        // Handle loading errors
+        const handleError = (error: Event) => {
+          console.error('Error loading video quality:', error);
+          toast({
+            title: "Quality Change Failed",
+            description: "Failed to load the selected quality. Please try again.",
+            variant: "destructive",
+          });
+          
+          // Fallback to original source
+          video.src = src;
+          video.load();
+          setCurrentVideoSrc(src);
+          setSelectedQuality('auto');
+          video.removeEventListener('error', handleError);
+        };
+        
+        // Add event listeners
+        video.addEventListener('canplay', handleCanPlay);
+        video.addEventListener('error', handleError);
+      }
+    }
+    // If not using Cloudinary, just update the state (for other video sources)
   };
 
   const handleSpeedChange = (speed: number) => {
@@ -322,7 +442,7 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
       >
         <video
           ref={videoRef}
-          src={src}
+          src={currentVideoSrc} // Use dynamic source
           className={`${className} ${isFullscreen ? 'object-contain' : 'object-cover'}`}
           controlsList="nodownload noremoteplayback"
           disablePictureInPicture={!allowFullscreen}
@@ -385,15 +505,16 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
                    onClick={(e) => {
                      const rect = e.currentTarget.getBoundingClientRect();
                      const percent = (e.clientX - rect.left) / rect.width;
-                     handleSeek(percent * duration);
+                     const totalDuration = originalDuration || duration;
+                     handleSeek(percent * totalDuration);
                    }}>
                 <div 
                   className="absolute left-0 top-0 h-full bg-blue-500 rounded-full"
-                  style={{ width: `${(currentTime / duration) * 100}%` }}
+                  style={{ width: `${(currentTime / (originalDuration || duration)) * 100}%` }}
                 />
                 <div 
                   className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-blue-500 rounded-full"
-                  style={{ left: `${(currentTime / duration) * 100}%` }}
+                  style={{ left: `${(currentTime / (originalDuration || duration)) * 100}%` }}
                 />
               </div>
             </div>
@@ -458,7 +579,7 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
               <div className="flex items-center gap-4">
                 {/* Time Display */}
                 <span className="text-sm text-white/80">
-                  {formatTime(currentTime)} / {formatTime(duration)}
+                  {formatTime(currentTime)} / {formatTime(originalDuration || duration)}
                 </span>
                 
                 {/* Settings Button with Custom Dropdown */}
@@ -529,7 +650,7 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
                   className="text-white hover:bg-white/30 h-8 w-8 p-0 transition-all duration-200 rounded-md"
                   title={isExpanded ? "Exit expanded view" : "Expanded view"}
                 >
-                  {isExpanded ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                  {isExpanded ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
                 </Button>
 
                 {/* Fullscreen Button */}
