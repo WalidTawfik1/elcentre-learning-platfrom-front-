@@ -15,6 +15,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { 
   MessageSquare, 
   Plus, 
@@ -26,7 +35,8 @@ import {
   ChevronDown,
   ChevronUp,
   Pin,
-  PinOff
+  PinOff,
+  Flag
 } from "lucide-react";
 import { QAService, Question, Answer } from "@/services/qa-service";
 import { useAuth } from "@/hooks/use-auth";
@@ -71,6 +81,8 @@ export function QAComponent({
   const [editingAnswer, setEditingAnswer] = useState<{ id: number; text: string } | null>(null);
   const [answerInputs, setAnswerInputs] = useState<{ [key: number]: string }>({});
   const [submittingAnswers, setSubmittingAnswers] = useState<Set<number>>(new Set());
+  const [reportingItem, setReportingItem] = useState<{ type: 'question' | 'answer'; id: number } | null>(null);
+  const [reportReason, setReportReason] = useState("");
 
   useEffect(() => {
     fetchQuestions();
@@ -325,6 +337,33 @@ export function QAComponent({
     }
   };
 
+  const handleReportQA = async () => {
+    if (!reportingItem || !reportReason.trim()) return;
+
+    try {
+      if (reportingItem.type === 'question') {
+        await QAService.reportQA(reportingItem.id, undefined, reportReason.trim());
+      } else {
+        await QAService.reportQA(undefined, reportingItem.id, reportReason.trim());
+      }
+      
+      toast({
+        title: "Success",
+        description: `${reportingItem.type === 'question' ? 'Question' : 'Answer'} reported successfully!`,
+      });
+      
+      setReportingItem(null);
+      setReportReason("");
+    } catch (error) {
+      console.error("Error reporting Q&A:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit report. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Check if user is instructor (can pin questions)
   const isInstructor = user?.userType === 'Instructor';
 
@@ -342,6 +381,15 @@ export function QAComponent({
 
   const canEditOrDelete = (createdById: string) => {
     return user?.id === createdById;
+  };
+
+  const canDelete = (createdById: string) => {
+    return user?.id === createdById || isInstructor;
+  };
+
+  const canReport = (isContentFromInstructor: boolean) => {
+    // Students can't report instructor content, instructors can report any content
+    return isInstructor || !isContentFromInstructor;
   };
 
   if (isLoading) {
@@ -547,31 +595,44 @@ export function QAComponent({
                           >
                             <Edit2 className="h-3 w-3" />
                           </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700">
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Question</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete this question? This action cannot be undone and will also delete all answers.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteQuestion(question.id)}
-                                  className="bg-red-500 hover:bg-red-600"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
                         </>
+                      )}
+                      {canDelete(question.createdById) && !editingQuestion && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Question</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this question? This action cannot be undone and will also delete all answers.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteQuestion(question.id)}
+                                className="bg-red-500 hover:bg-red-600"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                      {canReport(question.isInstructor) && user?.id !== question.createdById && !editingQuestion && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setReportingItem({ type: 'question', id: question.id })}
+                          className="text-orange-500 hover:text-orange-700"
+                          title="Report question"
+                        >
+                          <Flag className="h-3 w-3" />
+                        </Button>
                       )}
                       
                       <Button
@@ -699,6 +760,10 @@ export function QAComponent({
                                       >
                                         <Edit2 className="h-3 w-3" />
                                       </Button>
+                                    </div>
+                                  )}
+                                  {canDelete(answer.createdById) && !editingAnswer && (
+                                    <div className="flex gap-1">
                                       <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                           <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700">
@@ -725,6 +790,17 @@ export function QAComponent({
                                       </AlertDialog>
                                     </div>
                                   )}
+                                  {canReport(answer.isInstructor) && user?.id !== answer.createdById && !editingAnswer && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setReportingItem({ type: 'answer', id: answer.id })}
+                                      className="text-orange-500 hover:text-orange-700"
+                                      title="Report answer"
+                                    >
+                                      <Flag className="h-3 w-3" />
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -739,6 +815,45 @@ export function QAComponent({
           })
         )}
       </div>
+
+      {/* Report Dialog */}
+      <Dialog open={!!reportingItem} onOpenChange={(open) => !open && setReportingItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report {reportingItem?.type === 'question' ? 'Question' : 'Answer'}</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for reporting this {reportingItem?.type}. Our moderators will review your report.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Please describe why you are reporting this content..."
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setReportingItem(null);
+                setReportReason("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReportQA}
+              disabled={!reportReason.trim()}
+              className="bg-orange-500 hover:bg-orange-600"
+            >
+              <Flag className="h-4 w-4 mr-2" />
+              Submit Report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

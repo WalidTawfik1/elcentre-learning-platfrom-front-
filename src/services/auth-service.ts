@@ -316,5 +316,16 @@ export const AuthService = {
     
     return { hasToken, tokenValue: token, isExpired };
   },
+
+  // Google authentication methods
+  googleLogin: () => {
+    const googleAuthUrl = `${DIRECT_API_URL}/Account/google-login`;
+    window.location.href = googleAuthUrl;
+  },
+
+  googleRegister: (role: string) => {
+    const googleAuthUrl = `${DIRECT_API_URL}/Account/google-login?role=${encodeURIComponent(role)}`;
+    window.location.href = googleAuthUrl;
+  },
   
 };

@@ -135,4 +135,18 @@ export const QAService = {
       method: "PUT",
     });
   },
+
+  /**
+   * Report a question or answer
+   */
+  reportQA: async (questionId?: number, answerId?: number, reason?: string): Promise<void> => {
+    const params = new URLSearchParams();
+    if (questionId) params.append('questionId', questionId.toString());
+    if (answerId) params.append('answerId', answerId.toString());
+    if (reason) params.append('reason', reason);
+    
+    return apiRequest<void>(`/Q_A/report-qa?${params.toString()}`, {
+      method: "POST",
+    });
+  },
 };

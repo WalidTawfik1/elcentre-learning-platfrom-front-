@@ -50,6 +50,8 @@ export const NotificationTypes = {
   // Q&A notifications
   NewQuestion: "NewQuestion",
   NewAnswer: "NewAnswer",
+  QuestionReported: "QuestionReported",
+  AnswerReported: "AnswerReported",
   
   // Admin/Course status notifications
   CourseApproved: "CourseApproved",

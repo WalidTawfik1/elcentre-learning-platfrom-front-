@@ -14,6 +14,7 @@ import Login from "./pages/auth/login";
 import Register from "./pages/auth/register";
 import VerifyAccount from "./pages/auth/verify-account";
 import ForgetPassword from "./pages/auth/forget-password";
+import GoogleBridge from "./pages/auth/google-bridge";
 import CoursesIndex from "./pages/courses/index";
 import CourseDetail from "./pages/courses/course-detail";
 import ProfilePage from "./pages/profile";
@@ -64,6 +65,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/verify-account" element={<VerifyAccount />} />
             <Route path="/forgot-password" element={<ForgetPassword />} />
+            <Route path="/google-bridge" element={<GoogleBridge />} />
             
             {/* Student routes */}
             <Route path="/courses" element={<CoursesIndex />} />

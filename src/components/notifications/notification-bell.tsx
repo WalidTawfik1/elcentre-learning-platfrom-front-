@@ -70,7 +70,8 @@ export function NotificationBell() {
       
       // Q&A notifications should go to appropriate Q&A section based on user type
       if (notificationType === 'NewQuestion' || notificationType === 'NewAnswer' || 
-          notificationType === NotificationTypes.NewQuestion || notificationType === NotificationTypes.NewAnswer) {
+          notificationType === NotificationTypes.NewQuestion || notificationType === NotificationTypes.NewAnswer ||
+          notificationType === NotificationTypes.QuestionReported || notificationType === NotificationTypes.AnswerReported) {
         
         if (isInstructor) {
           // Instructors should go to course viewing mode (like students but read-only)
@@ -158,6 +159,10 @@ export function NotificationBell() {
         return '❓';
       case 'newanswer':
         return '💬';
+      case 'questionreported':
+        return '🚩';
+      case 'answerreported':
+        return '🚩';
       case 'quizavailable':
         return '📝';
       case 'gradeposted':
@@ -193,6 +198,14 @@ export function NotificationBell() {
     
     if (notificationType === 'NewAnswer' || notificationType === NotificationTypes.NewAnswer) {
       return 'Click to view answer';
+    }
+    
+    if (notificationType === NotificationTypes.QuestionReported) {
+      return 'Click to view reported question';
+    }
+    
+    if (notificationType === NotificationTypes.AnswerReported) {
+      return 'Click to view reported answer';
     }
     
     return 'Click to view';

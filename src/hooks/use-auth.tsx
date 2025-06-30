@@ -14,6 +14,7 @@ type AuthContextType = {
   logout: () => Promise<void>;
   updateProfile: (userData: UserDTO, profilePicture?: File) => Promise<void>;
   refreshUser: () => Promise<void>; // Add method to refresh user data
+  fetchUser: (force?: boolean) => Promise<void>; // Expose fetchUser for external use
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -309,6 +310,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         updateProfile,
         refreshUser,
+        fetchUser,
       }}
     >
       {children}
