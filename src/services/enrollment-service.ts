@@ -2,16 +2,17 @@ import { apiRequest } from "./api";
 import { Enrollment } from "@/types/api";
 
 export const EnrollmentService = {
+  // Regular enrollment - this will handle payment processing if needed
   enrollInCourse: async (courseId: number): Promise<any> => {
     return apiRequest(`/Enrollment/enroll?courseId=${courseId}`, {
       method: "POST",
     });
   },
   
-  // New method for free enrollment regardless of course price
+  // Free enrollment - specifically for free courses (price = 0)
   freeEnrollment: async (courseId: number): Promise<any> => {
-    // Using the correct parameter format for services/api.ts apiRequest function
-    return apiRequest(`/Enrollment/enroll?courseId=${courseId}&isFree=true`, {
+    // For free courses, use the simple enroll endpoint without payment processing
+    return apiRequest(`/Enrollment/enroll?courseId=${courseId}`, {
       method: "POST",
     }, true);  // Last parameter is requiresAuth = true
   },

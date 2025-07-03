@@ -157,14 +157,40 @@ export default function CourseDetail() {
       return;
     }
     
+    if (!course) return;
+    
     setIsEnrolling(true);
     try {
-      // In a real app, we would call the API
-      // await API.courses.enroll(id);
+      const { CourseService } = await import('@/services/course-service');
       
-      setIsEnrolled(true);
+      // If course is free, enroll directly using the simple endpoint
+      if (course.price === 0) {
+        await CourseService.freeEnroll(id!);
+        setIsEnrolled(true);
+        // Show success toast
+        const { toast } = await import('@/components/ui/use-toast');
+        toast({
+          title: "Success!",
+          description: "You have successfully enrolled in this course for free.",
+        });
+      } else {
+        // For paid courses, use the payment flow
+        await CourseService.enroll(id!);
+        setIsEnrolled(true);
+        const { toast } = await import('@/components/ui/use-toast');
+        toast({
+          title: "Success!",
+          description: "You have successfully enrolled in this course.",
+        });
+      }
     } catch (error) {
       console.error("Error enrolling in course:", error);
+      const { toast } = await import('@/components/ui/use-toast');
+      toast({
+        title: "Enrollment Failed",
+        description: "There was a problem with your enrollment. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsEnrolling(false);
     }

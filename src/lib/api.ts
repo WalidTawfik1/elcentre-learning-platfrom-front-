@@ -632,7 +632,11 @@ export const API = {
   // Enrollments
   enrollments: {
     enroll: (courseId: number, isFree: boolean = false) => 
-      apiRequest(`/Enrollment/enroll?courseId=${courseId}${isFree ? '&isFree=true' : ''}`, 'POST'),
+      apiRequest(`/Enrollment/enroll?courseId=${courseId}${isFree ? '' : ''}`, 'POST'),
+    
+    // For free courses, use simple endpoint without payment processing
+    enrollFree: (courseId: number) => 
+      apiRequest(`/Enrollment/enroll?courseId=${courseId}`, 'POST'),
     
     isEnrolled: (courseId: number) => 
       apiRequest(`/Enrollment/is-enrolled?courseId=${courseId}`),

@@ -85,11 +85,12 @@ export const CourseService = {
     return API.enrollments.getStudentEnrollments();
   },
 
+  // Regular enrollment - this will handle payment processing for paid courses
   enroll: async (courseId: string | number): Promise<any> => {
     return EnrollmentService.enrollInCourse(Number(courseId));
   },
   
-  // New method for free enrollment regardless of course price
+  // Free enrollment - specifically for courses where price = 0
   freeEnroll: async (courseId: string | number): Promise<any> => {
     return EnrollmentService.freeEnrollment(Number(courseId));
   },
