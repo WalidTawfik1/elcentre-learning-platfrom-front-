@@ -347,7 +347,8 @@ export const AdminService = {  // Get total courses count
 
   blockUnblockUser: async (userId: string, block: boolean): Promise<boolean> => {
     try {
-      return true;
+      const response = await API.auth.blockUnblockUser(userId, block);
+      return !!response; // Return true if response exists, false otherwise
     } catch (error) {
       console.error("Error blocking/unblocking user:", error);
       // Log more details about the error
