@@ -18,7 +18,7 @@ export default function CoursesIndex() {
   // State for filters
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(0); // 0 is "All Categories"
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
   const [filteredCourses, setFilteredCourses] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const coursesPerPage = 12;
@@ -51,7 +51,7 @@ export default function CoursesIndex() {
         categoryId,
         searchQuery,
         priceRange[0] > 0 ? priceRange[0] : undefined,
-        priceRange[1] < 1000 ? priceRange[1] : undefined
+        priceRange[1] < 5000 ? priceRange[1] : undefined
       );
       
       
@@ -87,15 +87,6 @@ export default function CoursesIndex() {
   const mapCourseData = (course: any) => {
     const instructorName = course.instructorName || course.instructor?.name || "Unknown Instructor";
     const instructorImage = course.instructorImage || course.instructor?.avatar || course.instructor?.image;
-    
-    // Debug logging for avatar issues
-    ('Course instructor debug:', {
-      courseId: course.id,
-      instructorName,
-      instructorImage,
-      hasImage: !!instructorImage,
-      course: course
-    });
     
     return {
       id: course.id?.toString() || "",
@@ -163,7 +154,7 @@ export default function CoursesIndex() {
   const handleResetFilters = () => {
     setSearchTerm("");
     setSelectedCategory(0);
-    setPriceRange([0, 1000]);
+    setPriceRange([0, 5000]);
     setCurrentPage(1);
   };
 
@@ -223,9 +214,9 @@ export default function CoursesIndex() {
               <h3 className="font-medium mb-4">Price Range</h3>
               <div className="px-2">
                 <Slider
-                  defaultValue={[0, 1000]}
+                  defaultValue={[0, 5000]}
                   min={0}
-                  max={1000}
+                  max={5000}
                   step={50}
                   value={priceRange}
                   onValueChange={handlePriceChange}

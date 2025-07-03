@@ -39,7 +39,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     },
     {
       title: 'Users',
-      href: '/dashboard/admin/users',
+      href: '/admin/users',
       icon: Users
     },
     {
@@ -77,6 +77,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         name: 'Categories',
         path: '/dashboard/admin/categories',
         icon: Tag
+      });
+    }
+    
+    // Add User management
+    if (pathnames.includes('users')) {
+      breadcrumbs.push({
+        name: 'Users',
+        path: '/admin/users',
+        icon: Users
       });
     }
     

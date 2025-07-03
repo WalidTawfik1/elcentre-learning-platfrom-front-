@@ -15,6 +15,7 @@ import Register from "./pages/auth/register";
 import VerifyAccount from "./pages/auth/verify-account";
 import ForgetPassword from "./pages/auth/forget-password";
 import GoogleBridge from "./pages/auth/google-bridge";
+import BlockedAccount from "./pages/auth/blocked";
 import CoursesIndex from "./pages/courses/index";
 import CourseDetail from "./pages/courses/course-detail";
 import ProfilePage from "./pages/profile";
@@ -33,6 +34,9 @@ import AdminCategories from "@/pages/dashboard/admin/categories";
 import CreateAdminPage from "@/pages/dashboard/admin/create-admin";
 import AdminPendingCoursesPage from "@/pages/admin/pending-courses";
 import AdminDashboardNew from "@/pages/admin/index";
+import UsersManagement from "@/pages/admin/users";
+import CoursesManagement from "@/pages/admin/courses";
+import AdminApiDocs from "@/pages/admin/api-docs";
 import RequireAdminAuth from "@/components/auth/require-admin-auth";
 import InstructorsPage from "@/pages/instructors/index";
 import InstructorCoursesPage from "@/pages/instructors/[id]/courses";
@@ -66,6 +70,7 @@ const App = () => (
             <Route path="/verify-account" element={<VerifyAccount />} />
             <Route path="/forgot-password" element={<ForgetPassword />} />
             <Route path="/google-bridge" element={<GoogleBridge />} />
+            <Route path="/auth/blocked" element={<BlockedAccount />} />
             
             {/* Student routes */}
             <Route path="/courses" element={<CoursesIndex />} />
@@ -108,6 +113,21 @@ const App = () => (
             <Route path="/admin/pending-courses" element={
               <RequireAdminAuth>
                 <AdminPendingCoursesPage />
+              </RequireAdminAuth>
+            } />
+            <Route path="/admin/users" element={
+              <RequireAdminAuth>
+                <UsersManagement />
+              </RequireAdminAuth>
+            } />
+            <Route path="/admin/courses" element={
+              <RequireAdminAuth>
+                <CoursesManagement />
+              </RequireAdminAuth>
+            } />
+            <Route path="/admin/api-docs" element={
+              <RequireAdminAuth>
+                <AdminApiDocs />
               </RequireAdminAuth>
             } />
             <Route path="/dashboard/admin" element={

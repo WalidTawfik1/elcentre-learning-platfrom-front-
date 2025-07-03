@@ -4,7 +4,7 @@ import { MainLayout } from "@/components/layouts/main-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle, XCircle, Users, BookOpen, TrendingUp, Settings, RefreshCw } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Users, BookOpen, TrendingUp, Settings, RefreshCw, Tag } from "lucide-react";
 import { useState, useEffect } from "react";
 import { CourseService } from "@/services/course-service";
 import { AdminService } from "@/services/admin-service";
@@ -55,10 +55,24 @@ export default function AdminDashboard() {
     },
     {
       title: "User Management",
-      description: "Manage user accounts, roles, and permissions",
+      description: "Manage user accounts, roles, and permissions. Create new admin accounts.",
       icon: Users,
       href: "/admin/users",
       color: "border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
+    },
+    {
+      title: "Course Management",
+      description: "View, manage, and moderate all courses on the platform",
+      icon: BookOpen,
+      href: "/admin/courses",
+      color: "border-indigo-200 hover:border-indigo-300 bg-indigo-50 hover:bg-indigo-100"
+    },
+    {
+      title: "Category Management",
+      description: "Manage course categories and organize content structure",
+      icon: Tag,
+      href: "/dashboard/admin/categories",
+      color: "border-green-200 hover:border-green-300 bg-green-50 hover:bg-green-100"
     },
     {
       title: "Course Analytics",

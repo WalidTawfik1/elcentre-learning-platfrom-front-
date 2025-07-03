@@ -77,6 +77,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   // Use useCallback to memoize the fetchUser function
   const fetchUser = useCallback(async (force = false) => {
+    // Don't fetch user data if we're on the blocked page to prevent redirect loops
+    if (window.location.pathname === '/auth/blocked') {
+      setIsLoading(false);
+      return;
+    }
+    
     // Check if we're already fetching or if it's too soon since last fetch
     const currentTime = Date.now();
     const timeSinceLastFetch = currentTime - lastFetchTimeRef.current;
@@ -99,6 +105,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       lastFetchTimeRef.current = currentTime;
       
       const userData = await AuthService.getProfile();      
+      
+      // Check if user account is blocked
+      if (userData.isActive === false) {
+        // Clear authentication and redirect to blocked page
+        setUser(null);
+        storeUserInLocalStorage(null);
+        setError("Account is blocked");
+        
+        // Only redirect if not already on the blocked page to prevent infinite loops
+        if (window.location.pathname !== '/auth/blocked') {
+          window.location.href = '/auth/blocked';
+        }
+        return;
+      }
+      
       const userWithComputedProps = {
         ...userData,
         name: `${userData.firstName} ${userData.lastName}`,

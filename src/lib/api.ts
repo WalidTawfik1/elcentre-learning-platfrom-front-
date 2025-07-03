@@ -419,6 +419,28 @@ export const API = {
     
     getInstructorById: (instructorId: string | number) =>
       apiRequest(`/Account/get-instructor-by-id/${instructorId}`, 'GET', undefined, false),
+
+    getAllUsers: (params: {
+      pagenum?: number;
+      pagesize?: number;
+      Maxpagesize?: number;
+      sort?: string;
+      search?: string;
+    }) => {
+      const queryParams = new URLSearchParams();
+      if (params.pagenum) queryParams.append('pagenum', params.pagenum.toString());
+      if (params.pagesize) queryParams.append('pagesize', params.pagesize.toString());
+      if (params.Maxpagesize) queryParams.append('Maxpagesize', params.Maxpagesize.toString());
+      if (params.sort) queryParams.append('sort', params.sort);
+      if (params.search) queryParams.append('search', params.search);
+      
+      const queryString = queryParams.toString();
+      return apiRequest(`/Account/get-all-users${queryString ? `?${queryString}` : ''}`, 'GET', undefined, true);
+    },
+
+    blockUnblockUser: (userId: string, block: boolean) => {
+      return apiRequest(`/Account/block-user/${userId}?block=${block}`, 'PUT', undefined, true);
+    },
   },
   
   // Courses
@@ -483,6 +505,25 @@ export const API = {
     
     delete: (id: number) => 
       apiRequest(`/Course/delete-course/${id}`, 'DELETE'),
+    
+    // Admin specific course management
+    getAllForAdmin: (params?: { 
+      pagenum?: number;
+      pagesize?: number; 
+      Maxpagesize?: number;
+      sort?: string;
+      categoryId?: number;
+      search?: string;
+      minPrice?: number;
+      maxPrice?: number;
+    }) => 
+      apiRequest(`/Course/get-all-courses-for-admin${params ? `?${new URLSearchParams(params as any).toString()}` : ""}`, 'GET', undefined, true),
+    
+    deleteAdmin: (courseId: number) => 
+      apiRequest(`/Course/delete-course-admin/${courseId}?delete=true`, 'PUT', undefined, true),
+    
+    undeleteAdmin: (courseId: number) => 
+      apiRequest(`/Course/delete-course-admin/${courseId}?delete=false`, 'PUT', undefined, true),
   },
   
   // Categories

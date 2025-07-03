@@ -109,6 +109,11 @@ const AdminDashboard: React.FC = () => {
                     <Plus className="h-4 w-4 mr-2" /> Create Admin Account
                   </Link>
                 </Button>
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <Link to="/admin/users">
+                    <Users className="h-4 w-4 mr-2" /> User Management
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -150,6 +155,26 @@ const AdminDashboard: React.FC = () => {
               <div className="mt-auto">
                 <Link to="/dashboard/admin/create-admin">
                   <Button variant="default">Create Admin Account</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                <CardTitle>User Management</CardTitle>
+              </div>
+              <CardDescription>Manage users and admin accounts</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col">
+              <div className="flex-1 min-h-[3rem] mb-4">
+                <p>View users, create admin accounts, and manage user roles</p>
+              </div>
+              <div className="mt-auto">
+                <Link to="/admin/users">
+                  <Button variant="default">Manage Users</Button>
                 </Link>
               </div>
             </CardContent>

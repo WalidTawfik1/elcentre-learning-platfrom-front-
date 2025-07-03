@@ -24,6 +24,7 @@ export interface UserDTO {
   gender: string;
   userType: string;
   dateOfBirth: string;
+  isActive: boolean;
   name?: string;
   avatar?: string;
   bio?: string;
@@ -43,6 +44,7 @@ export interface Course {
   price: number;
   thumbnail: string;
   isActive: boolean;
+  isDeleted: boolean;
   durationInHours: number;
   categoryId: number;
   categoryName?: string;
