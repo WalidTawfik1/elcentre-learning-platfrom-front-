@@ -34,7 +34,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     },
     {
       title: 'Courses',
-      href: '/dashboard/admin/courses',
+      href: '/admin/courses',
       icon: BookOpen
     },
     {
@@ -44,7 +44,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     },
     {
       title: 'Settings',
-      href: '/dashboard/admin/settings',
+      href: '/admin/settings',
       icon: Settings
     }
   ];
