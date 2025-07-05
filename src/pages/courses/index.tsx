@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { CourseCard } from "@/components/courses/course-card";
+import { CourseCardSkeleton } from "@/components/courses/course-card-skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -239,20 +240,9 @@ export default function CoursesIndex() {
           {/* Course Listings */}
           <div className="lg:col-span-3">
             {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="h-[300px] rounded border bg-card">
-                    <div className="h-[150px] bg-muted" />
-                    <div className="p-4 space-y-2">
-                      <Skeleton className="h-5 w-4/5" />
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-3/4" />
-                      <div className="flex justify-between items-center mt-4">
-                        <Skeleton className="h-4 w-1/4" />
-                        <Skeleton className="h-8 w-24" />
-                      </div>
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 course-grid">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+                  <CourseCardSkeleton key={i} />
                 ))}
               </div>
             ) : filteredCourses.length === 0 ? (
@@ -268,7 +258,7 @@ export default function CoursesIndex() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 course-grid">
                   {filteredCourses.map((course) => (
                     <CourseCard key={course.id} 
                       id={course.id}

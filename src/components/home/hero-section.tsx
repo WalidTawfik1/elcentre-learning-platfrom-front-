@@ -12,6 +12,8 @@ export function HeroSection() {
           <img
             src="/ELCentreLogo21.png"
             alt="ElCentre Logo"
+            width={200}
+            height={80}
             className="h-20 w-auto mb-6"
             draggable={false}
           />

@@ -57,7 +57,10 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
               <img
                 src={getImageUrl(course.thumbnail)}
                 alt={course.title}
+                width={320}
+                height={180}
                 className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
               />
               <Badge className="absolute top-2 right-2 bg-primary/90">{course.category}</Badge>
             </div>

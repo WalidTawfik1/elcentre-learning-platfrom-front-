@@ -56,6 +56,8 @@ export function NavBar() {
             <img
               src="/ELCentreLogo21.png"
               alt="ElCentre Logo"
+              width={120}
+              height={32}
               className="h-8 w-auto my-auto -mt-2.5"
             />
           </Link>          <nav className="flex items-center space-x-6 text-sm font-medium">
@@ -106,6 +108,8 @@ export function NavBar() {
             <img
               src="/ELCentreLogo21.png"
               alt="ElCentre Logo"
+              width={100}
+              height={28}
               className="h-7 w-auto" /* Fixed size for mobile */
             />
           </Link>
@@ -181,16 +185,19 @@ export function NavBar() {
               </Button>
             )}
           </div>
-            {/* Auth state dependent UI */}
+            {/* Auth state dependent UI - Reserve consistent space */}
           {isLoading ? (
-            <div className="h-8 w-8 rounded-full bg-muted animate-pulse"></div>
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-muted animate-pulse"></div>
+              <div className="h-8 w-8 rounded-full bg-muted animate-pulse"></div>
+            </div>
           ) : isAuthenticated ? (
             <div className="flex items-center gap-2">
               <NotificationBell />
               <UserNav />
             </div>
           ) : (
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 min-w-[120px] justify-end">
               <Link to="/login">
                 <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
                   Log in

@@ -192,13 +192,20 @@ export default function AddCourse() {
                 </div>
               </div>
 
-              {thumbnailPreview && (
+              {thumbnailPreview ? (
                 <div className="relative w-40 h-40 rounded-lg overflow-hidden border">
                   <img 
                     src={thumbnailPreview} 
                     alt="Thumbnail preview" 
+                    width={160}
+                    height={160}
                     className="w-full h-full object-cover"
                   />
+                </div>
+              ) : (
+                // Reserve space even when no preview to prevent layout shift
+                <div className="relative w-40 h-40 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center">
+                  <span className="text-gray-400 text-sm text-center px-2">Preview will appear here</span>
                 </div>
               )}
               <Input
