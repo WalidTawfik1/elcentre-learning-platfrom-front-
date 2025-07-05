@@ -7,6 +7,7 @@ import { AuthProvider } from "./hooks/use-auth";
 import { NotificationProvider } from "./hooks/use-notifications";
 import { API_BASE_URL } from "./config/api-config";
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import { Analytics } from "@vercel/analytics/react";
 
 // Pages
 import Index from "./pages/Index";
@@ -151,6 +152,7 @@ const App = () => (
           </Routes>
         </BrowserRouter>
         <SpeedInsights />
+        <Analytics />
       </TooltipProvider>
     </NotificationProvider>
   </AuthProvider>
