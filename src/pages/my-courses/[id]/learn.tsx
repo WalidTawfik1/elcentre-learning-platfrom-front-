@@ -805,7 +805,7 @@ export default function CourseLearn() {
                 <div className="space-y-8">
                   <div>
                     <h2 className="text-xl font-semibold mb-4">About This Course</h2>
-                    <p className="text-muted-foreground">{course?.description}</p>
+                    <p className="text-muted-foreground whitespace-pre-wrap">{course?.description}</p>
                   </div>
                   
                   {course?.whatYouWillLearn && course.whatYouWillLearn.length > 0 && (
@@ -822,17 +822,10 @@ export default function CourseLearn() {
                     </div>
                   )}
                   
-                  {course?.requirements && course.requirements.length > 0 && (
+                  {course?.requirements && course.requirements.trim() && (
                     <div>
                       <h3 className="text-lg font-semibold mb-4">Requirements</h3>
-                      <ul className="space-y-2">
-                        {course.requirements.map((requirement: string, index: number) => (
-                          <li key={index} className="flex items-start">
-                            <span className="mr-2">•</span>
-                            <span>{requirement}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      <p className="text-muted-foreground whitespace-pre-wrap">{course.requirements}</p>
                     </div>
                   )}                  <div>
                     <h3 className="text-lg font-semibold mb-4">Instructor</h3>

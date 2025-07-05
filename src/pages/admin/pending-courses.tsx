@@ -34,6 +34,7 @@ export default function PendingCoursesPage() {
   const [processingCourseId, setProcessingCourseId] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [selectedCourseForRejection, setSelectedCourseForRejection] = useState<number | null>(null);
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
 
   useEffect(() => {
     loadPendingCourses();
@@ -118,6 +119,7 @@ export default function PendingCoursesPage() {
       
       setRejectionReason("");
       setSelectedCourseForRejection(null);
+      setIsRejectDialogOpen(false);
     } catch (error) {
       console.error("Error rejecting course:", error);
       toast.error("Failed to reject course");
@@ -312,12 +314,15 @@ export default function PendingCoursesPage() {
                         Approve
                       </Button>
                       
-                      <Dialog>
+                      <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
                         <DialogTrigger asChild>
                           <Button
                             variant="destructive"
                             disabled={processingCourseId === course.id}
-                            onClick={() => setSelectedCourseForRejection(course.id)}
+                            onClick={() => {
+                              setSelectedCourseForRejection(course.id);
+                              setIsRejectDialogOpen(true);
+                            }}
                           >
                             <XCircle className="h-4 w-4 mr-1" />
                             Reject
@@ -343,13 +348,18 @@ export default function PendingCoursesPage() {
                                 onClick={() => {
                                   setRejectionReason("");
                                   setSelectedCourseForRejection(null);
+                                  setIsRejectDialogOpen(false);
                                 }}
                               >
                                 Cancel
                               </Button>
                               <Button
                                 variant="destructive"
-                                onClick={() => handleRejectCourse(course.id, rejectionReason)}
+                                onClick={() => {
+                                  if (selectedCourseForRejection) {
+                                    handleRejectCourse(selectedCourseForRejection, rejectionReason);
+                                  }
+                                }}
                                 disabled={!rejectionReason.trim() || processingCourseId === course.id}
                               >
                                 Reject Course

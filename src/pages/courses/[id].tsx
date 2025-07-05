@@ -16,7 +16,11 @@ import { getInitials } from "@/lib/utils";
 const MOCK_COURSE = {
   id: "course-1",
   title: "Introduction to Web Development",
-  description: "Learn the fundamentals of web development, including HTML, CSS, and JavaScript. This comprehensive course takes you from a beginner to building complete websites. You'll understand how the web works, create responsive layouts, add interactivity, and deploy your sites to the internet.",
+  description: `Learn the fundamentals of web development, including HTML, CSS, and JavaScript. 
+
+This comprehensive course takes you from a beginner to building complete websites. You'll understand how the web works, create responsive layouts, add interactivity, and deploy your sites to the internet.
+
+Perfect for beginners who want to start their web development journey!`,
   thumbnail: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=500&fit=crop",
   rating: 4.7,
   reviewCount: 128,
@@ -70,12 +74,10 @@ const MOCK_COURSE = {
       ],
     },
   ],
-  requirements: [
-    "Basic computer skills",
-    "No prior programming experience needed",
-    "A computer with internet access",
-    "Text editor (recommended: VS Code, will be covered in the course)"
-  ],
+  requirements: `Basic computer skills
+No prior programming experience needed
+A computer with internet access
+Text editor (recommended: VS Code, will be covered in the course)`,
   whatYouWillLearn: [
     "Build complete, responsive websites from scratch",
     "Write clean, semantic HTML",
@@ -251,7 +253,6 @@ export default function CourseDetail() {
                 </div>
               </div>
               <h1 className="text-3xl md:text-4xl font-bold mb-4">{course.title}</h1>
-              <p className="text-lg text-muted-foreground mb-6">{course.description}</p>
                 <div className="flex items-center mb-6">
                 <Avatar className="h-12 w-12 mr-3">
                   <AvatarImage src={course.instructor.avatar ? getImageUrl(course.instructor.avatar) : ""} />
@@ -490,6 +491,11 @@ export default function CourseDetail() {
           <TabsContent value="overview">
             <div className="max-w-3xl">
               <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">About This Course</h2>
+                <p className="text-muted-foreground whitespace-pre-wrap">{course.description}</p>
+              </div>
+              
+              <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">What You'll Learn</h2>
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {course.whatYouWillLearn.map((item, index) => (
@@ -503,14 +509,11 @@ export default function CourseDetail() {
               
               <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Requirements</h2>
-                <ul className="space-y-2">
-                  {course.requirements.map((requirement, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="mr-2">•</span>
-                      <span>{requirement}</span>
-                    </li>
-                  ))}
-                </ul>
+                {course.requirements && course.requirements.trim() ? (
+                  <p className="text-muted-foreground whitespace-pre-wrap">{course.requirements}</p>
+                ) : (
+                  <p className="text-muted-foreground">No specific requirements for this course.</p>
+                )}
               </div>
             </div>
           </TabsContent>

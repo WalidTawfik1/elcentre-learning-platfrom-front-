@@ -21,7 +21,8 @@ export default function AddCourse() {
     thumbnail: null as File | null,
     isActive: true,
     categoryId: 0,
-    durationInHours: 0
+    durationInHours: 0,
+    requirements: "" // Add requirements as a string that will be split into array
   });
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
@@ -165,7 +166,19 @@ export default function AddCourse() {
                 min="0"
                 required
               />
-            </div>            <div className="space-y-4">
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Course Requirements (Optional)</label>
+              <Textarea
+                name="requirements"
+                value={formData.requirements}
+                onChange={handleInputChange}
+                placeholder="Enter course requirements"
+                className="min-h-[100px]"
+              />
+            </div>
+            <div className="space-y-4">
               <label className="block text-sm font-medium">Thumbnail</label>
               
               {/* Thumbnail Size Recommendations */}

@@ -68,21 +68,25 @@ export function PaymentMethodDialog({
             className="space-y-3"
           >
             {paymentMethods.map((method) => (
-              <div key={method.value} className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-gray-50">
+              <Label 
+                key={method.value}
+                htmlFor={method.value} 
+                className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${
+                  selectedMethod === method.value 
+                    ? 'border-primary bg-primary/5' 
+                    : 'hover:bg-gray-50'
+                }`}
+                onClick={() => setSelectedMethod(method.value)}
+              >
                 <RadioGroupItem value={method.value} id={method.value} />
-                <Label 
-                  htmlFor={method.value} 
-                  className="flex items-center space-x-3 cursor-pointer flex-1"
-                >
-                  <div className="flex items-center justify-center w-10 h-10 bg-primary/10 rounded-lg">
-                    {getIcon(method.value)}
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium">{method.label}</div>
-                    <div className="text-sm text-muted-foreground">{method.description}</div>
-                  </div>
-                </Label>
-              </div>
+                <div className="flex items-center justify-center w-10 h-10 bg-primary/10 rounded-lg">
+                  {getIcon(method.value)}
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium">{method.label}</div>
+                  <div className="text-sm text-muted-foreground">{method.description}</div>
+                </div>
+              </Label>
             ))}
           </RadioGroup>
 

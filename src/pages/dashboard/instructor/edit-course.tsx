@@ -30,7 +30,8 @@ export default function EditCourse() {
     originalThumbnail: "", // Add this field to store original thumbnail URL
     isActive: true,
     categoryId: 0,
-    durationInHours: 0
+    durationInHours: 0,
+    requirements: "" // Add requirements as a string
   });
   const [isLoading, setIsLoading] = useState(true); // Add loading state
 
@@ -91,7 +92,8 @@ export default function EditCourse() {
           originalThumbnail: courseData.thumbnail, // Store the original thumbnail URL
           isActive: courseData.isActive,
           categoryId: courseData.categoryId,
-          durationInHours: courseData.durationInHours || 0
+          durationInHours: courseData.durationInHours || 0,
+          requirements: courseData.requirements || "" // Use the string directly
         });
       } catch (error) {
         console.error("Error fetching course:", error);
@@ -137,7 +139,8 @@ export default function EditCourse() {
         price: formData.price,
         isActive: formData.isActive,
         categoryId: formData.categoryId,
-        durationInHours: formData.durationInHours
+        durationInHours: formData.durationInHours,
+        requirements: formData.requirements
       };
 
       // Only include thumbnail if user selected a new one
@@ -261,7 +264,19 @@ export default function EditCourse() {
                 min="0"
                 required
               />
-            </div>            <div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Course Requirements (Optional)</label>
+              <Textarea
+                name="requirements"
+                value={formData.requirements}
+                onChange={handleInputChange}
+                placeholder="Enter course requirements"
+                className="min-h-[100px]"
+              />
+            </div>
+            <div className="space-y-4">
               <label className="block text-sm font-medium mb-2">Thumbnail</label>
               
               {/* Thumbnail Size Recommendations */}

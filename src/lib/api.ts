@@ -485,6 +485,8 @@ export const API = {
       Thumbnail: File | File[];
       IsActive: boolean; 
       CategoryId: number;
+      DurationInHours: number;
+      Requirements?: string;
     }) => {
       const formData = createFormData(data);
       return apiRequest('/Course/add-course', 'POST', formData, true, true);
@@ -498,6 +500,8 @@ export const API = {
       Thumbnail?: File | File[];
       IsActive?: boolean; 
       CategoryId?: number;
+      DurationInHours?: number;
+      Requirements?: string;
     }) => {
       const formData = createFormData(data);
       return apiRequest('/Course/update-course', 'PUT', formData, true, true);

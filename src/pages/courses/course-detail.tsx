@@ -558,7 +558,7 @@ export default function CourseDetail() {
                 </div>
               </div>
               <h1 className="text-3xl md:text-4xl font-bold mb-4">{courseData.title}</h1>
-              <p className="text-lg text-muted-foreground mb-6">{courseData.description}</p>              <div className="flex items-center mb-6">
+              <div className="flex items-center mb-6">
                 <Link to={`/instructors/${courseData.instructorId || courseData.instructor?.id}/courses`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                   <Avatar className="h-12 w-12">
                     <AvatarImage src={(courseData.instructorImage) ? getImageUrl(courseData.instructorImage) : ""} />
@@ -870,7 +870,7 @@ export default function CourseDetail() {
               <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">About This Course</h2>
                 {courseData.description ? (
-                  <p className="text-muted-foreground">{courseData.description}</p>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{courseData.description}</p>
                 ) : (
                   <p className="text-muted-foreground">No description has been provided for this course yet.</p>
                 )}
@@ -878,15 +878,8 @@ export default function CourseDetail() {
               
               <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Requirements</h2>
-                {courseData.requirements && Array.isArray(courseData.requirements) && courseData.requirements.length > 0 ? (
-                  <ul className="space-y-2">
-                    {courseData.requirements.map((requirement: string, index: number) => (
-                      <li key={index} className="flex items-start">
-                        <span className="mr-2">•</span>
-                        <span>{requirement}</span>
-                      </li>
-                    ))}
-                  </ul>
+                {courseData.requirements && courseData.requirements.trim() ? (
+                  <p className="text-muted-foreground whitespace-pre-wrap">{courseData.requirements}</p>
                 ) : (
                   <p className="text-muted-foreground">No specific requirements for this course.</p>
                 )}
