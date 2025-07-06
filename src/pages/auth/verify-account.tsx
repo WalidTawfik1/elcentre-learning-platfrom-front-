@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthService } from "@/services/auth-service";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { MainLayout } from "@/components/layouts/main-layout";
+import { OTPInput } from "@/components/ui/otp-input";
 
 export default function VerifyAccount() {
   const navigate = useNavigate();
@@ -59,8 +59,8 @@ export default function VerifyAccount() {
       return;
     }
     
-    if (!verificationCode.trim()) {
-      setError("Please enter the verification code.");
+    if (!verificationCode.trim() || verificationCode.length !== 6) {
+      setError("Please enter the complete 6-digit verification code.");
       return;
     }
     
@@ -132,9 +132,9 @@ export default function VerifyAccount() {
           <Card>
             <CardHeader className="space-y-1">
               <CardTitle className="text-xl">Email Verification</CardTitle>
-              <CardDescription>
-                We've sent a verification code to {email || "your email"}
-              </CardDescription>
+                <CardDescription>
+                We've sent a 6-digit verification code to <strong>{email || "your email"}</strong>
+                </CardDescription>
             </CardHeader>
             <form onSubmit={handleVerify}>
               <CardContent className="grid gap-4">
@@ -144,15 +144,18 @@ export default function VerifyAccount() {
                   </Alert>
                 )}
                 
-                <div className="grid gap-2">
-                  <Label htmlFor="verificationCode">Verification Code</Label>
-                  <Input
-                    id="verificationCode"
-                    placeholder="Enter verification code"
+                <div className="grid gap-4">
+                  <Label className="text-center">Verification Code</Label>
+                  <OTPInput
+                    length={6}
                     value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value)}
-                    required
+                    onChange={setVerificationCode}
+                    disabled={isVerifying}
+                    className="justify-center"
                   />
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Enter the 6-digit code sent to your email. You can paste all digits in any field.
+                  </p>
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col">
