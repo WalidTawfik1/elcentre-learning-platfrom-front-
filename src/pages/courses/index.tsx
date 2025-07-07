@@ -20,6 +20,7 @@ export default function CoursesIndex() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(0); // 0 is "All Categories"
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
+  const [sortBy, setSortBy] = useState<string>("default"); // Sort parameter: "PriceAsc", "PriceDesc", "Rating", or "default" for default
   const [filteredCourses, setFilteredCourses] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const coursesPerPage = 12;
@@ -36,7 +37,7 @@ export default function CoursesIndex() {
     isLoading: isCoursesLoading,
     error: coursesError
   } = useQuery({
-    queryKey: ['courses', currentPage, selectedCategory, searchTerm, priceRange],
+    queryKey: ['courses', currentPage, selectedCategory, searchTerm, priceRange, sortBy],
     queryFn: async () => {
       // Only filter by category if not "All Categories"
       const categoryId = selectedCategory > 0 ? selectedCategory : undefined;
@@ -44,11 +45,14 @@ export default function CoursesIndex() {
       // Convert string search term to a format the API expects
       const searchQuery = searchTerm.trim() || undefined;
       
+      // Use sortBy parameter, pass null if "default" for default sorting
+      const sortParam = sortBy === "default" ? null : sortBy;
+      
       // Get all courses from the API
       const result = await CourseService.getAllCourses(
         currentPage, 
         coursesPerPage, 
-        undefined, // sort parameter
+        sortParam, // sort parameter
         categoryId,
         searchQuery,
         priceRange[0] > 0 ? priceRange[0] : undefined,
@@ -156,6 +160,7 @@ export default function CoursesIndex() {
     setSearchTerm("");
     setSelectedCategory(0);
     setPriceRange([0, 5000]);
+    setSortBy("default");
     setCurrentPage(1);
   };
 
@@ -207,6 +212,21 @@ export default function CoursesIndex() {
                       {category.name}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <h3 className="font-medium mb-4">Sort By</h3>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sort by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Title</SelectItem>
+                  <SelectItem value="PriceAsc">Price: Low to High</SelectItem>
+                  <SelectItem value="PriceDesc">Price: High to Low</SelectItem>
+                  <SelectItem value="Rating">Rating</SelectItem>
                 </SelectContent>
               </Select>
             </div>
