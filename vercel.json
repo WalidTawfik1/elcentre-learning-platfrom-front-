@@ -4,11 +4,15 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
       "source": "/api/:match*",
       "destination": "https://elcentre-api.runasp.net/:match*"
     },
     {
-      "source": "/((?!sitemap\\.xml|robots\\.txt|favicon\\.ico|manifest\\.json|.*\\..*).*)",
+      "source": "/((?!robots\\.txt|favicon\\.ico|manifest\\.json|.*\\..*).*)",
       "destination": "/"
     }
   ],
