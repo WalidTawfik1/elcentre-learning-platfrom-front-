@@ -8,13 +8,13 @@
       "destination": "https://elcentre-api.runasp.net/:match*"
     },
     {
-      "source": "/((?!sitemap\\.xml|robots\\.txt|favicon\\.ico|manifest\\.json|.*\\..*).*)",
+      "source": "/((?!mysitemap\\.xml|robots\\.txt|favicon\\.ico|manifest\\.json|.*\\..*).*)",
       "destination": "/"
     }
   ],
   "headers": [
     {
-      "source": "/sitemap.xml",
+      "source": "/mysitemap.xml",
       "headers": [
         {
           "key": "Content-Type",
