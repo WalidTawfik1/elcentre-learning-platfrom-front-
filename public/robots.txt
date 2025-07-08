@@ -21,4 +21,4 @@ Disallow: /profile/
 Disallow: /my-courses/
 
 # Sitemap location
-Sitemap: https://elcentre-learn.vercel.app/mysitemap.xml
+Sitemap: https://elcentre-learn.vercel.app/sitemap.xml
