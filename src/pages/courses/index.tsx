@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { CourseCard } from "@/components/courses/course-card";
 import { CourseCardSkeleton } from "@/components/courses/course-card-skeleton";
+import { SEO } from "@/components/seo/seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -169,8 +170,43 @@ export default function CoursesIndex() {
   const isLoading = isCoursesLoading || isCategoriesLoading;
   const hasError = !!coursesError;
 
+  // SEO structured data for courses page
+  const coursesPageStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Online Courses - ElCentre",
+    "description": "Browse our comprehensive collection of online courses in web development, data science, mobile development, and more.",
+    "url": "https://elcentre-learn.vercel.app/courses",
+    "mainEntity": {
+      "@type": "ItemList",
+      "numberOfItems": filteredCourses.length,
+      "itemListElement": filteredCourses.slice(0, 10).map((course, index) => ({
+        "@type": "Course",
+        "position": index + 1,
+        "name": course.title,
+        "description": course.description,
+        "provider": {
+          "@type": "Organization",
+          "name": "ElCentre"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": course.price,
+          "priceCurrency": "USD"
+        }
+      }))
+    }
+  };
+
   return (
     <MainLayout>
+      <SEO
+        title="Online Courses - ElCentre | Web Development, Data Science & More"
+        description="Browse our comprehensive collection of online courses in web development, data science, mobile development, and more. Learn from expert instructors and advance your career."
+        keywords="online courses, web development courses, data science courses, mobile development, programming courses, skill development, professional training"
+        url="https://elcentre-learn.vercel.app/courses"
+        structuredData={coursesPageStructuredData}
+      />
       <div className="container py-8">
         <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 mb-8">
           <div>

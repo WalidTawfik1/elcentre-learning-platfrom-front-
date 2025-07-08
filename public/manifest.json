@@ -1,0 +1,16 @@
+{
+  "name": "ElCentre",
+  "short_name": "ElCentre",
+  "description": "Online learning platform with courses in web development, data science, and more",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1f2937",
+  "icons": [
+    {
+      "src": "/ElCentreIcon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

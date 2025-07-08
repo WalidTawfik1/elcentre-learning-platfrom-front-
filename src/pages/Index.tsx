@@ -4,6 +4,7 @@ import { HeroSection } from "@/components/home/hero-section";
 import { CourseSection } from "@/components/home/course-section";
 import { CategorySection } from "@/components/home/category-section";
 import { CTASection } from "@/components/home/cta-section";
+import { SEO } from "@/components/seo/seo";
 import { CourseService } from "@/services/course-service";
 import { CategoryService } from "@/services/category-service";
 import { Course, Category } from "@/types/api";
@@ -182,8 +183,41 @@ export default function Index() {
   const categories = categoriesData?.length ? categoriesData : mockCategories;
   const courses = coursesData?.length ? coursesData : mockCourses;
 
+  const homePageStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "ElCentre - Online Learning Platform",
+    "description": "Discover thousands of courses in web development, data science, mobile development, and more. Learn from expert instructors and advance your career.",
+    "url": "https://elcentre-learn.vercel.app/",
+    "mainEntity": {
+      "@type": "ItemList",
+      "name": "Featured Courses",
+      "itemListElement": courses.slice(0, 6).map((course, index) => ({
+        "@type": "Course",
+        "position": index + 1,
+        "name": course.title,
+        "description": course.description,
+        "provider": {
+          "@type": "Organization",
+          "name": "ElCentre"
+        },
+        "instructor": {
+          "@type": "Person",
+          "name": course.instructor?.name || "Expert Instructor"
+        }
+      }))
+    }
+  };
+
   return (
     <MainLayout>
+      <SEO
+        title="ElCentre - Online Learning Platform | Courses, Skills & Career Development"
+        description="Discover thousands of courses in web development, data science, mobile development, and more. Learn from expert instructors and advance your career with ElCentre."
+        keywords="online learning, courses, education, web development, data science, mobile development, programming, skills, career development, ElCentre, tutorials"
+        url="https://elcentre-learn.vercel.app/"
+        structuredData={homePageStructuredData}
+      />
       <HeroSection />
       <CourseSection 
         courses={courses} 
