@@ -1,8 +1,10 @@
 User-agent: Googlebot
 Allow: /
+Allow: /api/sitemap
 
 User-agent: Bingbot
 Allow: /
+Allow: /api/sitemap
 
 User-agent: Twitterbot
 Allow: /
@@ -12,8 +14,8 @@ Allow: /
 
 User-agent: *
 Allow: /
+Allow: /api/sitemap
 Disallow: /admin/
-Disallow: /api/
 Disallow: /dashboard/
 Disallow: /profile/
 Disallow: /my-courses/
