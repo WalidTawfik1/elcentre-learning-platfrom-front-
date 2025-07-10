@@ -14,27 +14,27 @@ export default function handler(req, res) {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 <url>
 <loc>https://elcentre-learn.vercel.app/</loc>
-<lastmod>2025-07-09</lastmod>
+<lastmod>2025-07-10</lastmod>
 </url>
 <url>
 <loc>https://elcentre-learn.vercel.app/courses</loc>
-<lastmod>2025-07-09</lastmod>
+<lastmod>2025-07-10</lastmod>
 </url>
 <url>
 <loc>https://elcentre-learn.vercel.app/categories</loc>
-<lastmod>2025-07-09</lastmod>
+<lastmod>2025-07-10</lastmod>
 </url>
 <url>
 <loc>https://elcentre-learn.vercel.app/instructors</loc>
-<lastmod>2025-07-09</lastmod>
+<lastmod>2025-07-10</lastmod>
 </url>
 <url>
 <loc>https://elcentre-learn.vercel.app/auth/login</loc>
-<lastmod>2025-07-09</lastmod>
+<lastmod>2025-07-10</lastmod>
 </url>
 <url>
 <loc>https://elcentre-learn.vercel.app/auth/register</loc>
-<lastmod>2025-07-09</lastmod>
+<lastmod>2025-07-10</lastmod>
 </url>
 </urlset>`;
 
