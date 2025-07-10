@@ -8,7 +8,7 @@
       "destination": "/api/generate-sitemap"
     },
     {
-      "source": "/sitemap_index.xml",
+      "source": "/sitemap_index.xml", 
       "destination": "/api/sitemap-index"
     },
     {
@@ -16,13 +16,30 @@
       "destination": "https://elcentre-api.runasp.net/$1"
     },
     {
-      "source": "/((?!robots\\.txt|favicon\\.ico|manifest\\.json|sitemap\\.xml|sitemap_index\\.xml|.*\\..*).*)",
+      "source": "/(.*)",
       "destination": "/"
     }
   ],
   "headers": [
     {
-      "source": "/sitemap*.xml",
+      "source": "/sitemap.xml",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, s-maxage=3600"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap_index.xml",
       "headers": [
         {
           "key": "Content-Type",
