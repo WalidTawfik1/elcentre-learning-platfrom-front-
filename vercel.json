@@ -5,10 +5,10 @@
   "rewrites": [
     {
       "source": "/sitemap.xml",
-      "destination": "/api/sitemap"
+      "destination": "/api/generate-sitemap"
     },
     {
-      "source": "/api/(?!sitemap)(.+)",
+      "source": "/api/(.*)",
       "destination": "https://elcentre-api.runasp.net/$1"
     },
     {
