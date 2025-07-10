@@ -34,12 +34,12 @@ export default function handler(req, res) {
 <priority>0.7</priority>
 </url>
 <url>
-<loc>https://elcentre-learn.vercel.app/auth/login</loc>
+<loc>https://elcentre-learn.vercel.app/login</loc>
 <lastmod>2025-07-10</lastmod>
 <priority>0.3</priority>
 </url>
 <url>
-<loc>https://elcentre-learn.vercel.app/auth/register</loc>
+<loc>https://elcentre-learn.vercel.app/register</loc>
 <lastmod>2025-07-10</lastmod>
 <priority>0.3</priority>
 </url>
