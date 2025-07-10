@@ -8,17 +8,21 @@
       "destination": "/api/generate-sitemap"
     },
     {
+      "source": "/sitemap_index.xml",
+      "destination": "/api/sitemap-index"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "https://elcentre-api.runasp.net/$1"
     },
     {
-      "source": "/((?!sitemap\\.xml|robots\\.txt|favicon\\.ico|manifest\\.json|.*\\..*).*)",
+      "source": "/((?!sitemap.*\\.xml|robots\\.txt|favicon\\.ico|manifest\\.json|.*\\..*).*)",
       "destination": "/"
     }
   ],
   "headers": [
     {
-      "source": "/sitemap.xml",
+      "source": "/sitemap*.xml",
       "headers": [
         {
           "key": "Content-Type",
