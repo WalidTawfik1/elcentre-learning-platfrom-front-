@@ -16,7 +16,7 @@
       "destination": "https://elcentre-api.runasp.net/$1"
     },
     {
-      "source": "/((?!sitemap.*\\.xml|robots\\.txt|favicon\\.ico|manifest\\.json|.*\\..*).*)",
+      "source": "/((?!robots\\.txt|favicon\\.ico|manifest\\.json|sitemap\\.xml|sitemap_index\\.xml|.*\\..*).*)",
       "destination": "/"
     }
   ],
