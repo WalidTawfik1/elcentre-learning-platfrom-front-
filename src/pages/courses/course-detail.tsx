@@ -23,6 +23,8 @@ import * as z from "zod";
 import { CourseReview } from "@/types/api";
 import { getImageUrl, DIRECT_API_URL } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
+import { CourseStructuredData } from "@/components/seo/course-structured-data";
+import { SEO } from "@/components/seo/seo";
 
 // Define the review form schema
 const reviewFormSchema = z.object({
@@ -540,6 +542,19 @@ export default function CourseDetail() {
 
   return (
     <MainLayout>
+      <SEO
+        title={`${courseData.title} - ElCentre | Online Course`}
+        description={courseData.description}
+        keywords={`${courseData.title}, ${courseData.categoryName || courseData.category}, online course, ${courseData.instructorName}, learning, education`}
+        url={`https://elcentre-learn.vercel.app/courses/${id}`}
+        image={getImageUrl(courseData.thumbnail)}
+      />
+      
+      <CourseStructuredData 
+        course={courseData} 
+        url={`https://elcentre-learn.vercel.app/courses/${id}`}
+      />
+
       {/* Course Header */}
       <div className="bg-muted/30 border-b">
         <div className="container py-8 md:py-12">

@@ -9,7 +9,6 @@ export default function handler(req, res) {
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('X-Robots-Tag', 'noindex');
   
   // Generate sitemap index XML
   const sitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>

@@ -11,6 +11,8 @@ import { API } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
 import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
+import { CourseStructuredData } from "@/components/seo/course-structured-data";
+import { SEO } from "@/components/seo/seo";
 
 // Mock course data for development
 const MOCK_COURSE = {
@@ -235,6 +237,19 @@ export default function CourseDetail() {
 
   return (
     <MainLayout>
+      <SEO
+        title={`${course.title} - ElCentre | Online Course`}
+        description={course.description}
+        keywords={`${course.title}, ${course.category}, online course, ${course.instructor.name}, learning, education`}
+        url={`https://elcentre-learn.vercel.app/courses/${id}`}
+        image={course.thumbnail}
+      />
+      
+      <CourseStructuredData 
+        course={course} 
+        url={`https://elcentre-learn.vercel.app/courses/${id}`}
+      />
+
       {/* Course Header */}
       <div className="bg-muted/30 border-b">
         <div className="container py-8 md:py-12">
