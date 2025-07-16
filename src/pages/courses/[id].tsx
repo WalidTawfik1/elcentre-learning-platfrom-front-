@@ -322,7 +322,7 @@ export default function CourseDetail() {
                 ) : (
                   <div className="flex gap-4">
                     <Button onClick={handleEnroll} disabled={isEnrolling}>
-                      {isEnrolling ? "Enrolling..." : course.price === 0 ? "Enroll for Free" : `Enroll for ${course.price}LE`}
+                      {isEnrolling ? "Enrolling..." : course.price === 0 ? "Enroll for Free" : `Enroll for ${course.price}EGP`}
                     </Button>
                     <Button variant="outline">
                       Add to Wishlist
@@ -404,7 +404,7 @@ export default function CourseDetail() {
                     ) : (
                       <div className="flex flex-col gap-2">
                         <Button onClick={handleEnroll} disabled={isEnrolling} className="w-full">
-                          {isEnrolling ? "Enrolling..." : course.price === 0 ? "Enroll for Free" : `Enroll for ${course.price}LE`}
+                          {isEnrolling ? "Enrolling..." : course.price === 0 ? "Enroll for Free" : `Enroll for ${course.price}EGP`}
                         </Button>
                         <Button variant="outline" className="w-full">
                           Add to Wishlist

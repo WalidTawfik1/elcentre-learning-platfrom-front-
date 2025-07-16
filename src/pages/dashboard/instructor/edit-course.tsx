@@ -243,7 +243,7 @@ export default function EditCourse() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Price (LE)</label>
+              <label className="block text-sm font-medium mb-2">Price (EGP)</label>
               <Input
                 type="number"
                 name="price"

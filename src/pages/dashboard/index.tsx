@@ -503,7 +503,7 @@ export default function StudentDashboard() {
                             {course.price !== undefined ? (
                               <div className="mb-3">
                                 <span className="font-semibold">
-                                  {course.price === 0 ? "Free" : `${course.price} LE`}
+                                  {course.price === 0 ? "Free" : `${course.price} EGP`}
                                 </span>
                               </div>
                             ) : (

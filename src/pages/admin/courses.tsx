@@ -265,7 +265,7 @@ export default function CoursesManagement() {
   };
 
   const formatPrice = (price: number) => {
-    return `${price.toLocaleString()} LE`;
+    return `${price.toLocaleString()} EGP`;
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -433,8 +433,8 @@ export default function CoursesManagement() {
                       className="mb-4"
                     />
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span>{priceRange[0]} LE</span>
-                      <span>{priceRange[1] >= 5000 ? '5000 LE' : `${priceRange[1]} LE`}</span>
+                      <span>{priceRange[0]} EGP</span>
+                      <span>{priceRange[1] >= 5000 ? '5000 EGP' : `${priceRange[1]} EGP`}</span>
                     </div>
                   </div>
                 </div>

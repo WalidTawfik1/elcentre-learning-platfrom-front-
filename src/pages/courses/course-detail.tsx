@@ -653,7 +653,7 @@ export default function CourseDetail() {
                         {isEnrolling ? "Enrolling..." : 
                          !canEnroll() ? "Students Only" :
                          courseData.price === 0 ? "Enroll for Free" : 
-                         `Enroll Now - ${courseData.price} LE`}
+                         `Enroll Now - ${courseData.price} EGP`}
                       </Button>
                     )}
                     {!isInstructor() && !isAdmin() && (
@@ -686,7 +686,7 @@ export default function CourseDetail() {
                       {courseData.price === 0 ? (
                         <span className="text-eduAccent">Free</span>
                       ) : (
-                        <span>{courseData.price} LE</span>
+                        <span>{courseData.price} EGP</span>
                       )}
                     </p>
                   </div>
@@ -765,7 +765,7 @@ export default function CourseDetail() {
                             {isEnrolling ? "Enrolling..." : 
                              !canEnroll() ? "Students Only" :
                              courseData.price === 0 ? "Enroll for Free" : 
-                             `Enroll Now - ${courseData.price} LE`}
+                             `Enroll Now - ${courseData.price} EGP`}
                           </Button>
                         )}
                         {!isInstructor() && (

@@ -84,7 +84,7 @@ export default function InstructorCoursesPage() {
   }, [instructorId]);
 
   const formatPrice = (price: number) => {
-    return price === 0 ? "Free" : `${price} LE`;
+    return price === 0 ? "Free" : `${price} EGP`;
   };
 
   const formatDuration = (hours: number) => {

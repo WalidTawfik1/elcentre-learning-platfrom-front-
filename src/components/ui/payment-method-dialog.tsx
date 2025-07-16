@@ -55,7 +55,7 @@ export function PaymentMethodDialog({
             {courseTitle && coursePrice && (
               <span>
                 Complete your enrollment for <strong>{courseTitle}</strong> 
-                {" "}({coursePrice.toFixed(2)} LE)
+                {" "}({coursePrice.toFixed(2)} EGP)
               </span>
             )}
           </DialogDescription>

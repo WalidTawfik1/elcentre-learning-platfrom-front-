@@ -94,7 +94,7 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
                 {course.price === 0 ? (
                   <span className="text-eduAccent">Free</span>
                 ) : (
-                  <span>{course.price.toFixed(2)} LE</span>
+                  <span>{course.price.toFixed(2)} EGP</span>
                 )}
               </div>
               <Button variant="outline" size="sm" asChild>

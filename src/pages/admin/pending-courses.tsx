@@ -129,7 +129,7 @@ export default function PendingCoursesPage() {
   };
 
   const formatPrice = (price: number) => {
-    return price === 0 ? "Free" : `${price.toFixed(2)} LE`;
+    return price === 0 ? "Free" : `${price.toFixed(2)} EGP`;
   };
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

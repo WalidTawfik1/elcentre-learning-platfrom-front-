@@ -280,8 +280,8 @@ export default function CoursesIndex() {
                   className="mb-6"
                 />
                 <div className="flex items-center justify-between">
-                  <span>{priceRange[0]} LE</span>
-                  <span>{priceRange[1]} LE</span>
+                  <span>{priceRange[0]} EGP</span>
+                  <span>{priceRange[1]} EGP</span>
                 </div>
               </div>
             </div>

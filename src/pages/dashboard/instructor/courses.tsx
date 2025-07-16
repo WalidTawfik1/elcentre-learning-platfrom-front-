@@ -215,7 +215,7 @@ export default function InstructorCourses() {
                       </div>
                       <div className="flex items-center">
                         <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" />
-                        <span>{course.price === 0 ? "Free" : `${course.price} LE`}</span>
+                        <span>{course.price === 0 ? "Free" : `${course.price} EGP`}</span>
                       </div>
                     </div>
                   </CardContent>
