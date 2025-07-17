@@ -3,6 +3,8 @@ import { AdminLayout } from '@/components/layouts/admin-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
+import { PhoneInput } from '@/components/ui/phone-input';
+import { CountrySelect } from '@/components/ui/country-select';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -20,6 +22,7 @@ const CreateAdminPage: React.FC = () => {
     password: "",
     confirmPassword: "",
     phoneNumber: "",
+    country: "EG", // Default to Egypt
     gender: "",
     dateOfBirth: "",
     userType: "Admin" // Default and fixed to Admin
@@ -37,6 +40,14 @@ const CreateAdminPage: React.FC = () => {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePhoneChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, phoneNumber: value }));
+  };
+
+  const handleCountryChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, country: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,6 +77,7 @@ const CreateAdminPage: React.FC = () => {
         email: formData.email,
         password: formData.password,
         phoneNumber: formData.phoneNumber,
+        country: formData.country,
         gender: formData.gender,
         dateOfBirth: formData.dateOfBirth,
         userType: "Admin" // Ensure it's set to Admin
@@ -84,6 +96,7 @@ const CreateAdminPage: React.FC = () => {
         password: "",
         confirmPassword: "",
         phoneNumber: "",
+        country: "EG", // Reset to default
         gender: "",
         dateOfBirth: "",
         userType: "Admin"
@@ -194,14 +207,26 @@ const CreateAdminPage: React.FC = () => {
               </div>
               
               <div className="grid gap-2">
+                <Label htmlFor="country">Country</Label>
+                <CountrySelect
+                  id="country"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleCountryChange}
+                  placeholder="Select country"
+                  required
+                />
+              </div>
+
+              <div className="grid gap-2">
                 <Label htmlFor="phoneNumber">Phone Number</Label>
-                <Input
+                <PhoneInput
                   id="phoneNumber"
                   name="phoneNumber"
-                  type="tel"
-                  placeholder="+1 (123) 456-7890"
                   value={formData.phoneNumber}
-                  onChange={handleChange}
+                  onChange={handlePhoneChange}
+                  onCountryChange={handleCountryChange}
+                  placeholder="Enter phone number"
                   required
                 />
               </div>

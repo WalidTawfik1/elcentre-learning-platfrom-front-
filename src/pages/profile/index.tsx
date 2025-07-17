@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { CountrySelect, getCountryName } from "@/components/ui/country-select";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -24,18 +26,19 @@ export default function ProfilePage() {
   const [formError, setFormError] = useState("");
   const [selectedProfilePicture, setSelectedProfilePicture] = useState<File | null>(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
-    // Initialize form data with user's current information
+  // Initialize form data with user's current information
   const [formData, setFormData] = useState<Partial<UserDTO>>({
     firstName: "",
     lastName: "",
     email: "",
     phoneNumber: "",
+    country: "",
     gender: "",
     dateOfBirth: "",
     userType: "",
     bio: ""
   });
-    // Only update form data from user when not in editing mode
+  // Only update form data from user when not in editing mode
   // This prevents the form from resetting while the user is editing
   useEffect(() => {
     if (user && !isEditing) {
@@ -44,6 +47,7 @@ export default function ProfilePage() {
         lastName: user.lastName || "",
         email: user.email || "",
         phoneNumber: user.phoneNumber || "",
+        country: user.country || "",
         gender: user.gender || "",
         dateOfBirth: user.dateOfBirth || "",
         userType: user.userType || "",
@@ -69,9 +73,19 @@ export default function ProfilePage() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-    // Handle select input changes
+  // Handle select input changes
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Handle phone number changes
+  const handlePhoneChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, phoneNumber: value }));
+  };
+
+  // Handle country changes
+  const handleCountryChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, country: value }));
   };
 
   // Handle profile picture change
@@ -127,7 +141,7 @@ export default function ProfilePage() {
     
     try {
       // Make sure we have all the required fields
-      if (!formData.firstName || !formData.lastName || !formData.gender || !formData.dateOfBirth || !formData.phoneNumber) {
+      if (!formData.firstName || !formData.lastName || !formData.gender || !formData.dateOfBirth || !formData.phoneNumber || !formData.country) {
         setFormError("Please fill in all required fields");
         setIsSaving(false);
         return;
@@ -141,6 +155,7 @@ export default function ProfilePage() {
         gender: formData.gender,
         dateOfBirth: formData.dateOfBirth,
         phoneNumber: formData.phoneNumber,
+        country: formData.country,
         bio: formData.bio || ""
       };
       
@@ -170,6 +185,7 @@ export default function ProfilePage() {
         lastName: user.lastName || "",
         email: user.email || "",
         phoneNumber: user.phoneNumber || "",
+        country: user.country || "",
         gender: user.gender || "",
         dateOfBirth: user.dateOfBirth || "",
         userType: user.userType || "",
@@ -191,6 +207,7 @@ export default function ProfilePage() {
         lastName: user.lastName || "",
         email: user.email || "",
         phoneNumber: user.phoneNumber || "",
+        country: user.country || "",
         gender: user.gender || "",
         dateOfBirth: user.dateOfBirth || "",
         userType: user.userType || "",
@@ -339,16 +356,33 @@ export default function ProfilePage() {
                       <p className="text-xs text-muted-foreground">Email cannot be changed</p>
                     </div>
                     
+                    <div className="space-y-2">
+                      <Label htmlFor="country">Country</Label>
+                      {isEditing ? (
+                        <CountrySelect
+                          id="country"
+                          name="country"
+                          value={formData.country || ""}
+                          onChange={handleCountryChange}
+                          placeholder="Select your country"
+                          required
+                        />
+                      ) : (
+                        <p className="py-2 px-3 border rounded-md bg-muted/30">{user?.country ? getCountryName(user.country) : "Not provided"}</p>
+                      )}
+                    </div>
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="phoneNumber">Phone Number</Label>
                         {isEditing ? (
-                          <Input
+                          <PhoneInput
                             id="phoneNumber"
                             name="phoneNumber"
-                            type="tel"
-                            value={formData.phoneNumber}
-                            onChange={handleChange}
+                            value={formData.phoneNumber || ""}
+                            onChange={handlePhoneChange}
+                            onCountryChange={handleCountryChange}
+                            placeholder="Enter phone number"
                             required
                           />
                         ) : (

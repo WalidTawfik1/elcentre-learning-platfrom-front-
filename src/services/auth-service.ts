@@ -213,7 +213,7 @@ export const AuthService = {
       credentials: "include" // Explicitly include credentials
     }, true);
   },
-    updateProfile: async (userData: UserDTO): Promise<any> => {
+  updateProfile: async (userData: UserDTO): Promise<any> => {
     return apiRequest<any>("/Account/edit-profile", {
       method: "PUT",
       body: JSON.stringify(userData),
@@ -228,6 +228,7 @@ export const AuthService = {
     formData.append('firstName', userData.firstName);
     formData.append('lastName', userData.lastName);
     formData.append('phoneNumber', userData.phoneNumber);
+    formData.append('country', userData.country);
     formData.append('gender', userData.gender);
     formData.append('dateOfBirth', userData.dateOfBirth);
     if (userData.bio) {

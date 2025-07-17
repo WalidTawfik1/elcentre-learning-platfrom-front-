@@ -7,11 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, Users, Search, Filter, RefreshCw, Shield, GraduationCap, BookOpen, ChevronLeft, ChevronRight, Ban, UserCheck } from "lucide-react";
+import { UserPlus, Users, Search, Filter, RefreshCw, Shield, GraduationCap, BookOpen, ChevronLeft, ChevronRight, Ban, UserCheck, Globe } from "lucide-react";
 import { AdminService } from "@/services/admin-service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { getCountryName } from "@/components/ui/country-select";
 
 interface User {
   id: string;
@@ -22,6 +23,7 @@ interface User {
   isActive: boolean;
   createdAt: string;
   phoneNumber?: string;
+  country?: string;
 }
 
 interface UsersResponse {
@@ -388,11 +390,20 @@ export default function UsersManagement() {
                                 <div className="font-medium">
                                   {user.firstName} {user.lastName}
                                 </div>
-                                {user.phoneNumber && (
-                                  <div className="text-sm text-muted-foreground">
-                                    {user.phoneNumber}
-                                  </div>
-                                )}
+                                <div className="text-sm text-muted-foreground space-y-1">
+                                  {user.phoneNumber && (
+                                    <div className="flex items-center gap-1">
+                                      <span>📱</span>
+                                      <span>{user.phoneNumber}</span>
+                                    </div>
+                                  )}
+                                  {user.country && (
+                                    <div className="flex items-center gap-1">
+                                      <Globe className="h-3 w-3" />
+                                      <span>{getCountryName(user.country)}</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </TableCell>

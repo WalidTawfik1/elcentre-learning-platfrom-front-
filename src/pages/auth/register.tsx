@@ -4,6 +4,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { CountrySelect } from "@/components/ui/country-select";
 import { Label } from "@/components/ui/label";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +25,7 @@ export default function Register() {
     password: "",
     confirmPassword: "",
     phoneNumber: "",
+    country: "EG", // Default to Egypt
     gender: "",
     dateOfBirth: "",
     userType: "Student" // Default to Student
@@ -33,6 +36,14 @@ export default function Register() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePhoneChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, phoneNumber: value }));
+  };
+
+  const handleCountryChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, country: value }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
@@ -58,6 +69,7 @@ export default function Register() {
         email: formData.email,
         password: formData.password,
         phoneNumber: formData.phoneNumber,
+        country: formData.country,
         gender: formData.gender,
         dateOfBirth: dateFormatted,
         userType: formData.userType
@@ -243,14 +255,25 @@ export default function Register() {
               </div>
               
               <div className="grid gap-2">
+                <Label htmlFor="country">Country</Label>
+                <CountrySelect
+                  id="country"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleCountryChange}
+                  placeholder="Select your country"
+                />
+              </div>
+
+              <div className="grid gap-2">
                 <Label htmlFor="phoneNumber">Phone Number</Label>
-                <Input
+                <PhoneInput
                   id="phoneNumber"
                   name="phoneNumber"
-                  type="tel"
-                  placeholder="+1 (123) 456-7890"
                   value={formData.phoneNumber}
-                  onChange={handleChange}
+                  onChange={handlePhoneChange}
+                  onCountryChange={handleCountryChange}
+                  placeholder="Enter phone number"
                   required
                 />
               </div>

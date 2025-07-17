@@ -10,6 +10,7 @@ export interface RegisterDTO {
   email: string;
   password: string;
   phoneNumber: string;
+  country: string;
   gender: string;
   dateOfBirth: string;
   userType: string;
@@ -21,6 +22,7 @@ export interface UserDTO {
   lastName: string;
   email: string;
   phoneNumber: string;
+  country: string;
   gender: string;
   userType: string;
   dateOfBirth: string;
