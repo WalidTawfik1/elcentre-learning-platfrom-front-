@@ -252,7 +252,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       const errorMessage = error.message || "Registration failed. Please check your network connection.";
       setError(errorMessage);
-      throw error;
+      // Don't throw the error, just set it in state so it's displayed in the UI
+      console.error("Registration error:", errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -62,19 +62,20 @@ export default function Register() {
     // Format date as YYYY-MM-DD for API
     const dateFormatted = formData.dateOfBirth;
     
-    try {
-      await register({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password,
-        phoneNumber: formData.phoneNumber,
-        country: formData.country,
-        gender: formData.gender,
-        dateOfBirth: dateFormatted,
-        userType: formData.userType
-      });
-      
+    await register({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      password: formData.password,
+      phoneNumber: formData.phoneNumber,
+      country: formData.country,
+      gender: formData.gender,
+      dateOfBirth: dateFormatted,
+      userType: formData.userType
+    });
+    
+    // Only navigate if registration was successful (no error set)
+    if (!error) {
       toast({
         title: "Registration successful",
         description: "Please verify your account using the verification code sent to your email.",
@@ -85,8 +86,6 @@ export default function Register() {
       
       // Navigate to verification page after successful registration
       navigate('/verify-account', { state: { email: formData.email } });
-    } catch (error) {
-      console.error("Registration failed:", error);
     }
   };
 

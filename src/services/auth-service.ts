@@ -66,38 +66,25 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
       try {
         const errorData = await response.json();
         
-        // Handle specific error cases
-        if (response.status === 400) {
-          // Check for unverified account error
-          if (errorData.message?.toLowerCase().includes('not verified') || 
-              errorData.message?.toLowerCase().includes('verify') ||
-              errorData.errorCode === 'ACCOUNT_NOT_VERIFIED') {
-            const error = new Error(errorData.message || 'Account not verified');
-            error.name = 'Account not verified';
-            throw error;
-          }
-        }
-        if (response.status === 400) {
-          // Check for unverified account error
-          if (errorData.message?.toLowerCase().includes('invalid')) {
-            const error = new Error(errorData.message || 'Invalid Email or Password');
-            error.name = 'Invalid Email or Password';
-            throw error;
-          }
-        }
-
-        if (response.status === 400) {
-          // Check for unverified account error
-          if (errorData.message?.toLowerCase().includes('must')) {
-            const error = new Error(errorData.message || 'Create a strong password');
-            error.name = 'Create a strong password';
-            throw error;
-          }
+        // Extract error message from various possible formats
+        let errorMessage = '';
+        
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        } else {
+          errorMessage = `API Error: ${response.status}`;
         }
         
-        throw new Error(errorData.message || `API Error: ${response.status}`);
+        throw new Error(errorMessage);
       } catch (e) {
-        if (e.name === 'Account not verified' || e.name === 'Invalid Email or Password' || e.name === 'Create a strong password') {
+        // If e is already our custom error, re-throw it
+        if (e instanceof Error && e.message !== `API Error: ${response.status}`) {
           throw e;
         }
         throw new Error(`API Error: ${response.status} - ${response.statusText}`);
