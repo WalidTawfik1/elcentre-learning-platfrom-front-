@@ -12,12 +12,10 @@ dist
 dist-ssr
 *.local
 
-# Environment variables
+# Environment variables - ignore all except .env.example
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 
 # Backend files (for reference only)
 Backend Notification/

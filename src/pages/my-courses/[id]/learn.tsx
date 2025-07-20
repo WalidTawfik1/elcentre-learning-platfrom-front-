@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { StarIcon, Play, Clock, Book, Video, CheckCircle, FileText, ArrowLeft, Check, HelpCircle, Trophy, Bell, MessageSquare } from "lucide-react";
+import { StarIcon, Play, Clock, Book, Video, CheckCircle, FileText, ArrowLeft, Check, HelpCircle, Trophy, Bell, MessageSquare, Bot } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { EnrollmentService } from "@/services/enrollment-service";
 import { InstructorService } from "@/services/instructor-service";
@@ -16,6 +16,7 @@ import { QuizTaking } from "@/components/quiz/quiz-taking";
 import { QuizService } from "@/services/quiz-service";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useAuth } from "@/hooks/use-auth";
+import { useVideoTranscription } from "@/hooks/use-video-transcription";
 import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
@@ -23,6 +24,7 @@ import { formatDistanceToNow } from "date-fns";
 import { SecureVideoPlayer } from "@/components/ui/secure-video-player";
 import { QAComponent } from "@/components/qa";
 import { CreateNotificationForm } from "@/components/notifications/create-notification-form";
+import { AIAssistant } from "@/components/ai-assistant/ai-assistant";
 import "@/styles/secure-video.css";
 
 import { DIRECT_API_URL } from "@/config/api-config";
@@ -89,6 +91,12 @@ export default function CourseLearn() {
   const [activeTab, setActiveTab] = useState('overview');
   const [qaTargetQuestionId, setQaTargetQuestionId] = useState<number | undefined>(undefined);
   const [qaTargetAnswerId, setQaTargetAnswerId] = useState<number | undefined>(undefined);
+  
+  // Video transcription state
+  const [lessonTranscript, setLessonTranscript] = useState('');
+  const { transcribeVideo, isTranscribing, error: transcriptionError } = useVideoTranscription({
+    language: 'en' // You can make this dynamic based on course language
+  });
   
   // Check if instructor is viewing the course
   const isInstructorViewing = new URLSearchParams(location.search).get('instructor') === 'true' && user?.userType === 'Instructor';
@@ -224,6 +232,60 @@ export default function CourseLearn() {
       fetchInstructorDetails(course.instructorId);
     }
   }, [course?.instructorId, instructor]);
+
+  // Transcribe video when active lesson changes
+  useEffect(() => {
+    const transcribeCurrentLesson = async () => {
+      if (!activeLesson || activeLesson.contentType !== 'video') {
+        setLessonTranscript('');
+        return;
+      }
+
+      // Check if we already have a cached transcript for this lesson
+      const cachedTranscript = localStorage.getItem(`transcript-${activeLesson.id}`);
+      if (cachedTranscript) {
+        setLessonTranscript(cachedTranscript);
+        return;
+      }
+
+      try {
+        // Construct the video URL
+        let videoUrl = null;
+        if (activeLesson.content) {
+          if (activeLesson.content.startsWith('http')) {
+            videoUrl = activeLesson.content;
+          } else {
+            const contentPath = activeLesson.content.replace(/^\//, '');
+            videoUrl = `${DIRECT_API_URL}/${contentPath}`;
+          }
+        }
+
+        console.log('Video URL for transcription:', videoUrl);
+
+        if (videoUrl) {
+          const result = await transcribeVideo(videoUrl);
+          if (result && result.text) {
+            setLessonTranscript(result.text);
+            // Cache the transcript
+            localStorage.setItem(`transcript-${activeLesson.id}`, result.text);
+          }
+        }
+      } catch (error) {
+        console.error('Error transcribing lesson video:', error);
+        // Show a subtle error notification
+        if (transcriptionError) {
+          toast({
+            title: "Transcription Unavailable",
+            description: "AI Assistant will work with limited context for this lesson.",
+            variant: "default",
+          });
+        }
+      }
+    };
+
+    transcribeCurrentLesson();
+  }, [activeLesson, transcribeVideo, transcriptionError]);
+
   // Join course notification group when course is loaded and user is subscribed
   useEffect(() => {
     if (course?.id && isAuthenticated && (user?.userType === "Student" || isInstructorViewing)) {
@@ -749,7 +811,7 @@ export default function CourseLearn() {
           </div>
           
           {/* Main Content Area */}
-          <div className="lg:col-span-3 order-1 lg:order-2">
+          <div className="lg:col-span-3 order-1 lg:order-2 min-w-0 max-w-full overflow-hidden">
             {/* Lesson Content */}
             <div className="mb-8">
               <div className="border rounded-lg p-6">
@@ -813,13 +875,23 @@ export default function CourseLearn() {
               </div>
             </div>
               {/* Course Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab}>              <TabsList className="w-full justify-start border-b rounded-none mb-6 px-0 h-auto">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-full overflow-hidden">              <TabsList className="w-full justify-start border-b rounded-none mb-6 px-0 h-auto">
                 <TabsTrigger 
                   value="overview"
                   className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
                 >
                   <Book className="h-4 w-4 mr-2" />
                   Overview
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="ai-assistant"
+                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+                >
+                  <Bot className="h-4 w-4 mr-2" />
+                  AI Assistant
+                  {isTranscribing && (
+                    <div className="ml-2 h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
+                  )}
                 </TabsTrigger>
                 {!isInstructorViewing && (
                   <TabsTrigger 
@@ -969,6 +1041,18 @@ export default function CourseLearn() {
                         </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="ai-assistant">
+                <div className="max-w-full overflow-hidden">
+                  <div className="w-full max-w-4xl mx-auto">
+                    <AIAssistant 
+                      lessonTitle={activeLesson?.title}
+                      lessonTranscript={lessonTranscript}
+                      isLoadingTranscript={isTranscribing}
+                    />
                   </div>
                 </div>
               </TabsContent>
@@ -1271,6 +1355,7 @@ export default function CourseLearn() {
             </Tabs>
           </div>
         </div>
-      </div>    </MainLayout>
+      </div>
+    </MainLayout>
   );
 }
