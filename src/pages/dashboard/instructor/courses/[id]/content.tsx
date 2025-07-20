@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { 
   Accordion, 
   AccordionContent, 
@@ -115,6 +116,11 @@ export default function CourseContentManagement() {
   // Processing states
   const [isSavingModule, setIsSavingModule] = useState(false);
   const [isSavingLesson, setIsSavingLesson] = useState(false);
+
+  // Upload progress states
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   useEffect(() => {
     // Check authentication and redirect if needed
@@ -368,6 +374,7 @@ export default function CourseContentManagement() {
     if (!selectedModuleId) return;
 
     setIsSavingLesson(true);
+    
     try {
       if (isEditingLesson && currentLessonId) {
         // Update existing lesson - content and contentType are not editable
@@ -396,16 +403,47 @@ export default function CourseContentManagement() {
             "Text content is required" : 
             "Video content is required");
         }
-        
-        await LessonService.addLesson({
-          title: lessonFormData.title,
-          description: lessonFormData.description,
-          contentType: lessonFormData.contentType,
-          content: content,
-          durationInMinutes: lessonFormData.durationInMinutes,
-          isPublished: lessonFormData.isPublished,
-          moduleId: selectedModuleId
-        });
+
+        // For video uploads, show progress
+        if (lessonFormData.contentType === "video" && lessonFormData.content instanceof File) {
+          setIsUploading(true);
+          setUploadProgress(0);
+          
+          // Create abort controller
+          const controller = new AbortController();
+          setAbortController(controller);
+
+          const progressCallback = (progress: number) => {
+            setUploadProgress(progress);
+          };
+
+          try {
+            await LessonService.addLesson({
+              title: lessonFormData.title,
+              description: lessonFormData.description,
+              contentType: lessonFormData.contentType,
+              content: content,
+              durationInMinutes: lessonFormData.durationInMinutes,
+              isPublished: lessonFormData.isPublished,
+              moduleId: selectedModuleId
+            }, progressCallback, controller);
+          } finally {
+            setIsUploading(false);
+            setUploadProgress(0);
+            setAbortController(null);
+          }
+        } else {
+          // For text content, use normal upload
+          await LessonService.addLesson({
+            title: lessonFormData.title,
+            description: lessonFormData.description,
+            contentType: lessonFormData.contentType,
+            content: content,
+            durationInMinutes: lessonFormData.durationInMinutes,
+            isPublished: lessonFormData.isPublished,
+            moduleId: selectedModuleId
+          });
+        }
         
         toast({
           title: "Lesson Added",
@@ -418,15 +456,35 @@ export default function CourseContentManagement() {
       setLessonDialogOpen(false);
     } catch (error) {
       console.error("Error saving lesson:", error);
-      toast({
-        title: "Error",
-        description: typeof error === "object" && error !== null && "message" in error 
-          ? (error as Error).message 
-          : "Failed to save lesson. Please try again.",
-        variant: "destructive"
-      });
+      
+      if (error instanceof Error && error.message === 'Upload was cancelled') {
+        toast({
+          title: "Upload Cancelled",
+          description: "The video upload was cancelled.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: typeof error === "object" && error !== null && "message" in error 
+            ? (error as Error).message 
+            : "Failed to save lesson. Please try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsSavingLesson(false);
+      setIsUploading(false);
+      setUploadProgress(0);
+      setAbortController(null);
+    }
+  };
+
+  const handleCancelUpload = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -802,7 +860,16 @@ export default function CourseContentManagement() {
         </Dialog>
 
         {/* Lesson Dialog */}
-        <Dialog open={lessonDialogOpen} onOpenChange={setLessonDialogOpen}>
+        <Dialog 
+          open={lessonDialogOpen} 
+          onOpenChange={(open) => {
+            // Prevent closing dialog during upload
+            if (isUploading && !open) {
+              return;
+            }
+            setLessonDialogOpen(open);
+          }}
+        >
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>{isEditingLesson ? "Edit Lesson" : "Add New Lesson"}</DialogTitle>
@@ -884,7 +951,35 @@ export default function CourseContentManagement() {
                           accept="video/*"
                           onChange={handleLessonFileChange}
                           required={lessonFormData.contentType === 'video'}
+                          disabled={isUploading}
                         />
+                        
+                        {/* Upload Progress */}
+                        {isUploading && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span>Uploading video...</span>
+                              <span>{uploadProgress}%</span>
+                            </div>
+                            <Progress value={uploadProgress} className="w-full" />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={handleCancelUpload}
+                              className="w-full"
+                            >
+                              Cancel Upload
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {/* File info */}
+                        {lessonFormData.content && !isUploading && (
+                          <div className="text-sm text-muted-foreground">
+                            Selected: {lessonFormData.content.name} ({(lessonFormData.content.size / 1024 / 1024).toFixed(2)} MB)
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
@@ -922,11 +1017,26 @@ export default function CourseContentManagement() {
               </div>
               
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setLessonDialogOpen(false)}>
-                  Cancel
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    if (isUploading) {
+                      handleCancelUpload();
+                    }
+                    setLessonDialogOpen(false);
+                  }}
+                  disabled={isSavingLesson && !isUploading}
+                >
+                  {"Cancel"}
                 </Button>
-                <Button type="submit" disabled={isSavingLesson}>
-                  {isSavingLesson ? (
+                <Button type="submit" disabled={isSavingLesson || isUploading}>
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading... ({uploadProgress}%)
+                    </>
+                  ) : isSavingLesson ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Saving...

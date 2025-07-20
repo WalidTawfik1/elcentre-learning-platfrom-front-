@@ -82,17 +82,21 @@ export const LessonService = {
     }
   },
     /**
-   * Add a new lesson to a module
+   * Add a new lesson to a module with upload progress support
    */
-  addLesson: async (lessonData: {
-    title: string;
-    content: File | string; // Can be a file for video or string for text
-    contentType: string; // "video" or "text"
-    durationInMinutes: number;
-    description: string;
-    isPublished: boolean;
-    moduleId: number;
-  }): Promise<any> => {
+  addLesson: async (
+    lessonData: {
+      title: string;
+      content: File | string; // Can be a file for video or string for text
+      contentType: string; // "video" or "text"
+      durationInMinutes: number;
+      description: string;
+      isPublished: boolean;
+      moduleId: number;
+    },
+    onProgress?: (progress: number) => void,
+    abortController?: AbortController
+  ): Promise<any> => {
     try {
       // Validate the lesson data first
       const validationError = validateLesson({
@@ -122,7 +126,10 @@ export const LessonService = {
         Description: lessonData.description,
         IsPublished: lessonData.isPublished,
         ModuleId: lessonData.moduleId
-      };      const result = await API.lessons.add(formattedData);
+      };
+
+      // Use the new API method with progress support
+      const result = await API.lessons.addWithProgress(formattedData, onProgress, abortController);
       return result;
     } catch (error) {
       throw error; // Re-throw to handle in component

@@ -501,12 +501,29 @@ export default function CourseLearn() {
     
     switch (lesson.contentType) {
       case 'video':
+        // Construct the proper video URL using the lesson content
+        // Handle different content formats: full URL, relative path, or filename
+        let videoUrl = null;
+        if (lesson.content) {
+          if (lesson.content.startsWith('http')) {
+            // Already a full URL - add cache busting parameter
+            videoUrl = `${lesson.content}?t=${Date.now()}&lessonId=${lesson.id}`;
+          } else {
+            // Relative path or filename - construct full API URL
+            // Remove leading slash to avoid double slashes
+            const contentPath = lesson.content.replace(/^\//, '');
+            // Add cache busting and lesson ID to ensure unique requests
+            videoUrl = `${API_BASE_URL}/${contentPath}?t=${Date.now()}&lessonId=${lesson.id}`;
+          }
+        }
+          
         return (
           <div className="space-y-6">
             <div className="rounded-lg overflow-hidden border border-border">
-              {lesson.content ? (
+              {videoUrl ? (
                 <SecureVideoPlayer 
-                  src={lesson.content}
+                  src={videoUrl}
+                  key={`lesson-video-${lesson.id}`} // Add unique key to force re-render when lesson changes
                   title={lesson.title}
                   allowFullscreen={true}
                   allowQualityChange={true}

@@ -272,6 +272,72 @@ const createFormData = (data: Record<string, any>): FormData => {
   return formData;
 };
 
+// Helper function for uploads with progress tracking and cancellation
+const uploadWithProgress = <T>(
+  endpoint: string,
+  formData: FormData,
+  onProgress?: (progress: number) => void,
+  abortController?: AbortController
+): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const url = `${API_BASE_URL}${endpoint}`;
+
+    // Set up upload progress tracking
+    if (onProgress) {
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          onProgress(progress);
+        }
+      });
+    }
+
+    // Handle upload completion
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const response = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+          resolve(response);
+        } catch (error) {
+          resolve(xhr.responseText as any);
+        }
+      } else {
+        reject(new Error(`Upload failed with status: ${xhr.status}`));
+      }
+    });
+
+    // Handle upload errors
+    xhr.addEventListener('error', () => {
+      reject(new Error('Upload failed due to network error'));
+    });
+
+    // Handle upload abort
+    xhr.addEventListener('abort', () => {
+      reject(new Error('Upload was cancelled'));
+    });
+
+    // Set up abort controller
+    if (abortController) {
+      abortController.signal.addEventListener('abort', () => {
+        xhr.abort();
+      });
+    }
+
+    // Open the request first
+    xhr.open('POST', url);
+    
+    // Add JWT token to Authorization header if available (after opening)
+    const token = getCookie('jwt');
+    if (token && isValidJwtToken(token) && !isTokenExpired(token)) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
+
+    // Send the request
+    xhr.send(formData);
+  });
+};
+
 // Helper function to validate JWT token format
 const isValidJwtToken = (token: string): boolean => {
   if (!token) return false;
@@ -599,6 +665,23 @@ export const API = {
     }) => {
       const formData = createFormData(data);
       return apiRequest('/Lesson/add-lesson', 'POST', formData, true, true);
+    },
+
+    addWithProgress: (
+      data: {
+        Title: string;
+        Content: File;
+        ContentType: string;
+        DurationInMinutes: number;
+        Description: string;
+        IsPublished: boolean;
+        ModuleId: number;
+      },
+      onProgress?: (progress: number) => void,
+      abortController?: AbortController
+    ) => {
+      const formData = createFormData(data);
+      return uploadWithProgress('/Lesson/add-lesson', formData, onProgress, abortController);
     },    update: (data: {
       Id: number;
       Title?: string;
