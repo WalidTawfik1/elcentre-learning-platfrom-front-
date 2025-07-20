@@ -30,6 +30,44 @@ import { DIRECT_API_URL } from "@/config/api-config";
 // Backend base URL for serving static content
 const API_BASE_URL = DIRECT_API_URL;
 
+// Component for course description with show more/less functionality
+interface CourseDescriptionWithToggleProps {
+  description: string;
+}
+
+const CourseDescriptionWithToggle = ({ description }: CourseDescriptionWithToggleProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Set character limit for truncation
+  const CHARACTER_LIMIT = 300;
+  
+  // Check if description needs truncation
+  const shouldTruncate = description.length > CHARACTER_LIMIT;
+  
+  // Get displayed text based on state
+  const displayedText = shouldTruncate && !isExpanded 
+    ? description.slice(0, CHARACTER_LIMIT) + "..."
+    : description;
+  
+  return (
+    <div>
+      <h2 className="text-xl font-semibold mb-4">About This Course</h2>
+      <div className="text-muted-foreground whitespace-pre-wrap">
+        {displayedText}
+        {shouldTruncate && (
+          <Button
+            variant="link"
+            className="p-0 h-auto text-eduBlue-500 hover:text-eduBlue-600 font-medium ml-2"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? "Show less" : "Show more"}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function CourseLearn() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -624,7 +662,7 @@ export default function CourseLearn() {
                 {!isInstructorViewing && (
                   <>
                     <Progress value={courseProgress} className="w-32 h-2" />
-                    <span>{courseProgress}% complete</span>
+                    <span>{Math.round(courseProgress)}% complete</span>
                   </>
                 )}
                 {isInstructorViewing && (
@@ -820,10 +858,7 @@ export default function CourseLearn() {
               
               <TabsContent value="overview">
                 <div className="space-y-8">
-                  <div>
-                    <h2 className="text-xl font-semibold mb-4">About This Course</h2>
-                    <p className="text-muted-foreground whitespace-pre-wrap">{course?.description}</p>
-                  </div>
+                  <CourseDescriptionWithToggle description={course?.description || ""} />
                   
                   {course?.whatYouWillLearn && course.whatYouWillLearn.length > 0 && (
                     <div>
@@ -927,7 +962,7 @@ export default function CourseLearn() {
                           <div>
                             <p className="text-sm text-purple-700">{isInstructorViewing ? 'Modules' : 'Overall Progress'}</p>
                             <p className="text-2xl font-bold text-purple-900">
-                              {isInstructorViewing ? modules.length : `${courseProgress}%`}
+                              {isInstructorViewing ? modules.length : `${Math.round(courseProgress)}%`}
                             </p>
                           </div>
                           <Trophy className="h-8 w-8 text-purple-600" />

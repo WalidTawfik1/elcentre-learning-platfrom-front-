@@ -313,7 +313,7 @@ export default function StudentDashboard() {
                           <div className="space-y-3 mt-auto">
                             <div className="text-sm flex items-center justify-between">
                               <span>Progress</span>
-                              <span className="font-medium">{course.progress}%</span>
+                              <span className="font-medium">{Math.round(course.progress)}%</span>
                             </div>
                             <Progress value={course.progress} />
                           </div>

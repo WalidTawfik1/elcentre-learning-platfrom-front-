@@ -14,6 +14,44 @@ import { getInitials } from "@/lib/utils";
 import { CourseStructuredData } from "@/components/seo/course-structured-data";
 import { SEO } from "@/components/seo/seo";
 
+// Component for course description with show more/less functionality
+interface CourseDescriptionWithToggleProps {
+  description: string;
+}
+
+const CourseDescriptionWithToggle = ({ description }: CourseDescriptionWithToggleProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Set character limit for truncation
+  const CHARACTER_LIMIT = 300;
+  
+  // Check if description needs truncation
+  const shouldTruncate = description.length > CHARACTER_LIMIT;
+  
+  // Get displayed text based on state
+  const displayedText = shouldTruncate && !isExpanded 
+    ? description.slice(0, CHARACTER_LIMIT) + "..."
+    : description;
+  
+  return (
+    <div className="mb-8">
+      <h2 className="text-2xl font-bold mb-4">About This Course</h2>
+      <div className="text-muted-foreground whitespace-pre-wrap">
+        {displayedText}
+        {shouldTruncate && (
+          <Button
+            variant="link"
+            className="p-0 h-auto text-primary hover:text-primary/80 font-medium ml-2"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? "Show less" : "Show more"}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Mock course data for development
 const MOCK_COURSE = {
   id: "course-1",
@@ -505,10 +543,7 @@ export default function CourseDetail() {
           
           <TabsContent value="overview">
             <div className="max-w-3xl">
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">About This Course</h2>
-                <p className="text-muted-foreground whitespace-pre-wrap">{course.description}</p>
-              </div>
+              <CourseDescriptionWithToggle description={course.description} />
               
               <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">What You'll Learn</h2>
