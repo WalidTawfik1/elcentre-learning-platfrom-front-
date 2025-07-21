@@ -305,9 +305,10 @@ export default function StudentDashboard() {
                         
                         <CardContent className="p-4 pt-0 flex-1 flex flex-col">
                           <div className="flex-1 min-h-[3rem] mb-3">
-                            <p className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden">
-                              {course.description || "No description available"}
-                            </p>
+                            <div 
+                              className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden prose max-w-none"
+                              dangerouslySetInnerHTML={{ __html: course.description || "No description available" }}
+                            />
                           </div>
                           
                           <div className="space-y-3 mt-auto">
@@ -401,9 +402,10 @@ export default function StudentDashboard() {
                         
                         <CardContent className="p-4 pt-0 flex-1 flex flex-col">
                           <div className="flex-1 min-h-[3rem] mb-3">
-                            <p className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden">
-                              {course.description || "No description available"}
-                            </p>
+                            <div 
+                              className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden prose max-w-none"
+                              dangerouslySetInnerHTML={{ __html: course.description || "No description available" }}
+                            />
                           </div>
                           
                           {/* Recommendation reason - Fixed height section */}
@@ -493,9 +495,10 @@ export default function StudentDashboard() {
                         
                         <CardContent className="p-4 pt-0 flex-1 flex flex-col">
                           <div className="flex-1 min-h-[3rem] mb-3">
-                            <p className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden">
-                              {course.description || "No description available"}
-                            </p>
+                            <div 
+                              className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden prose max-w-none"
+                              dangerouslySetInnerHTML={{ __html: course.description || "No description available" }}
+                            />
                           </div>
                           
                           {/* Price section - Fixed height */}

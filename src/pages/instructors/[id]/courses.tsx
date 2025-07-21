@@ -293,9 +293,10 @@ export default function InstructorCoursesPage() {
 
                     <CardContent className="flex-1 flex flex-col">
                       <div className="flex-1 min-h-[4rem] mb-4">
-                        <p className="text-sm text-muted-foreground line-clamp-3">
-                          {course.description}
-                        </p>
+                        <div 
+                          className="text-sm text-muted-foreground line-clamp-3 prose max-w-none"
+                          dangerouslySetInnerHTML={{ __html: course.description }}
+                        />
                       </div>                      {/* Course Stats */}
                       <div className="grid grid-cols-2 gap-4 py-2 border-t border-b mb-4 flex-shrink-0">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -35,9 +35,10 @@ interface AIAssistantProps {
   lessonTitle?: string;
   lessonTranscript?: string;
   isLoadingTranscript?: boolean;
+  lessonType?: string;
 }
 
-export function AIAssistant({ lessonId, lessonTitle, lessonTranscript, isLoadingTranscript }: AIAssistantProps) {
+export function AIAssistant({ lessonId, lessonTitle, lessonTranscript, isLoadingTranscript, lessonType }: AIAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -125,16 +126,22 @@ export function AIAssistant({ lessonId, lessonTitle, lessonTranscript, isLoading
     } else {
       // Only add welcome message if there's no saved chat history and we have lesson data
       if (lessonTitle && lessonTranscript) {
+        const contentTypeText = lessonType === 'video' 
+          ? 'video transcript' 
+          : lessonType === 'text' || lessonType === 'article'
+          ? 'lesson content'
+          : 'lesson material';
+          
         const welcomeMessage: Message = {
           id: `welcome-lesson-${lessonId}`,
-          content: `Hi! I'm your AI assistant for this lesson: "${lessonTitle}". I've analyzed the lesson content and I'm ready to help you understand the material. Feel free to ask me any questions about what you've learned!`,
+          content: `Hi! I'm your AI assistant for this lesson: "${lessonTitle}". I've analyzed the ${contentTypeText} and I'm ready to help you understand the material. Feel free to ask me any questions about what you've learned!`,
           sender: 'assistant',
           timestamp: new Date()
         };
         setMessages([welcomeMessage]);
       }
     }
-  }, [lessonId, lessonTitle, lessonTranscript, currentLessonId]);
+  }, [lessonId, lessonTitle, lessonTranscript, currentLessonId, lessonType]);
 
   // Save chat history to localStorage
   useEffect(() => {
@@ -280,13 +287,17 @@ export function AIAssistant({ lessonId, lessonTitle, lessonTranscript, isLoading
         </AlertDescription>
       </Alert>
 
-      {/* Transcript Analysis Status */}
+      {/* Content Analysis Status */}
       {isLoadingTranscript && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
             <span className="text-sm text-blue-900">
-              Analyzing lesson content for better assistance...
+              {lessonType === 'video' 
+                ? 'Transcribing video content for better assistance...'
+                : lessonType === 'text' || lessonType === 'article'
+                ? 'Processing lesson content for better assistance...'
+                : 'Analyzing lesson content for better assistance...'}
             </span>
           </div>
         </div>

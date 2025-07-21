@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useQuery } from "@tanstack/react-query";
@@ -217,13 +218,15 @@ export default function EditCourse() {
 
             <div>
               <label className="block text-sm font-medium mb-2">Description</label>
-              <Textarea
-                name="description"
+              <RichTextEditor
                 value={formData.description}
-                onChange={handleInputChange}
-                required
+                onChange={(value) => setFormData(prev => ({
+                  ...prev,
+                  description: value
+                }))}
                 placeholder="Enter course description"
-                className="min-h-[100px]"
+                rows={6}
+                required
               />
             </div>
 

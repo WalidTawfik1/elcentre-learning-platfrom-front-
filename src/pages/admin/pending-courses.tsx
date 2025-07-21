@@ -259,9 +259,10 @@ export default function PendingCoursesPage() {
                         <Link to={`/courses/${course.id}`} className="hover:text-primary transition-colors">
                           <h3 className="text-xl font-semibold mb-1 hover:underline">{course.title}</h3>
                         </Link>
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                          {course.description}
-                        </p>
+                        <div 
+                          className="text-sm text-muted-foreground line-clamp-2 mb-2 prose max-w-none"
+                          dangerouslySetInnerHTML={{ __html: course.description }}
+                        />
                       </div>
                       {getStatusBadge(course.status)}
                     </div>

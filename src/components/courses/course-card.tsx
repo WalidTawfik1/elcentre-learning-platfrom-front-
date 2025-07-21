@@ -96,7 +96,10 @@ export function CourseCard({
         </CardHeader>
         <CardContent className="p-4 pt-0 flex-1 flex flex-col">
           <div className="flex-1 min-h-[3rem] mb-2">
-            <p className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden">{description}</p>
+            <div 
+              className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: description }}
+            />
           </div>
           <div className="flex justify-between text-xs text-muted-foreground mt-auto">
             <span>{duration}</span>

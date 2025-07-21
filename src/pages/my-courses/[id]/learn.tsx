@@ -22,9 +22,11 @@ import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { SecureVideoPlayer } from "@/components/ui/secure-video-player";
+import { SimpleLessonViewer } from "@/components/lessons/simple-lesson-viewer";
 import { QAComponent } from "@/components/qa";
 import { CreateNotificationForm } from "@/components/notifications/create-notification-form";
 import { AIAssistant } from "@/components/ai-assistant/ai-assistant";
+import { RichTextLessonViewer } from "@/components/lessons/rich-text-lesson-viewer";
 import "@/styles/secure-video.css";
 
 import { DIRECT_API_URL } from "@/config/api-config";
@@ -54,18 +56,23 @@ const CourseDescriptionWithToggle = ({ description }: CourseDescriptionWithToggl
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">About This Course</h2>
-      <div className="text-muted-foreground whitespace-pre-wrap">
-        {displayedText}
-        {shouldTruncate && (
-          <Button
-            variant="link"
-            className="p-0 h-auto text-eduBlue-500 hover:text-eduBlue-600 font-medium ml-2"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? "Show less" : "Show more"}
-          </Button>
-        )}
-      </div>
+      <div 
+        className="text-muted-foreground prose max-w-none"
+        dangerouslySetInnerHTML={{ __html: displayedText }}
+        style={{
+          wordBreak: 'break-word',
+          overflowWrap: 'break-word'
+        }}
+      />
+      {shouldTruncate && (
+        <Button
+          variant="link"
+          className="p-0 h-auto text-eduBlue-500 hover:text-eduBlue-600 font-medium mt-2"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {isExpanded ? "Show less" : "Show more"}
+        </Button>
+      )}
     </div>
   );
 };
@@ -93,9 +100,10 @@ export default function CourseLearn() {
   const [qaTargetQuestionId, setQaTargetQuestionId] = useState<number | undefined>(undefined);
   const [qaTargetAnswerId, setQaTargetAnswerId] = useState<number | undefined>(undefined);
   
-  // Video transcription state
+  // Content processing state for AI Assistant
   const [lessonTranscript, setLessonTranscript] = useState('');
   const [detectedLanguage, setDetectedLanguage] = useState('auto');
+  const [isProcessingContent, setIsProcessingContent] = useState(false);
   
   // Detect if lesson content is likely Arabic for better transcription
   const detectLessonLanguage = useCallback(() => {
@@ -271,55 +279,86 @@ export default function CourseLearn() {
     }
   }, [course?.instructorId, instructor]);
 
-  // Transcribe video when active lesson changes
+  // Process lesson content for AI Assistant when active lesson changes
   useEffect(() => {
-    const transcribeCurrentLesson = async () => {
-      if (!activeLesson || activeLesson.contentType !== 'video') {
+    const processLessonContent = async () => {
+      if (!activeLesson) {
         setLessonTranscript('');
+        setIsProcessingContent(false);
         return;
       }
 
-      // Check if we already have a cached transcript for this lesson
-      const cachedTranscript = localStorage.getItem(`transcript-${activeLesson.id}`);
-      if (cachedTranscript) {
-        setLessonTranscript(cachedTranscript);
+      // Check if we already have cached content for this lesson
+      const cachedContent = localStorage.getItem(`lesson-content-${activeLesson.id}`);
+      if (cachedContent) {
+        setLessonTranscript(cachedContent);
+        setIsProcessingContent(false);
         return;
       }
+
+      setIsProcessingContent(true);
 
       try {
-        // Construct the video URL
-        let videoUrl = null;
-        if (activeLesson.content) {
-          if (activeLesson.content.startsWith('http')) {
-            videoUrl = activeLesson.content;
-          } else {
-            const contentPath = activeLesson.content.replace(/^\//, '');
-            videoUrl = `${DIRECT_API_URL}/${contentPath}`;
+        let lessonContent = '';
+
+        if (activeLesson.contentType === 'text' || activeLesson.contentType === 'article') {
+          // For text lessons, use the content directly
+          if (activeLesson.content) {
+            // Strip HTML tags to get clean text for AI
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = activeLesson.content;
+            lessonContent = tempDiv.textContent || tempDiv.innerText || '';
+            
+            // Add lesson title and description for better context
+            lessonContent = `Lesson Title: ${activeLesson.title}\n\n` +
+                          (activeLesson.description ? `Description: ${activeLesson.description}\n\n` : '') +
+                          `Content:\n${lessonContent}`;
+          }
+        } else if (activeLesson.contentType === 'video') {
+          // For video lessons, transcribe the video
+          let videoUrl = null;
+          if (activeLesson.content) {
+            if (activeLesson.content.startsWith('http')) {
+              videoUrl = activeLesson.content;
+            } else {
+              const contentPath = activeLesson.content.replace(/^\//, '');
+              videoUrl = `${DIRECT_API_URL}/${contentPath}`;
+            }
+          }
+
+          if (videoUrl) {
+            const result = await transcribeVideoWithLanguage(videoUrl);
+            if (result && result.text) {
+              lessonContent = `Lesson Title: ${activeLesson.title}\n\n` +
+                            (activeLesson.description ? `Description: ${activeLesson.description}\n\n` : '') +
+                            `Video Transcript:\n${result.text}`;
+            }
           }
         }
 
-        if (videoUrl) {
-          const result = await transcribeVideoWithLanguage(videoUrl);
-          if (result && result.text) {
-            setLessonTranscript(result.text);
-            // Cache the transcript
-            localStorage.setItem(`transcript-${activeLesson.id}`, result.text);
-          }
+        if (lessonContent) {
+          setLessonTranscript(lessonContent);
+          // Cache the processed content
+          localStorage.setItem(`lesson-content-${activeLesson.id}`, lessonContent);
+        } else {
+          setLessonTranscript('');
         }
       } catch (error) {
-        console.error('Error transcribing lesson video:', error);
+        console.error('Error processing lesson content:', error);
         // Show a subtle error notification
-        if (transcriptionError) {
+        if (transcriptionError && activeLesson.contentType === 'video') {
           toast({
             title: "Transcription Unavailable",
             description: "AI Assistant will work with limited context for this lesson.",
             variant: "default",
           });
         }
+      } finally {
+        setIsProcessingContent(false);
       }
     };
 
-    transcribeCurrentLesson();
+    processLessonContent();
   }, [activeLesson, transcribeVideoWithLanguage, transcriptionError]);
 
   // Join course notification group when course is loaded and user is subscribed
@@ -693,15 +732,24 @@ export default function CourseLearn() {
       default:
         return (
           <div className="space-y-6">
-            <div className="prose max-w-none">
-              <h1>{lesson.title}</h1>
-              <div>
-                {lesson.content ? (
-                  <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
-                ) : (
-                  <p>No content available for this lesson.</p>
+            {/* Lesson Header with Title and Description */}
+            <div className="space-y-4">
+              <div className="border-b pb-4">
+                <h1 className="text-3xl font-bold text-gray-900 mb-3">{lesson.title}</h1>
+                {lesson.description && (
+                  <div 
+                    className="text-lg text-gray-600 prose max-w-none"
+                    dangerouslySetInnerHTML={{ __html: lesson.description }}
+                  />
                 )}
               </div>
+            </div>
+            
+            {/* Lesson Content */}
+            <div className="space-y-4">
+              <SimpleLessonViewer
+                content={lesson.content || ''}
+              />
             </div>
           </div>
         );
@@ -933,7 +981,7 @@ export default function CourseLearn() {
                   >
                     <Bot className="h-4 w-4 mr-2" />
                     AI Assistant
-                    {isTranscribing && (
+                    {(isProcessingContent || isTranscribing) && (
                       <div className="ml-2 h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
                     )}
                   </TabsTrigger>
@@ -1099,7 +1147,8 @@ export default function CourseLearn() {
                         lessonId={activeLesson?.id}
                         lessonTitle={activeLesson?.title}
                         lessonTranscript={lessonTranscript}
-                        isLoadingTranscript={isTranscribing}
+                        isLoadingTranscript={isProcessingContent || isTranscribing}
+                        lessonType={activeLesson?.contentType}
                       />
                     </div>
                   </div>

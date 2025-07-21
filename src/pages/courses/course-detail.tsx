@@ -12,6 +12,8 @@ import { WishlistService } from "@/services/wishlist-service";
 import { PaymentService } from "@/services/payment-service";
 import { PaymentMethodDialog } from "@/components/ui/payment-method-dialog";
 import { NotificationSubscriptionToggle } from "@/components/notifications/notification-subscription-toggle";
+import { RichTextCourseDescription } from "@/components/courses/rich-text-course-description";
+import { SimpleCourseDescription } from "@/components/courses/simple-course-description";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -26,52 +28,7 @@ import { getInitials } from "@/lib/utils";
 import { CourseStructuredData } from "@/components/seo/course-structured-data";
 import { SEO } from "@/components/seo/seo";
 
-// Component for course description with show more/less functionality
-interface CourseDescriptionWithToggleProps {
-  description: string;
-}
 
-const CourseDescriptionWithToggle = ({ description }: CourseDescriptionWithToggleProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  
-  // Set character limit for truncation
-  const CHARACTER_LIMIT = 300;
-  
-  // Check if description needs truncation
-  const shouldTruncate = description.length > CHARACTER_LIMIT;
-  
-  // Get displayed text based on state
-  const displayedText = shouldTruncate && !isExpanded 
-    ? description.slice(0, CHARACTER_LIMIT) + "..."
-    : description;
-  
-  if (!description || !description.trim()) {
-    return (
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-4">About This Course</h2>
-        <p className="text-muted-foreground">No description has been provided for this course yet.</p>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="mb-8">
-      <h2 className="text-2xl font-bold mb-4">About This Course</h2>
-      <div className="text-muted-foreground whitespace-pre-wrap">
-        {displayedText}
-        {shouldTruncate && (
-          <Button
-            variant="link"
-            className="p-0 h-auto text-eduBlue-500 hover:text-eduBlue-600 font-medium ml-2"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? "Show less" : "Show more"}
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-};
 
 // Define the review form schema
 const reviewFormSchema = z.object({
@@ -929,7 +886,7 @@ export default function CourseDetail() {
           
           <TabsContent value="overview">
             <div className="max-w-3xl">
-              <CourseDescriptionWithToggle description={courseData.description || ""} />
+              <SimpleCourseDescription description={courseData.description || ""} />
               
               <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Requirements</h2>

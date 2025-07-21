@@ -178,9 +178,10 @@ export default function InstructorCourses() {
                   
                   <CardContent className="p-4 pt-0 flex-1 flex flex-col">
                     <div className="flex-1 min-h-[3rem] mb-3">
-                      <p className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden">
-                        {course.description || "No description available"}
-                      </p>
+                      <div 
+                        className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden prose max-w-none"
+                        dangerouslySetInnerHTML={{ __html: course.description || "No description available" }}
+                      />
                     </div>
                     
                     {/* Course Status Badge - Fixed height section */}

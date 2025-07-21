@@ -4,6 +4,7 @@ import { MainLayout } from "@/components/layouts/main-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -870,48 +871,54 @@ export default function CourseContentManagement() {
             setLessonDialogOpen(open);
           }}
         >
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>{isEditingLesson ? "Edit Lesson" : "Add New Lesson"}</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="sm:max-w-[900px] max-h-[95vh] overflow-hidden flex flex-col">
+            <DialogHeader className="flex-shrink-0 pb-4">
+              <DialogTitle className="text-xl font-semibold">
+                {isEditingLesson ? "Edit Lesson" : "Add New Lesson"}
+              </DialogTitle>
+              <DialogDescription className="text-base">
                 {isEditingLesson 
                   ? "Update the content of this lesson."
                   : "Create a new lesson for your module."}
-              </DialogDescription>            </DialogHeader>
+              </DialogDescription>
+            </DialogHeader>
             
-            <form onSubmit={handleLessonSubmit}>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="lesson-title">Title</Label>
+            <form onSubmit={handleLessonSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="grid gap-6 py-2 overflow-y-auto flex-1 px-1">
+                <div className="grid gap-3">
+                  <Label htmlFor="lesson-title" className="text-sm font-medium">Title</Label>
                   <Input
                     id="lesson-title"
                     value={lessonFormData.title}
                     onChange={(e) => setLessonFormData({...lessonFormData, title: e.target.value})}
                     required
+                    className="text-base"
+                    placeholder="Enter lesson title..."
                   />
                 </div>
                 
-                <div className="grid gap-2">
-                  <Label htmlFor="lesson-description">Description</Label>
+                <div className="grid gap-3">
+                  <Label htmlFor="lesson-description" className="text-sm font-medium">Description</Label>
                   <Textarea
                     id="lesson-description"
                     value={lessonFormData.description}
                     onChange={(e) => setLessonFormData({...lessonFormData, description: e.target.value})}
                     rows={3}
                     required
-                    placeholder="Enter lesson description"
+                    placeholder="Enter lesson description..."
+                    className="text-base resize-none"
                   />
                 </div>
                 
                 {!isEditingLesson && (
                   <>
-                    <div className="grid gap-2">
-                      <Label htmlFor="contentType">Content Type</Label>
+                    <div className="grid gap-3">
+                      <Label htmlFor="contentType" className="text-sm font-medium">Content Type</Label>
                       <Select
                         value={lessonFormData.contentType}
                         onValueChange={(value) => setLessonFormData({...lessonFormData, contentType: value})}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="text-base">
                           <SelectValue placeholder="Select content type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -932,19 +939,20 @@ export default function CourseContentManagement() {
                     </div>
                     
                     {lessonFormData.contentType === 'text' ? (
-                      <div className="grid gap-2">
-                        <Label htmlFor="contentText">Content</Label>
-                        <Textarea
+                      <div className="grid gap-3">
+                        <Label htmlFor="contentText" className="text-sm font-medium">Content</Label>
+                        <RichTextEditor
                           id="contentText"
                           value={lessonFormData.contentText}
-                          onChange={(e) => setLessonFormData({...lessonFormData, contentText: e.target.value})}
-                          rows={10}
+                          onChange={(value) => setLessonFormData({...lessonFormData, contentText: value})}
+                          placeholder="Enter lesson content..."
+                          rows={12}
                           required={lessonFormData.contentType === 'text'}
                         />
                       </div>
                     ) : (
-                      <div className="grid gap-2">
-                        <Label htmlFor="videoContent">Video Content</Label>
+                      <div className="grid gap-3">
+                        <Label htmlFor="videoContent" className="text-sm font-medium">Video Content</Label>
                         <Input
                           id="videoContent"
                           type="file"
@@ -952,14 +960,15 @@ export default function CourseContentManagement() {
                           onChange={handleLessonFileChange}
                           required={lessonFormData.contentType === 'video'}
                           disabled={isUploading}
+                          className="text-base"
                         />
                         
                         {/* Upload Progress */}
                         {isUploading && (
-                          <div className="space-y-2">
+                          <div className="space-y-3 p-4 border rounded-lg bg-muted/20">
                             <div className="flex items-center justify-between text-sm">
                               <span>Uploading video...</span>
-                              <span>{uploadProgress}%</span>
+                              <span className="font-medium">{uploadProgress}%</span>
                             </div>
                             <Progress value={uploadProgress} className="w-full" />
                             <Button
@@ -976,8 +985,8 @@ export default function CourseContentManagement() {
                         
                         {/* File info */}
                         {lessonFormData.content && !isUploading && (
-                          <div className="text-sm text-muted-foreground">
-                            Selected: {lessonFormData.content.name} ({(lessonFormData.content.size / 1024 / 1024).toFixed(2)} MB)
+                          <div className="text-sm text-muted-foreground p-3 bg-muted/20 rounded-lg">
+                            <strong>Selected:</strong> {lessonFormData.content.name} ({(lessonFormData.content.size / 1024 / 1024).toFixed(2)} MB)
                           </div>
                         )}
                       </div>
@@ -993,8 +1002,8 @@ export default function CourseContentManagement() {
                   </div>
                 )}
                 
-                <div className="grid gap-2">
-                  <Label htmlFor="durationInMinutes">Duration (minutes)</Label>
+                <div className="grid gap-3">
+                  <Label htmlFor="durationInMinutes" className="text-sm font-medium">Duration (minutes)</Label>
                   <Input
                     id="durationInMinutes"
                     type="number"
@@ -1003,20 +1012,22 @@ export default function CourseContentManagement() {
                     value={lessonFormData.durationInMinutes}
                     onChange={(e) => setLessonFormData({...lessonFormData, durationInMinutes: parseInt(e.target.value)})}
                     required
+                    className="text-base"
+                    placeholder="Enter duration in minutes..."
                   />
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3 pt-2">
                   <Switch
                     id="lesson-isPublished"
                     checked={lessonFormData.isPublished}
                     onCheckedChange={(checked) => setLessonFormData({...lessonFormData, isPublished: checked})}
                   />
-                  <Label htmlFor="lesson-isPublished">Publish this lesson</Label>
+                  <Label htmlFor="lesson-isPublished" className="text-sm font-medium">Publish this lesson</Label>
                 </div>
               </div>
               
-              <DialogFooter>
+              <DialogFooter className="flex-shrink-0 pt-6 border-t bg-muted/20">
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -1027,10 +1038,11 @@ export default function CourseContentManagement() {
                     setLessonDialogOpen(false);
                   }}
                   disabled={isSavingLesson && !isUploading}
+                  className="px-6"
                 >
                   {"Cancel"}
                 </Button>
-                <Button type="submit" disabled={isSavingLesson || isUploading}>
+                <Button type="submit" disabled={isSavingLesson || isUploading} className="px-6">
                   {isUploading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
