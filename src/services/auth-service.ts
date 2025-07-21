@@ -105,7 +105,7 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
 export const AuthService = {
   login: async (credentials: LoginDTO): Promise<any> => {
     try {
-      // Use regular API request (goes through proxy in production)
+      // Use regular API request - now uses direct URL in production
       const response = await apiRequest<any>("/Account/login", {
         method: "POST",
         body: JSON.stringify(credentials)
@@ -167,7 +167,7 @@ export const AuthService = {
   },
   
   register: async (userData: RegisterDTO): Promise<any> => {
-    // Use regular API request (goes through proxy in production)
+    // Use regular API request - now uses direct URL in production
     return apiRequest<any>("/Account/register", {
       method: "POST",
       body: JSON.stringify(userData)

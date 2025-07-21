@@ -9,10 +9,10 @@ const FALLBACK_API_URL = "https://elcentre-api.runasp.net";
 // Production Vercel deployment URL for images
 const PRODUCTION_URL = "https://elcentre-learn.vercel.app";
 
-// Use relative URL in production (for Vercel proxy) and environment/fallback URL in development
-export const API_BASE_URL = isProduction 
+// Use environment URL if provided, otherwise use proxy in production for non-auth endpoints
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (isProduction 
   ? "/api" 
-  : (import.meta.env.VITE_API_BASE_URL || FALLBACK_API_URL);
+  : FALLBACK_API_URL);
 
 // Direct API URL for SignalR and operations that need direct access (bypassing proxy)
 // SignalR WebSocket connections cannot go through Vercel proxy, so always use direct URL
