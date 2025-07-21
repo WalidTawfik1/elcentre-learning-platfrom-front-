@@ -31,16 +31,18 @@ interface Message {
 }
 
 interface AIAssistantProps {
+  lessonId?: number;
   lessonTitle?: string;
   lessonTranscript?: string;
   isLoadingTranscript?: boolean;
 }
 
-export function AIAssistant({ lessonTitle, lessonTranscript, isLoadingTranscript }: AIAssistantProps) {
+export function AIAssistant({ lessonId, lessonTitle, lessonTranscript, isLoadingTranscript }: AIAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [currentLessonId, setCurrentLessonId] = useState<number | undefined>(lessonId);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
@@ -84,27 +86,47 @@ export function AIAssistant({ lessonTitle, lessonTranscript, isLoadingTranscript
 
   // Load chat history from localStorage and clear when lesson changes
   useEffect(() => {
-    // Clear messages first when lesson changes
-    setMessages([]);
+    // Check if lesson has actually changed
+    if (lessonId !== currentLessonId) {
+      // Clear messages immediately when lesson changes
+      setMessages([]);
+      setCurrentLessonId(lessonId);
+      
+      // Clear any ongoing loading state
+      setIsLoading(false);
+      setInputValue("");
+    }
     
-    const savedMessages = localStorage.getItem(`ai-chat-${lessonTitle}`);
+    // Only proceed if we have a valid lesson ID and title
+    if (!lessonId || !lessonTitle) {
+      setMessages([]);
+      return;
+    }
+    
+    // Use lessonId as the primary key for more reliability
+    const chatKey = `ai-chat-lesson-${lessonId}`;
+    const savedMessages = localStorage.getItem(chatKey);
+    
     if (savedMessages) {
       try {
         const parsed = JSON.parse(savedMessages);
-        // Convert timestamp strings back to Date objects
-        const messagesWithDates = parsed.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }));
+        // Convert timestamp strings back to Date objects and validate structure
+        const messagesWithDates = parsed
+          .filter((msg: any) => msg && msg.content && msg.sender && msg.timestamp)
+          .map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }));
         setMessages(messagesWithDates);
       } catch (error) {
         console.error('Error loading chat history:', error);
+        setMessages([]);
       }
     } else {
       // Only add welcome message if there's no saved chat history and we have lesson data
       if (lessonTitle && lessonTranscript) {
         const welcomeMessage: Message = {
-          id: `welcome-${lessonTitle}`,
+          id: `welcome-lesson-${lessonId}`,
           content: `Hi! I'm your AI assistant for this lesson: "${lessonTitle}". I've analyzed the lesson content and I'm ready to help you understand the material. Feel free to ask me any questions about what you've learned!`,
           sender: 'assistant',
           timestamp: new Date()
@@ -112,14 +134,15 @@ export function AIAssistant({ lessonTitle, lessonTranscript, isLoadingTranscript
         setMessages([welcomeMessage]);
       }
     }
-  }, [lessonTitle, lessonTranscript]);
+  }, [lessonId, lessonTitle, lessonTranscript, currentLessonId]);
 
   // Save chat history to localStorage
   useEffect(() => {
-    if (messages.length > 0 && lessonTitle) {
-      localStorage.setItem(`ai-chat-${lessonTitle}`, JSON.stringify(messages));
+    if (messages.length > 0 && lessonId && lessonTitle) {
+      const chatKey = `ai-chat-lesson-${lessonId}`;
+      localStorage.setItem(chatKey, JSON.stringify(messages));
     }
-  }, [messages, lessonTitle]);
+  }, [messages, lessonId, lessonTitle]);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
@@ -205,8 +228,9 @@ export function AIAssistant({ lessonTitle, lessonTranscript, isLoadingTranscript
 
   const clearChat = () => {
     setMessages([]);
-    if (lessonTitle) {
-      localStorage.removeItem(`ai-chat-${lessonTitle}`);
+    if (lessonId) {
+      const chatKey = `ai-chat-lesson-${lessonId}`;
+      localStorage.removeItem(chatKey);
     }
     toast({
       title: "Chat Cleared",
@@ -246,19 +270,6 @@ export function AIAssistant({ lessonTitle, lessonTranscript, isLoadingTranscript
             Ask questions about the lesson content and get intelligent responses
           </p>
         </div>
-        <div className="flex gap-2 flex-shrink-0">
-          {messages.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearChat}
-              className="text-red-600 hover:text-red-700"
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Clear Chat
-            </Button>
-          )}
-        </div>
       </div>
 
       {/* AI Assistant Warning */}
@@ -285,12 +296,25 @@ export function AIAssistant({ lessonTitle, lessonTranscript, isLoadingTranscript
       <Card className="h-[500px] lg:h-[600px] flex flex-col w-full max-w-full overflow-hidden relative">
         <CardHeader className="pb-3 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg truncate">Ask questions about this lesson</CardTitle>
-            {lessonTranscript && (
-              <Badge variant="secondary" className="text-xs flex-shrink-0">
-                <Bot className="h-3 w-3 mr-1" />
-                AI Ready
-              </Badge>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-lg truncate">Ask questions about this lesson</CardTitle>
+              {lessonTranscript && (
+                <Badge variant="secondary" className="text-xs flex-shrink-0">
+                  <Bot className="h-3 w-3 mr-1" />
+                  AI Ready
+                </Badge>
+              )}
+            </div>
+            {messages.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearChat}
+                className="text-red-600 hover:text-red-700 flex-shrink-0"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Clear Chat
+              </Button>
             )}
           </div>
         </CardHeader>

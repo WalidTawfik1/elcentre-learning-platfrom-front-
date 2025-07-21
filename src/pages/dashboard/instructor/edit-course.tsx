@@ -22,6 +22,7 @@ export default function EditCourse() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -31,7 +32,8 @@ export default function EditCourse() {
     isActive: true,
     categoryId: 0,
     durationInHours: 0,
-    requirements: "" // Add requirements as a string
+    requirements: "", // Add requirements as a string
+    useAIAssistant: false // Default to false to match backend default
   });
   const [isLoading, setIsLoading] = useState(true); // Add loading state
 
@@ -93,7 +95,8 @@ export default function EditCourse() {
           isActive: courseData.isActive,
           categoryId: courseData.categoryId,
           durationInHours: courseData.durationInHours || 0,
-          requirements: courseData.requirements || "" // Use the string directly
+          requirements: courseData.requirements || "", // Use the string directly
+          useAIAssistant: courseData.useAIAssistant ?? false // Use nullish coalescing to handle null/undefined
         });
       } catch (error) {
         console.error("Error fetching course:", error);
@@ -140,7 +143,8 @@ export default function EditCourse() {
         isActive: formData.isActive,
         categoryId: formData.categoryId,
         durationInHours: formData.durationInHours,
-        requirements: formData.requirements
+        requirements: formData.requirements,
+        useAIAssistant: formData.useAIAssistant
       };
 
       // Only include thumbnail if user selected a new one
@@ -319,6 +323,21 @@ export default function EditCourse() {
                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
               />
               <label className="text-sm font-medium">Published</label>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={formData.useAIAssistant}
+                  onCheckedChange={(checked) => {
+                    setFormData(prev => ({ ...prev, useAIAssistant: checked }));
+                  }}
+                />
+                <label className="text-sm font-medium">Enable AI Assistant for Students</label>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                When enabled, students can use the AI assistant to ask questions about lesson content. The AI analyzes video transcripts and course materials to provide intelligent responses.
+              </p>
             </div>
 
             <div className="flex justify-end gap-4">

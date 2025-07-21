@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { Button } from "@/components/ui/button";
@@ -76,6 +76,7 @@ export default function CourseLearn() {
   const location = useLocation();
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const { joinCourseGroup, leaveCourseGroup, isSubscribedToCourse, notifications, markAsRead, refreshNotifications } = useNotifications();
+
   const [course, setCourse] = useState<any>(null);
   const [modules, setModules] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,9 +95,46 @@ export default function CourseLearn() {
   
   // Video transcription state
   const [lessonTranscript, setLessonTranscript] = useState('');
-  const { transcribeVideo, isTranscribing, error: transcriptionError } = useVideoTranscription({
-    language: 'en' // You can make this dynamic based on course language
-  });
+  const [detectedLanguage, setDetectedLanguage] = useState('auto');
+  
+  // Detect if lesson content is likely Arabic for better transcription
+  const detectLessonLanguage = useCallback(() => {
+    if (!activeLesson) return 'auto';
+    
+    const lessonText = `${activeLesson.title} ${activeLesson.description || ''}`;
+    const arabicRegex = /[\u0600-\u06FF]/;
+    const hasArabicChars = arabicRegex.test(lessonText);
+    const totalCharCount = lessonText.replace(/\s/g, '').length;
+    
+    // Also check for common Arabic words or language indicators
+    const arabicKeywords = ['عربي', 'العربية', 'اللغة', 'كورس', 'درس', 'تعلم', 'شرح'];
+    const hasArabicKeywords = arabicKeywords.some(keyword => lessonText.includes(keyword));
+    
+    // Simple Arabic detection: any Arabic character + at least 3 total characters = Arabic content
+    const isArabicContent = (hasArabicChars && totalCharCount >= 3) || hasArabicKeywords;
+    
+    // If lesson content is likely Arabic, set language to Arabic
+    return isArabicContent ? 'ar' : 'auto';
+  }, [activeLesson]);
+  
+  // Update detected language when active lesson changes
+  useEffect(() => {
+    if (activeLesson) {
+      const newLanguage = detectLessonLanguage();
+      setDetectedLanguage(newLanguage);
+    }
+  }, [activeLesson, detectLessonLanguage]);
+  
+  const { transcribeVideo, isTranscribing, error: transcriptionError } = useVideoTranscription();
+  
+  // Create a wrapper function that passes the detected language
+  const transcribeVideoWithLanguage = useCallback(async (videoUrl: string) => {
+    // Detect language immediately before transcription instead of relying on state
+    const currentLanguage = activeLesson ? detectLessonLanguage() : 'auto';
+    
+    // Pass the detected language as override parameter
+    return await transcribeVideo(videoUrl, currentLanguage);
+  }, [transcribeVideo, activeLesson, detectLessonLanguage]);
   
   // Check if instructor is viewing the course
   const isInstructorViewing = new URLSearchParams(location.search).get('instructor') === 'true' && user?.userType === 'Instructor';
@@ -260,10 +298,8 @@ export default function CourseLearn() {
           }
         }
 
-        console.log('Video URL for transcription:', videoUrl);
-
         if (videoUrl) {
-          const result = await transcribeVideo(videoUrl);
+          const result = await transcribeVideoWithLanguage(videoUrl);
           if (result && result.text) {
             setLessonTranscript(result.text);
             // Cache the transcript
@@ -284,7 +320,7 @@ export default function CourseLearn() {
     };
 
     transcribeCurrentLesson();
-  }, [activeLesson, transcribeVideo, transcriptionError]);
+  }, [activeLesson, transcribeVideoWithLanguage, transcriptionError]);
 
   // Join course notification group when course is loaded and user is subscribed
   useEffect(() => {
@@ -397,6 +433,13 @@ export default function CourseLearn() {
       navigate(location.pathname + location.search + location.hash, { replace: true, state: {} });
     }
   }, [location.state, navigate, location.pathname, location.search, location.hash]);
+
+  // Handle AI Assistant being disabled - redirect from ai-assistant tab if it's disabled
+  useEffect(() => {
+    if (activeTab === 'ai-assistant' && !course?.useAIAssistant && !isInstructorViewing) {
+      setActiveTab('overview');
+    }
+  }, [activeTab, course?.useAIAssistant, isInstructorViewing]);
   
   // Fetch course reviews when the reviews tab is clicked
   const handleFetchReviews = async () => {
@@ -883,16 +926,18 @@ export default function CourseLearn() {
                   <Book className="h-4 w-4 mr-2" />
                   Overview
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="ai-assistant"
-                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
-                >
-                  <Bot className="h-4 w-4 mr-2" />
-                  AI Assistant
-                  {isTranscribing && (
-                    <div className="ml-2 h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
-                  )}
-                </TabsTrigger>
+                {(course?.useAIAssistant || isInstructorViewing) && (
+                  <TabsTrigger 
+                    value="ai-assistant"
+                    className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+                  >
+                    <Bot className="h-4 w-4 mr-2" />
+                    AI Assistant
+                    {isTranscribing && (
+                      <div className="ml-2 h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
+                    )}
+                  </TabsTrigger>
+                )}
                 {!isInstructorViewing && (
                   <TabsTrigger 
                     value="quizzes"
@@ -1045,17 +1090,21 @@ export default function CourseLearn() {
                 </div>
               </TabsContent>
               
-              <TabsContent value="ai-assistant">
-                <div className="max-w-full overflow-hidden">
-                  <div className="w-full max-w-4xl mx-auto">
-                    <AIAssistant 
-                      lessonTitle={activeLesson?.title}
-                      lessonTranscript={lessonTranscript}
-                      isLoadingTranscript={isTranscribing}
-                    />
+              {(course?.useAIAssistant || isInstructorViewing) && (
+                <TabsContent value="ai-assistant">
+                  <div className="max-w-full overflow-hidden">
+                    <div className="w-full max-w-4xl mx-auto">
+                      <AIAssistant 
+                        key={`ai-assistant-${activeLesson?.id}`}
+                        lessonId={activeLesson?.id}
+                        lessonTitle={activeLesson?.title}
+                        lessonTranscript={lessonTranscript}
+                        isLoadingTranscript={isTranscribing}
+                      />
+                    </div>
                   </div>
-                </div>
-              </TabsContent>
+                </TabsContent>
+              )}
               
               {!isInstructorViewing && (
                 <TabsContent value="quizzes">

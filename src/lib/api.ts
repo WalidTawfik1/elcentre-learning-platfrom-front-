@@ -553,6 +553,7 @@ export const API = {
       CategoryId: number;
       DurationInHours: number;
       Requirements?: string;
+      UseAIAssistant?: boolean;
     }) => {
       const formData = createFormData(data);
       return apiRequest('/Course/add-course', 'POST', formData, true, true);
@@ -568,6 +569,7 @@ export const API = {
       CategoryId?: number;
       DurationInHours?: number;
       Requirements?: string;
+      UseAIAssistant?: boolean;
     }) => {
       const formData = createFormData(data);
       return apiRequest('/Course/update-course', 'PUT', formData, true, true);

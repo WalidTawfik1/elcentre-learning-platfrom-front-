@@ -22,7 +22,8 @@ export default function AddCourse() {
     isActive: true,
     categoryId: 0,
     durationInHours: 0,
-    requirements: "" // Add requirements as a string that will be split into array
+    requirements: "", // Add requirements as a string that will be split into array
+    useAIAssistant: false // Default to false to match backend default
   });
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
@@ -224,6 +225,14 @@ export default function AddCourse() {
               <label className="text-sm font-medium">
                 {formData.isActive ? 'Published' : 'Draft'}
               </label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={formData.useAIAssistant}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, useAIAssistant: checked }))}
+              />
+              <label className="text-sm font-medium">Enable AI Assistant for Students</label>
             </div>
 
             <div className="flex justify-end gap-4">

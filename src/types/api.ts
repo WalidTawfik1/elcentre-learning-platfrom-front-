@@ -57,6 +57,7 @@ export interface Course {
   enrollmentCount?: number;
   courseStatus?: string; // Added to track admin approval status
   requirements?: string; // Optional requirements as string
+  useAIAssistant?: boolean; // AI Assistant feature toggle
 }
 
 export interface CourseModule {
