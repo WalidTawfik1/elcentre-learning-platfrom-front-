@@ -99,7 +99,7 @@ export const OTPInput: React.FC<OTPInputProps> = ({
   };
 
   return (
-    <div className={cn("flex gap-2 justify-center", className)}>
+    <div className={cn("flex gap-1 sm:gap-2 justify-center", className)}>
       {otp.map((digit, index) => (
         <input
           key={index}
@@ -114,15 +114,26 @@ export const OTPInput: React.FC<OTPInputProps> = ({
           onFocus={() => handleFocus(index)}
           disabled={disabled}
           className={cn(
-            "w-12 h-12 text-center text-lg font-semibold",
-            "border-2 rounded-lg",
+            // Base sizing - smaller on mobile, larger on desktop
+            "w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14",
+            // Text styling - responsive text sizes
+            "text-center text-base sm:text-lg md:text-xl font-semibold",
+            // Border and border radius
+            "border-2 rounded-md sm:rounded-lg",
+            // Focus states
             "focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
+            // Disabled states
             "disabled:opacity-50 disabled:cursor-not-allowed",
+            // Transitions and hover effects
             "transition-all duration-200",
-            "hover:border-gray-400",
-            digit ? "border-primary bg-primary/5" : "border-gray-300"
+            "hover:border-gray-400 active:scale-95",
+            // Dynamic border and background based on content
+            digit ? "border-primary bg-primary/5 shadow-sm" : "border-gray-300",
+            // Better mobile touch targets
+            "touch-manipulation"
           )}
-          aria-label={`Digit ${index + 1}`}
+          aria-label={`Digit ${index + 1} of ${length}`}
+          autoComplete="one-time-code"
         />
       ))}
     </div>

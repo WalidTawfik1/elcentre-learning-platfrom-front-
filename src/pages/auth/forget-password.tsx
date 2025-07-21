@@ -9,6 +9,8 @@ import { MainLayout } from "@/components/layouts/main-layout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
+import { OTPInput } from "@/components/ui/otp-input";
+import { cn } from "@/lib/utils";
 
 export default function ForgetPassword() {
   const navigate = useNavigate();
@@ -193,25 +195,27 @@ export default function ForgetPassword() {
   
   return (
     <MainLayout>
-      <div className="container py-12 flex flex-col items-center justify-center">
-        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
+      <div className="container flex min-h-[calc(100vh-80px)] items-center justify-center px-4 py-8 sm:py-12">
+        <div className="mx-auto flex w-full max-w-sm sm:max-w-md flex-col justify-center space-y-6">
           <div className="flex flex-col space-y-2 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight text-eduBlue-500">Reset Your Password</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-eduBlue-500">
+              Reset Your Password
+            </h1>
+            <p className="text-sm text-muted-foreground px-2">
               {step === 1 && "Enter your email to receive a verification code"}
               {step === 2 && "Enter the verification code sent to your email"}
               {step === 3 && "Create a new password for your account"}
             </p>
           </div>
 
-          <Card>
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-xl">
+          <Card className="border-0 shadow-lg sm:border sm:shadow-md">
+            <CardHeader className="space-y-1 px-6 pt-6 pb-4">
+              <CardTitle className="text-lg sm:text-xl text-center">
                 {step === 1 && "Forgot Password"}
                 {step === 2 && "Verify Code"}
                 {step === 3 && "Reset Password"}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-center text-sm leading-relaxed">
                 {step === 1 && "Enter your email address to receive a reset code"}
                 {step === 2 && `We've sent a verification code to ${email}`}
                 {step === 3 && "Create a new secure password"}
@@ -221,14 +225,14 @@ export default function ForgetPassword() {
             {/* Step 1: Email Form */}
             {step === 1 && (
               <form onSubmit={handleSendOTP}>
-                <CardContent className="grid gap-4">
+                <CardContent className="px-6 pb-4">
                   {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
+                    <Alert variant="destructive" className="mb-4">
+                      <AlertDescription className="text-sm">{error}</AlertDescription>
                     </Alert>
                   )}
-                  <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
                     <Input
                       id="email"
                       type="email"
@@ -236,19 +240,31 @@ export default function ForgetPassword() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      className="h-11"
                     />
                   </div>
                 </CardContent>
-                <CardFooter className="flex flex-col">
-                  <Button className="w-full" type="submit" disabled={isLoading}>
-                    {isLoading ? "Sending..." : "Send Reset Code"}
+                <CardFooter className="flex flex-col px-6 pb-6 space-y-4">
+                  <Button 
+                    className="w-full h-11 text-sm font-medium" 
+                    type="submit" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Sending...</span>
+                      </div>
+                    ) : (
+                      "Send Reset Code"
+                    )}
                   </Button>
-                  <div className="mt-4 text-sm text-center">
+                  <div className="text-sm text-center">
                     Remember your password?{" "}
                     <button
                       type="button"
                       onClick={() => navigate("/login")}
-                      className="text-primary underline-offset-4 hover:underline"
+                      className="text-primary hover:text-primary/80 underline-offset-4 hover:underline font-medium"
                     >
                       Back to Login
                     </button>
@@ -260,45 +276,88 @@ export default function ForgetPassword() {
             {/* Step 2: OTP Verification Form */}
             {step === 2 && (
               <form onSubmit={handleVerifyOTP}>
-                <CardContent className="grid gap-4">
+                <CardContent className="space-y-4">
                   {error && (
                     <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
+                      <AlertDescription className="text-sm">{error}</AlertDescription>
                     </Alert>
                   )}
-                  <div className="grid gap-2">
-                    <Label htmlFor="otpCode">Verification Code</Label>
-                    <Input
-                      id="otpCode"
-                      placeholder="Enter verification code"
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value)}
-                      required
-                    />
+                  
+                  <div className="space-y-4">
+                    <Label className="text-center block text-sm font-medium">
+                      Verification Code
+                    </Label>
+                    
+                    {/* OTP Input Container */}
+                    <div className="flex flex-col items-center space-y-3">
+                      <OTPInput
+                        length={6}
+                        value={otpCode}
+                        onChange={setOtpCode}
+                        disabled={isLoading}
+                        className="justify-center px-2"
+                      />
+                      
+                      {/* Progress indicator */}
+                      <div className="flex space-x-1">
+                        {Array.from({ length: 6 }, (_, i) => (
+                          <div
+                            key={i}
+                            className={cn(
+                              "h-1 w-4 rounded-full transition-colors duration-200",
+                              i < otpCode.length 
+                                ? "bg-primary" 
+                                : "bg-gray-200"
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <p className="text-xs text-muted-foreground text-center px-4 leading-relaxed">
+                      Enter the 6-digit code sent to your email to reset your password.
+                    </p>
                   </div>
                 </CardContent>
-                <CardFooter className="flex flex-col">
-                  <Button className="w-full" type="submit" disabled={isLoading}>
-                    {isLoading ? "Verifying..." : "Verify Code"}
+                <CardFooter className="flex flex-col space-y-4">
+                  <Button 
+                    className="w-full h-11 text-sm font-medium" 
+                    type="submit" 
+                    disabled={isLoading || otpCode.length !== 6}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Verifying...</span>
+                      </div>
+                    ) : (
+                      "Verify Code"
+                    )}
                   </Button>
                   
-                  <div className="mt-4 text-sm text-center">
-                    Didn't receive a code?{" "}
+                  <div className="text-center space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Didn't receive a code?
+                    </p>
                     <button
                       type="button"
                       onClick={handleResendOTP}
                       disabled={isResendActive}
-                      className={`text-primary underline-offset-4 hover:underline ${isResendActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={cn(
+                        "text-sm font-medium transition-colors duration-200",
+                        "text-primary hover:text-primary/80 underline-offset-4 hover:underline",
+                        isResendActive && "opacity-50 cursor-not-allowed"
+                      )}
                     >
                       {isResendActive ? `Resend in ${countdown}s` : "Resend code"}
                     </button>
                   </div>
                   
-                  <div className="mt-4 text-sm text-center">
+                  <div className="text-sm text-center">
                     <button
                       type="button"
                       onClick={() => setStep(1)}
-                      className="text-primary underline-offset-4 hover:underline"
+                      className="text-primary hover:text-primary/80 underline-offset-4 hover:underline font-medium"
                     >
                       Back to Email
                     </button>
@@ -310,41 +369,56 @@ export default function ForgetPassword() {
             {/* Step 3: Password Reset Form */}
             {step === 3 && (
               <form onSubmit={handleResetPassword}>
-                <CardContent className="grid gap-4">
+                <CardContent className="px-6 pb-4 space-y-4">
                   {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
+                    <Alert variant="destructive" className="mb-4">
+                      <AlertDescription className="text-sm">{error}</AlertDescription>
                     </Alert>
                   )}
-                  <div className="grid gap-2">
-                    <Label htmlFor="password">New Password</Label>
-                    <PasswordInput
-                      id="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="confirmPassword">Confirm Password</Label>
-                    <PasswordInput
-                      id="confirmPassword"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                    />
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="password">New Password</Label>
+                      <PasswordInput
+                        id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <PasswordInput
+                        id="confirmPassword"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        className="h-11"
+                      />
+                    </div>
                   </div>
                 </CardContent>
-                <CardFooter className="flex flex-col">
-                  <Button className="w-full" type="submit" disabled={isLoading}>
-                    {isLoading ? "Resetting..." : "Reset Password"}
+                <CardFooter className="flex flex-col px-6 pb-6 space-y-4">
+                  <Button 
+                    className="w-full h-11 text-sm font-medium" 
+                    type="submit" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Resetting...</span>
+                      </div>
+                    ) : (
+                      "Reset Password"
+                    )}
                   </Button>
                   
-                  <div className="mt-4 text-sm text-center">
+                  <div className="text-sm text-center">
                     <button
                       type="button"
                       onClick={() => setStep(2)}
-                      className="text-primary underline-offset-4 hover:underline"
+                      className="text-primary hover:text-primary/80 underline-offset-4 hover:underline font-medium"
                     >
                       Back to Verification
                     </button>
