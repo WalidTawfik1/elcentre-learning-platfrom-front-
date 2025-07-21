@@ -29,13 +29,26 @@ export function QuizTaking({ lessonId, courseId, onQuizComplete }: QuizTakingPro
   const [debugInfo, setDebugInfo] = useState<any>(null);
   useEffect(() => {
     loadQuizzes();
+    // Reset state when lessonId changes
+    setCurrentQuizIndex(0);
+    setLocalAnswers({});
+    setAnsweredQuizzes([]);
+    setScore(null);
+    setQuizCompleted(false);
+    setDebugInfo(null);
   }, [lessonId, courseId]);
 
   // Load saved answers from localStorage on component mount
   useEffect(() => {
     const savedAnswers = localStorage.getItem(`quiz-answers-${lessonId}`);
     if (savedAnswers) {
-      setLocalAnswers(JSON.parse(savedAnswers));
+      try {
+        setLocalAnswers(JSON.parse(savedAnswers));
+      } catch (error) {
+        console.error('Error parsing saved answers:', error);
+        // Clear corrupted data
+        localStorage.removeItem(`quiz-answers-${lessonId}`);
+      }
     }
   }, [lessonId]);  // Save answers to localStorage whenever they change
   useEffect(() => {

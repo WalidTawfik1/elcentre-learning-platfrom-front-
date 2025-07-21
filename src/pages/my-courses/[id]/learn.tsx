@@ -1121,52 +1121,66 @@ export default function CourseLearn() {
                     )}
                   </div>
                   
-                  {courseQuizzes.length > 0 ? (
+                  {activeLesson ? (
                     <div className="space-y-4">
-                      <p className="text-muted-foreground">
-                        Complete lessons to unlock their quizzes and test your knowledge.
-                      </p>
-                      
-                      {modules.map((module) => 
-                        module.lessons?.map((lesson: any) => {
-                          const lessonQuizzes = courseQuizzes.filter(quiz => quiz.lessonId === lesson.id);
-                          const isCompleted = completedLessons.includes(lesson.id);
-                          
-                          if (lessonQuizzes.length === 0) return null;
-                          
-                          return (
-                            <Card key={lesson.id} className="overflow-hidden">
-                              <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <CardTitle className="text-lg">{lesson.title}</CardTitle>
-                                    <p className="text-sm text-muted-foreground">
-                                      {lessonQuizzes.length} quiz{lessonQuizzes.length > 1 ? 'es' : ''} available
-                                    </p>
-                                  </div>
-                                  <Badge variant={isCompleted ? "default" : "secondary"}>
-                                    {isCompleted ? "Unlocked" : "Complete lesson to unlock"}
-                                  </Badge>
-                                </div>
-                              </CardHeader>                              {isCompleted && (                                <CardContent className="pt-0">
-                                  <QuizTaking 
-                                    lessonId={lesson.id}
-                                    courseId={Number(id)}
-                                    onQuizComplete={handleQuizComplete}
-                                  />
-                                </CardContent>
-                              )}
-                            </Card>
-                          );
-                        })
+                      {/* Show info about the current lesson */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h3 className="font-medium text-blue-900 mb-1">
+                          Current Lesson: {activeLesson.title}
+                        </h3>
+                        <p className="text-sm text-blue-700">
+                          {lessonHasQuizzes(activeLesson.id) 
+                            ? completedLessons.includes(activeLesson.id)
+                              ? "Quiz unlocked - you can take the quiz below"
+                              : "Complete this lesson to unlock its quiz"
+                            : "This lesson doesn't have any quizzes"
+                          }
+                        </p>
+                      </div>
+
+                      {/* Show quiz for the active lesson if it has quizzes and is completed */}
+                      {lessonHasQuizzes(activeLesson.id) ? (
+                        <Card className="overflow-hidden">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <CardTitle className="text-lg">{activeLesson.title} Quiz</CardTitle>
+                                <p className="text-sm text-muted-foreground">
+                                  {courseQuizzes.filter(quiz => quiz.lessonId === activeLesson.id).length} quiz{courseQuizzes.filter(quiz => quiz.lessonId === activeLesson.id).length > 1 ? 'es' : ''} available
+                                </p>
+                              </div>
+                              <Badge variant={completedLessons.includes(activeLesson.id) ? "default" : "secondary"}>
+                                {completedLessons.includes(activeLesson.id) ? "Unlocked" : "Complete lesson to unlock"}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          {completedLessons.includes(activeLesson.id) && (
+                            <CardContent className="pt-0">
+                              <QuizTaking 
+                                key={`quiz-${activeLesson.id}`} // Add key to ensure re-render when lesson changes
+                                lessonId={activeLesson.id}
+                                courseId={Number(id)}
+                                onQuizComplete={handleQuizComplete}
+                              />
+                            </CardContent>
+                          )}
+                        </Card>
+                      ) : (
+                        <div className="text-center py-12 border border-dashed rounded-lg">
+                          <HelpCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                          <h3 className="text-lg font-medium mb-2">No Quiz for This Lesson</h3>
+                          <p className="text-muted-foreground">
+                            This lesson doesn't have any quizzes. Select a different lesson that has quizzes to take a quiz.
+                          </p>
+                        </div>
                       )}
                     </div>
                   ) : (
                     <div className="text-center py-12 border border-dashed rounded-lg">
                       <HelpCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium mb-2">No Quizzes Available</h3>
+                      <h3 className="text-lg font-medium mb-2">Select a Lesson</h3>
                       <p className="text-muted-foreground">
-                        This lesson doesn't have any quizzes yet. Check back later!
+                        Please select a lesson from the sidebar to view its quiz.
                       </p>
                     </div>
                   )}
