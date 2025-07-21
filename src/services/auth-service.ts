@@ -105,8 +105,8 @@ const directApiRequest = async <T>(endpoint: string, options: RequestInit = {}, 
 export const AuthService = {
   login: async (credentials: LoginDTO): Promise<any> => {
     try {
-      // Use direct API connection for login to ensure cookies are set properly
-      const response = await directApiRequest<any>("/Account/login", {
+      // Use regular API request (goes through proxy in production)
+      const response = await apiRequest<any>("/Account/login", {
         method: "POST",
         body: JSON.stringify(credentials)
       }, false);
@@ -167,8 +167,8 @@ export const AuthService = {
   },
   
   register: async (userData: RegisterDTO): Promise<any> => {
-    // Use direct API connection for registration
-    return directApiRequest<any>("/Account/register", {
+    // Use regular API request (goes through proxy in production)
+    return apiRequest<any>("/Account/register", {
       method: "POST",
       body: JSON.stringify(userData)
     }, false);
