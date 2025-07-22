@@ -157,7 +157,6 @@ class APIRateLimiter {
         if (error.message?.includes('429') || error.status === 429) {
           if (attempt < maxRetries) {
             const delay = this.calculateBackoffDelay(attempt);
-            console.warn(`Rate limited. Retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
             await new Promise(resolve => setTimeout(resolve, delay));
             continue;
           }

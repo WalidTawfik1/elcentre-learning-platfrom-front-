@@ -129,7 +129,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           
           allNotifications.push(...convertedNotifications);
         } catch (error) {
-          console.warn("Failed to load instructor notifications immediately:", error);
           // Fall back to course-based loading below
         }
       }
@@ -159,7 +158,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
               }));
             } catch (error) {
-              console.warn(`Failed to load notifications for course ${subscription.courseId}:`, error);
               return [];
             }
           });
@@ -178,7 +176,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       setNotifications(allNotifications);
 
     } catch (error) {
-      console.warn("Failed to load notifications immediately:", error);
+      // Silently handle notification loading errors
     }
   };
 
@@ -252,7 +250,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [isAuthenticated, user]);  const initializeSignalR = async () => {
     // Prevent multiple simultaneous initialization attempts
     if (initializingRef.current) {
-      console.log('SignalR initialization already in progress, skipping...');
       return;
     }
     
@@ -301,7 +298,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
     } catch (error) {
       setIsConnected(false);
-      console.warn('SignalR initialization failed:', error);
     } finally {
       initializingRef.current = false;
     }
@@ -314,7 +310,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (courseCacheRef.current.student && 
           courseCacheRef.current.timestamp && 
           (now - courseCacheRef.current.timestamp) < COURSE_CACHE_DURATION) {
-        console.log('Using cached student enrollments');
         return;
       }
 
@@ -363,7 +358,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (courseCacheRef.current.instructor && 
           courseCacheRef.current.timestamp && 
           (now - courseCacheRef.current.timestamp) < COURSE_CACHE_DURATION) {
-        console.log('Using cached instructor courses');
         return;
       }
 
@@ -402,7 +396,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
     } catch (error) {
       // Silent error handling
-      console.warn('Failed to auto-subscribe to instructor courses:', error);
     }
   };
 
@@ -610,7 +603,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         await loadNotificationsImmediate();
       }
     } catch (error) {
-      console.warn("Failed to refresh notifications:", error);
+      // Silent error handling
     }
   }, [isAuthenticated, user, isConnected, getLocalReadStatuses, saveLocalReadStatuses, getLocalSubscriptions, loadNotificationsImmediate]);
 
@@ -638,7 +631,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }, 2000);
       
     } catch (error) {
-      console.error("Failed to force reconnect:", error);
+      // Silent error handling
     }
   }, [connectionStatus.isRateLimited]);
 

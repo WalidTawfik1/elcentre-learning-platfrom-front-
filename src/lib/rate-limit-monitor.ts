@@ -40,7 +40,7 @@ class RateLimitMonitor {
         this.cleanOldErrors();
       }
     } catch (error) {
-      console.warn('Failed to load rate limit error history:', error);
+      // Silent error handling
     }
   }
 
@@ -51,7 +51,7 @@ class RateLimitMonitor {
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(this.errors));
     } catch (error) {
-      console.warn('Failed to save rate limit error history:', error);
+      // Silent error handling
     }
   }
 
@@ -118,14 +118,6 @@ class RateLimitMonitor {
     this.errors.push(error);
     this.cleanOldErrors();
     this.saveToStorage();
-
-    // Log to console in development
-    if (import.meta.env.DEV) {
-      console.warn('Rate limit error detected:', error);
-      if (additionalInfo) {
-        console.warn('Additional info:', additionalInfo);
-      }
-    }
 
     // Send to analytics in production (if configured)
     if (import.meta.env.PROD) {
@@ -195,7 +187,7 @@ class RateLimitMonitor {
         });
       }
     } catch (analyticsError) {
-      console.warn('Failed to send rate limit error to analytics:', analyticsError);
+      // Silent error handling
     }
   }
 
@@ -307,9 +299,4 @@ if (import.meta.env.DEV) {
   // Make monitor available globally for debugging
   (window as any).rateLimitMonitor = rateLimitMonitor;
   
-  // Add console commands for debugging
-  console.log('Rate limit monitor available. Use:');
-  console.log('- window.rateLimitMonitor.getStats() - Get error statistics');
-  console.log('- window.rateLimitMonitor.getRecentErrors() - Get recent errors');
-  console.log('- window.rateLimitMonitor.exportErrors() - Export all data');
 }

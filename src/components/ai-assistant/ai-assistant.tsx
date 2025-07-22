@@ -120,7 +120,6 @@ export function AIAssistant({ lessonId, lessonTitle, lessonTranscript, isLoading
           }));
         setMessages(messagesWithDates);
       } catch (error) {
-        console.error('Error loading chat history:', error);
         setMessages([]);
       }
     } else {
@@ -199,7 +198,6 @@ export function AIAssistant({ lessonId, lessonTitle, lessonTranscript, isLoading
       setMessages(prev => [...prev, aiMessage]);
       
     } catch (error: any) {
-      console.error('Error sending message:', error);
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),

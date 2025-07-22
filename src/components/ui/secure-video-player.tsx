@@ -296,12 +296,10 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
 
   const handleSeek = (time: number) => {
     if (videoRef.current && !isQualitySwitching) {
-      console.log('Seeking to time:', time);
       setLastSeekTime(time);
       videoRef.current.currentTime = time;
       setCurrentTime(time);
     } else if (isQualitySwitching) {
-      console.log('Seek blocked - quality switching in progress');
       // Store the seek time to apply after quality switch completes
       setLastSeekTime(time);
     }
@@ -327,7 +325,6 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
   const handleQualityChange = (quality: string) => {
     // Prevent multiple simultaneous quality switches
     if (isQualitySwitching) {
-      console.log('Quality switch already in progress, ignoring request');
       return;
     }
     
@@ -342,7 +339,6 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
       const currentVolume = videoRef.current?.volume || volume;
       const currentMuted = videoRef.current?.muted || isMuted;
       
-      console.log('Starting quality change to:', quality, 'at time:', currentTimeBeforeSwitch);
       
       // Clear last seek time since we're handling it
       setLastSeekTime(null);
@@ -368,12 +364,10 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
         
         // Use loadstart event to detect when loading begins
         const handleLoadStart = () => {
-          console.log('Video loading started for quality:', quality);
         };
         
         // Use loadedmetadata instead of loadeddata - fires once when metadata is loaded
         const handleLoadedMetadata = () => {
-          console.log('Video metadata loaded, duration:', video.duration);
           
           // Restore volume and mute state
           video.volume = currentVolume;
@@ -383,7 +377,6 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
         
         // Use loadeddata to set the time position
         const handleLoadedData = () => {
-          console.log('Video data loaded, setting time to:', currentTimeBeforeSwitch);
           
           // Set the time if we had a previous position
           if (currentTimeBeforeSwitch > 0 && currentTimeBeforeSwitch <= video.duration) {
@@ -394,11 +387,9 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
         
         // Use canplaythrough event - fires when enough data is loaded to play through
         const handleCanPlayThrough = () => {
-          console.log('Video can play through, current time:', video.currentTime);
           
           // Double-check the time is set correctly
           if (currentTimeBeforeSwitch > 0 && Math.abs(video.currentTime - currentTimeBeforeSwitch) > 1) {
-            console.log('Correcting time position to:', currentTimeBeforeSwitch);
             video.currentTime = currentTimeBeforeSwitch;
             setCurrentTime(currentTimeBeforeSwitch);
           }

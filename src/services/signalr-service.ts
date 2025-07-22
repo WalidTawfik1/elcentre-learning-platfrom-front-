@@ -241,8 +241,6 @@ class SignalRService {
     // Clear any existing reconnection attempts
     this.reconnectAttempts = 0;
     
-    console.warn("SignalR rate limited - scheduling recovery attempts");
-    
     // Start health check to detect when rate limiting expires
     this.startRateLimitHealthCheck();
     
@@ -280,7 +278,6 @@ class SignalRService {
           if (attemptIndex < recoveryAttempts.length) {
             setTimeout(attemptRecovery, recoveryAttempts[attemptIndex]);
           } else {
-            console.warn("SignalR rate limit recovery failed after all attempts");
             // Schedule a final attempt after a longer delay
             setTimeout(() => {
               if (this.isRateLimited && this.shouldMaintainConnection) {
@@ -290,7 +287,6 @@ class SignalRService {
           }
         }
       }).catch(error => {
-        console.error("SignalR rate limit recovery error:", error);
         this.isRateLimited = true;
         attemptIndex++;
         
@@ -402,12 +398,6 @@ class SignalRService {
     } catch (error: any) {
       if (!import.meta.env.PROD) {
       }
-      console.error("Error details:", {
-        name: error?.name,
-        message: error?.message,
-        statusCode: error?.statusCode,
-        transport: error?.transport
-      });
       this.isConnected = false;
       
       // Check if this is a rate limiting error

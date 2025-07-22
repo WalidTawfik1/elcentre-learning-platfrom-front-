@@ -32,16 +32,13 @@ export default function MyCourses() {
   // Function to fetch enrollments 
   const fetchEnrollments = async () => {
       setIsLoading(true);
-      console.log("Fetching my courses data...");
       try {
         const enrollmentsData = await EnrollmentService.getStudentEnrollments();
-        console.log("Student enrollments received:", enrollmentsData);
         
         if (Array.isArray(enrollmentsData) && enrollmentsData.length > 0) {
           setEnrollments(enrollmentsData);
           
           // Fetch course details in parallel for better performance
-          console.log("Fetching course details in parallel...");
           const coursesDetailedData = await Promise.allSettled(
             enrollmentsData.map(async (enrollment) => {
               const courseData = await CourseService.getCourseById(enrollment.courseId);
@@ -60,13 +57,11 @@ export default function MyCourses() {
             .map(result => result.value);
           
           setCoursesData(successfulCourses);
-          console.log("Course details loaded:", successfulCourses.length, "courses");
         } else {
           setEnrollments([]);
           setCoursesData([]);
         }
       } catch (error) {
-        console.error("Error fetching enrollments:", error);
         toast({
           title: "Error",
           description: "Failed to load your enrolled courses. Please try again.",

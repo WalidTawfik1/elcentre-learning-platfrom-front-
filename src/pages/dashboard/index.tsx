@@ -87,18 +87,14 @@ export default function StudentDashboard() {
     if (isAuthenticated) {
       const fetchDashboardData = async () => {
         setIsLoadingDashboard(true);
-        console.log("Starting to fetch dashboard data...");
         try {
           // Fetch student enrollments first
-          console.log("Fetching student enrollments...");
           const enrollmentsData = await EnrollmentService.getStudentEnrollments();
-          console.log("Enrollments data received:", enrollmentsData);
           
           if (Array.isArray(enrollmentsData) && enrollmentsData.length > 0) {
             setEnrollments(enrollmentsData);
             
             // Fetch course details in parallel for better performance
-            console.log("Fetching course details in parallel...");
             const coursesDetailedData = await Promise.allSettled(
               enrollmentsData.map(async (enrollment) => {
                 const courseData = await CourseService.getCourseById(enrollment.courseId);
@@ -116,9 +112,7 @@ export default function StudentDashboard() {
               .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
               .map(result => result.value);
             
-            setCurrentCourses(successfulCourses);
-            console.log("Course details loaded:", successfulCourses.length, "courses");
-            
+            setCurrentCourses(successfulCourses);            
             // Get suggested courses based on the first course's category (if available)
             if (successfulCourses.length > 0 && successfulCourses[0].categoryId) {
               try {
@@ -138,7 +132,7 @@ export default function StudentDashboard() {
                   setSuggestedCourses(filteredSuggestions.slice(0, 3));
                 }
               } catch (error) {
-                console.error("Error fetching suggested courses:", error);
+                // Silently handle suggested courses error
               }
             }
           } else {
@@ -157,7 +151,7 @@ export default function StudentDashboard() {
                 setSuggestedCourses(popularCoursesData.items.slice(0, 3));
               }
             } catch (error) {
-              console.error("Error fetching popular courses:", error);
+              // Silently handle popular courses error
             }
           }
           
@@ -166,7 +160,6 @@ export default function StudentDashboard() {
           setWishlistCourses(wishlistData);
           
         } catch (error) {
-          console.error("Error fetching dashboard data:", error);
           toast({
             title: "Error",
             description: "Failed to load your dashboard. Please try again.",
