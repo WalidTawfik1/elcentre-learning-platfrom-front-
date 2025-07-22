@@ -1,5 +1,6 @@
 import { apiRequest } from "./api";
 import { Enrollment } from "@/types/api";
+import { backgroundRequest, highPriorityRequest } from "@/lib/rate-limiter";
 
 export const EnrollmentService = {
   // Regular enrollment - this will handle payment processing if needed
@@ -18,18 +19,27 @@ export const EnrollmentService = {
   },
   
   isEnrolled: async (courseId: number): Promise<boolean> => {
-    // Make sure we're using the correct API call format
-    return apiRequest<boolean>(`/Enrollment/is-enrolled?courseId=${courseId}`, {
-      method: "GET"
-    }, true);
+    return await highPriorityRequest(
+      () => apiRequest<boolean>(`/Enrollment/is-enrolled?courseId=${courseId}`, {
+        method: "GET"
+      }, true),
+      `is-enrolled-${courseId}`
+    );
   },
   
   getStudentEnrollments: async (): Promise<Enrollment[]> => {
-    return apiRequest<Enrollment[]>("/Enrollment/get-student-enrollments");
+    return await highPriorityRequest(
+      () => apiRequest<Enrollment[]>("/Enrollment/get-student-enrollments"),
+      'student-enrollments'
+    );
   },
   
   getCourseEnrollments: async (courseId: number): Promise<any[]> => {
-    return apiRequest<any[]>(`/Enrollment/get-course-enrollments?courseId=${courseId}`);
+    return await backgroundRequest(
+      () => apiRequest<any[]>(`/Enrollment/get-course-enrollments?courseId=${courseId}`),
+      `course-enrollments-${courseId}`,
+      120000 // 2 minute cache for course enrollment lists
+    );
   },
   
   completeLesson: async (lessonId: number): Promise<any> => {

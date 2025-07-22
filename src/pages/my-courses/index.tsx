@@ -29,53 +29,38 @@ export default function MyCourses() {
       return;
     }
 
-  // Function to fetch enrollments and recalculate progress
-  const fetchEnrollments = async (shouldRecalculate = true) => {
+  // Function to fetch enrollments 
+  const fetchEnrollments = async () => {
       setIsLoading(true);
+      console.log("Fetching my courses data...");
       try {
         const enrollmentsData = await EnrollmentService.getStudentEnrollments();
-                  if (Array.isArray(enrollmentsData) && enrollmentsData.length > 0) {
+        console.log("Student enrollments received:", enrollmentsData);
+        
+        if (Array.isArray(enrollmentsData) && enrollmentsData.length > 0) {
           setEnrollments(enrollmentsData);
           
-          // Fetch detailed course data for each enrollment
-          const coursesDetailedData = await Promise.all(
+          // Fetch course details in parallel for better performance
+          console.log("Fetching course details in parallel...");
+          const coursesDetailedData = await Promise.allSettled(
             enrollmentsData.map(async (enrollment) => {
-              try {
-                const courseData = await CourseService.getCourseById(enrollment.courseId);
-                
-                // Recalculate progress if requested
-                let updatedProgress = enrollment.progress || 0;
-                if (shouldRecalculate && enrollment.id) {
-                  try {
-                    const result = await EnrollmentService.recalculateProgress(enrollment.id);
-                    updatedProgress = result.progress;
-                  } catch (error) {
-                    console.error(`Error recalculating progress for enrollment ${enrollment.id}:`, error);
-                  }
-                }
-                
-                return {
-                  ...courseData,
-                  enrollmentId: enrollment.id,
-                  enrollmentStatus: enrollment.status,
-                  progress: updatedProgress
-                };
-              } catch (error) {
-                console.error(`Error fetching course ${enrollment.courseId}:`, error);
-                return {
-                  id: enrollment.courseId,
-                  title: enrollment.courseName || "Unknown Course",
-                  description: "Course details could not be loaded.",
-                  thumbnail: "/placeholder.svg",
-                  enrollmentId: enrollment.id,
-                  enrollmentStatus: enrollment.status,
-                  progress: enrollment.progress || 0
-                };
-              }
+              const courseData = await CourseService.getCourseById(enrollment.courseId);
+              return {
+                ...courseData,
+                enrollmentId: enrollment.id,
+                enrollmentStatus: enrollment.status,
+                progress: enrollment.progress || 0
+              };
             })
           );
           
-          setCoursesData(coursesDetailedData);
+          // Filter successful results only
+          const successfulCourses = coursesDetailedData
+            .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+            .map(result => result.value);
+          
+          setCoursesData(successfulCourses);
+          console.log("Course details loaded:", successfulCourses.length, "courses");
         } else {
           setEnrollments([]);
           setCoursesData([]);
@@ -92,7 +77,9 @@ export default function MyCourses() {
       } finally {
         setIsLoading(false);
       }
-    };      fetchEnrollments();
+    };
+    
+    fetchEnrollments();
   }, [isAuthenticated, authLoading, navigate]);
 
   return (

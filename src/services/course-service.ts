@@ -1,6 +1,7 @@
 import { API } from "@/lib/api";
 import { Course, PaginatedResponse, CourseModule, Lesson, CourseReview, PendingCourse, CourseApprovalRequest } from "@/types/api";
 import { EnrollmentService } from "./enrollment-service";
+import { backgroundRequest, highPriorityRequest, debouncedSearch } from "@/lib/rate-limiter";
 
 
 export const CourseService = {
@@ -24,11 +25,26 @@ export const CourseService = {
     if (minPrice !== undefined) params.minPrice = minPrice;
     if (maxPrice !== undefined) params.maxPrice = maxPrice;
     
-    return API.courses.getAll(params);
+    // Use rate limiting for course searches
+    if (search) {
+      return debouncedSearch(
+        () => API.courses.getAll(params),
+        `courses-search-${JSON.stringify(params)}`,
+        500 // 500ms debounce for search
+      );
+    }
+    
+    return await highPriorityRequest(
+      () => API.courses.getAll(params),
+      `courses-${JSON.stringify(params)}`
+    );
   },
   
   getCourseById: async (id: string | number): Promise<any> => {
-    return API.courses.getById(Number(id));
+    return await highPriorityRequest(
+      () => API.courses.getById(Number(id)),
+      `course-detail-${id}`
+    );
   },
   
   // Course modules
@@ -57,7 +73,11 @@ export const CourseService = {
   
   // Reviews
   getCourseReviews: async (courseId: string | number): Promise<any> => {
-    return API.reviews.getByCourse(Number(courseId));
+    return await backgroundRequest(
+      () => API.reviews.getByCourse(Number(courseId)),
+      `course-reviews-${courseId}`,
+      180000 // 3 minute cache for course reviews
+    );
   },
   
   addCourseReview: async (courseId: string | number, rating: number, reviewContent: string): Promise<any> => {
@@ -106,33 +126,49 @@ export const CourseService = {
 
   // Get completion rate for a course
   getCourseCompletionRate: async (courseId: string | number): Promise<number> => {
-    try {
-      // Get all enrollments for the course
-      const enrollments = await EnrollmentService.getCourseEnrollments(Number(courseId));
-      
-      if (!Array.isArray(enrollments) || enrollments.length === 0) {
-        return 0;
-      }
-      
-      // Calculate average progress across all enrollments
-      const totalProgress = enrollments.reduce((total, enrollment) => {
-        return total + (enrollment.progress || 0);
-      }, 0);
-        return Math.round(totalProgress / enrollments.length);
-    } catch (error) {
-      return 0;
-    }
+    return await backgroundRequest(
+      async () => {
+        try {
+          // Get all enrollments for the course
+          const enrollments = await EnrollmentService.getCourseEnrollments(Number(courseId));
+          
+          if (!Array.isArray(enrollments) || enrollments.length === 0) {
+            return 0;
+          }
+          
+          // Calculate average progress across all enrollments
+          const totalProgress = enrollments.reduce((total, enrollment) => {
+            return total + (enrollment.progress || 0);
+          }, 0);
+          return Math.round(totalProgress / enrollments.length);
+        } catch (error) {
+          return 0;
+        }
+      },
+      `course-completion-${courseId}`,
+      300000 // 5 minute cache for completion rates
+    );
   },
 
   // Get course reviews with count information
   getCourseReviewsWithCount: async (courseId: string | number): Promise<number> => {
-    const reviews = await API.reviews.getByCourse(Number(courseId)) as { studentId: string, studentName: string, id: number, rating: number, reviewContent: string, createdAt: string, count: number }[];
-    const reviewCount = reviews[0]?.count || 0;  // Assuming reviews is an array and you're interested in the first one
-    return reviewCount;
+    return await backgroundRequest(
+      async () => {
+        const reviews = await API.reviews.getByCourse(Number(courseId)) as { studentId: string, studentName: string, id: number, rating: number, reviewContent: string, createdAt: string, count: number }[];
+        const reviewCount = reviews[0]?.count || 0;  // Assuming reviews is an array and you're interested in the first one
+        return reviewCount;
+      },
+      `course-reviews-count-${courseId}`,
+      180000 // 3 minute cache for review counts
+    );
   },
 
   getInstructorCourses: async (): Promise<any> => {
-    return API.courses.getInstructorCourses();
+    return await backgroundRequest(
+      () => API.courses.getInstructorCourses(),
+      'instructor-courses',
+      5000 // 5 second debounce
+    );
   },
 
   addCourse: async (courseData: {

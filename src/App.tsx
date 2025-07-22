@@ -8,6 +8,7 @@ import { NotificationProvider } from "./hooks/use-notifications";
 import { API_BASE_URL } from "./config/api-config";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react";
+import { RateLimitDebugPanel } from "@/components/debug/rate-limit-debug-panel";
 
 // Pages
 import Index from "./pages/Index";
@@ -153,6 +154,7 @@ const App = () => (
         </BrowserRouter>
         <SpeedInsights />
         <Analytics />
+        <RateLimitDebugPanel />
       </TooltipProvider>
     </NotificationProvider>
   </AuthProvider>

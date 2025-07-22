@@ -1,10 +1,11 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { signalRService, CourseNotification } from '@/services/signalr-service';
 import { NotificationService, NotificationResponse } from '@/services/notification-service';
 import { EnrollmentService } from '@/services/enrollment-service';
 import { CourseService } from '@/services/course-service';
 import { useAuth } from './use-auth';
 import { SIGNALR_CONFIG } from '@/config/api-config';
+import { useRateLimiter } from '@/lib/rate-limiter';
 
 // Local subscription management (stored in localStorage)
 interface LocalNotificationSubscription {
@@ -41,6 +42,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState({ isConnected: false, isRateLimited: false, reconnectAttempts: 0 });
   const { user, isAuthenticated } = useAuth();
+  const { backgroundRequest } = useRateLimiter();
+  
+  // Refs to prevent duplicate requests
+  const loadingRef = useRef(false);
+  const lastLoadTimeRef = useRef(0);
+  const courseCacheRef = useRef<{ instructor?: any[], student?: any[], timestamp?: number }>({});
+  const initializingRef = useRef(false);
+  
+  // Rate limiting: minimum 30 seconds between full notification reloads
+  const MIN_RELOAD_INTERVAL = 30000;
+  // Cache duration: 2 minutes for course data
+  const COURSE_CACHE_DURATION = 120000;
   // Local storage key for subscriptions
   const getSubscriptionsKey = () => user ? `notifications_subscriptions_${user.id}` : null;
   
@@ -173,17 +186,32 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [fastUnreadCount, setFastUnreadCount] = useState<number>(0);
 
   const updateUnreadCountImmediate = useCallback(async () => {
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !user || loadingRef.current) return;
+
+    // Prevent duplicate rapid calls
+    const now = Date.now();
+    if (now - lastLoadTimeRef.current < 5000) { // 5 second minimum interval
+      return;
+    }
+    
+    loadingRef.current = true;
+    lastLoadTimeRef.current = now;
 
     try {
-      const result = await NotificationService.getUnreadCount();
+      const result = await backgroundRequest(
+        () => NotificationService.getUnreadCount(),
+        'unread-count-update',
+        5000 // 5 second debounce
+      );
       setFastUnreadCount(result.unreadCount);
     } catch (error) {
       // Fallback to local calculation
       const localUnreadCount = notifications.filter(n => !n.isRead).length;
       setFastUnreadCount(localUnreadCount);
+    } finally {
+      loadingRef.current = false;
     }
-  }, [isAuthenticated, user, notifications]);
+  }, [isAuthenticated, user, notifications, backgroundRequest]);
 
   // Update unread count immediately when user changes
   useEffect(() => {
@@ -222,6 +250,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       signalRService.setNotificationCallback(() => {});
     };
   }, [isAuthenticated, user]);  const initializeSignalR = async () => {
+    // Prevent multiple simultaneous initialization attempts
+    if (initializingRef.current) {
+      console.log('SignalR initialization already in progress, skipping...');
+      return;
+    }
+    
+    initializingRef.current = true;
+    
     try {
       // Check if already rate limited before attempting connection
       if (signalRService.isRateLimitActive()) {
@@ -265,12 +301,36 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
     } catch (error) {
       setIsConnected(false);
+      console.warn('SignalR initialization failed:', error);
+    } finally {
+      initializingRef.current = false;
     }
   };
 
   const autoSubscribeToEnrolledCourses = async () => {
     try {
-      const enrollments = await EnrollmentService.getStudentEnrollments();
+      // Check cache first
+      const now = Date.now();
+      if (courseCacheRef.current.student && 
+          courseCacheRef.current.timestamp && 
+          (now - courseCacheRef.current.timestamp) < COURSE_CACHE_DURATION) {
+        console.log('Using cached student enrollments');
+        return;
+      }
+
+      const enrollments = await backgroundRequest(
+        () => EnrollmentService.getStudentEnrollments(),
+        'student-enrollments-subscription',
+        10000 // 10 second debounce for this specific call
+      );
+      
+      // Cache the result
+      courseCacheRef.current = {
+        ...courseCacheRef.current,
+        student: enrollments,
+        timestamp: now
+      };
+      
       const currentSubscriptions = getLocalSubscriptions();
       
       for (const enrollment of enrollments) {
@@ -298,7 +358,28 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const autoSubscribeToInstructorCourses = async () => {
     try {
-      const instructorCourses = await CourseService.getInstructorCourses();
+      // Check cache first
+      const now = Date.now();
+      if (courseCacheRef.current.instructor && 
+          courseCacheRef.current.timestamp && 
+          (now - courseCacheRef.current.timestamp) < COURSE_CACHE_DURATION) {
+        console.log('Using cached instructor courses');
+        return;
+      }
+
+      const instructorCourses = await backgroundRequest(
+        () => CourseService.getInstructorCourses(),
+        'instructor-courses-subscription',
+        10000 // 10 second debounce for this specific call
+      );
+      
+      // Cache the result
+      courseCacheRef.current = {
+        ...courseCacheRef.current,
+        instructor: instructorCourses,
+        timestamp: now
+      };
+      
       const currentSubscriptions = getLocalSubscriptions();
       
       for (const course of instructorCourses) {
@@ -321,6 +402,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
     } catch (error) {
       // Silent error handling
+      console.warn('Failed to auto-subscribe to instructor courses:', error);
     }
   };
 

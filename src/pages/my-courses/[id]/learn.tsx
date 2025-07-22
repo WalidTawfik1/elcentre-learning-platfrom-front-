@@ -17,6 +17,7 @@ import { QuizService } from "@/services/quiz-service";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useAuth } from "@/hooks/use-auth";
 import { useVideoTranscription } from "@/hooks/use-video-transcription";
+import { useRateLimitedAction } from "@/hooks/use-debounced-actions";
 import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
@@ -563,6 +564,16 @@ export default function CourseLearn() {
   };
   
   // Handle lesson completion
+  // Rate-limited lesson completion to prevent spam
+  const { executeAction: completeLesson, isOnCooldown: isCompletingLesson } = useRateLimitedAction(
+    async () => {
+      if (!activeLesson || completedLessons.includes(activeLesson.id)) return;
+      
+      await handleCompleteLesson(activeLesson.id);
+    },
+    2000 // 2 second cooldown between lesson completions
+  );
+
   const handleCompleteLesson = async (lessonId: number) => {
     if (completedLessons.includes(lessonId)) {
       // Lesson already completed

@@ -1,14 +1,19 @@
 // API Service for interacting with the backend
 
 import { API_BASE_URL, DIRECT_API_URL } from "@/config/api-config";
+import { rateLimitMonitor } from "./rate-limit-monitor";
 
 // Configuration for rate limiting and retries
 const API_CONFIG = {
   maxRetries: 3,             // Maximum number of retry attempts
-  initialBackoffMs: 1000,    // Start with 1 second delay
-  maxBackoffMs: 10000,       // Maximum delay of 10 seconds
+  initialBackoffMs: 2000,    // Start with 2 seconds delay (increased)
+  maxBackoffMs: 30000,       // Maximum delay of 30 seconds (increased)
   backoffFactor: 2,          // Double the delay on each retry
-  retryStatusCodes: [429]    // Status codes that should trigger a retry
+  retryStatusCodes: [429],   // Status codes that should trigger a retry
+  
+  // New: Request tracking for better monitoring
+  trackRequests: true,
+  logRateLimitErrors: true,
 };
 
 // Helper function to get a cookie value
@@ -154,6 +159,15 @@ async function apiRequest<T>(
       
       // Check if we got a rate limit error and should retry
       if (API_CONFIG.retryStatusCodes.includes(response.status) && retryCount < API_CONFIG.maxRetries) {
+        // Log the rate limit error for monitoring
+        if (API_CONFIG.logRateLimitErrors) {
+          rateLimitMonitor.logRateLimitError(url, method, retryCount, {
+            endpoint: endpointPath,
+            requiresAuth,
+            timestamp: new Date().toISOString()
+          });
+        }
+        
         retryCount++;
         continue;
       }

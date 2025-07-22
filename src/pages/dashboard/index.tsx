@@ -87,74 +87,56 @@ export default function StudentDashboard() {
     if (isAuthenticated) {
       const fetchDashboardData = async () => {
         setIsLoadingDashboard(true);
+        console.log("Starting to fetch dashboard data...");
         try {
-          // Fetch student enrollments
+          // Fetch student enrollments first
+          console.log("Fetching student enrollments...");
           const enrollmentsData = await EnrollmentService.getStudentEnrollments();
+          console.log("Enrollments data received:", enrollmentsData);
           
           if (Array.isArray(enrollmentsData) && enrollmentsData.length > 0) {
             setEnrollments(enrollmentsData);
-              // Fetch detailed course data for current enrollments
-            const coursesDetailedData = await Promise.all(
+            
+            // Fetch course details in parallel for better performance
+            console.log("Fetching course details in parallel...");
+            const coursesDetailedData = await Promise.allSettled(
               enrollmentsData.map(async (enrollment) => {
-                try {
-                  const courseData = await CourseService.getCourseById(enrollment.courseId);
-                  
-                  // Recalculate progress for accurate display
-                  let updatedProgress = enrollment.progress || 0;
-                  if (enrollment.id) {
-                    try {
-                      const result = await EnrollmentService.recalculateProgress(enrollment.id);
-                      updatedProgress = result.progress;
-                    } catch (error) {
-                      console.error(`Error recalculating progress for enrollment ${enrollment.id}:`, error);
-                    }
-                  }
-                  
-                  return {
-                    ...courseData,
-                    enrollmentId: enrollment.id,
-                    enrollmentStatus: enrollment.status,
-                    progress: updatedProgress
-                  };
-                } catch (error) {
-                  console.error(`Error fetching course ${enrollment.courseId}:`, error);
-                  return {
-                    id: enrollment.courseId,
-                    title: enrollment.courseName || "Unknown Course",
-                    description: "Course details could not be loaded.",
-                    thumbnail: "/placeholder.svg",
-                    enrollmentId: enrollment.id,
-                    enrollmentStatus: enrollment.status,
-                    progress: enrollment.progress || 0
-                  };
-                }
+                const courseData = await CourseService.getCourseById(enrollment.courseId);
+                return {
+                  ...courseData,
+                  enrollmentId: enrollment.id,
+                  enrollmentStatus: enrollment.status,
+                  progress: enrollment.progress || 0
+                };
               })
             );
             
-            setCurrentCourses(coursesDetailedData);
+            // Filter successful results only
+            const successfulCourses = coursesDetailedData
+              .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+              .map(result => result.value);
             
-            // Use the first enrollment's category to get suggested courses
-            if (coursesDetailedData.length > 0) {
-              const primaryCourse = coursesDetailedData[0];
-              const primaryCategoryId = primaryCourse.categoryId;
-              
-              // Fetch suggested courses based on category
+            setCurrentCourses(successfulCourses);
+            console.log("Course details loaded:", successfulCourses.length, "courses");
+            
+            // Get suggested courses based on the first course's category (if available)
+            if (successfulCourses.length > 0 && successfulCourses[0].categoryId) {
               try {
                 const suggestedCoursesData = await CourseService.getAllCourses(
                   1, // page number
                   4, // page size
                   undefined, // sort
-                  primaryCategoryId // categoryId
+                  successfulCourses[0].categoryId // categoryId
                 );
                 
-                // Filter out courses the student is already enrolled in
-                const filteredSuggestions = Array.isArray(suggestedCoursesData.items) 
-                  ? suggestedCoursesData.items.filter((course: any) => 
-                      !enrollmentsData.some(enrollment => enrollment.courseId === course.id)
-                    ).slice(0, 3) // Limit to 3 suggestions
-                  : [];
-                  
-                setSuggestedCourses(filteredSuggestions);
+                if (Array.isArray(suggestedCoursesData.items)) {
+                  // Filter out courses the student is already enrolled in
+                  const enrolledCourseIds = new Set(enrollmentsData.map(e => e.courseId));
+                  const filteredSuggestions = suggestedCoursesData.items.filter(
+                    course => !enrolledCourseIds.has(course.id)
+                  );
+                  setSuggestedCourses(filteredSuggestions.slice(0, 3));
+                }
               } catch (error) {
                 console.error("Error fetching suggested courses:", error);
               }

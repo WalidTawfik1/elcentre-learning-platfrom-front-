@@ -15,6 +15,8 @@ import { Slider } from "@/components/ui/slider";
 import { useLocation } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
+import { useDebouncedSearch } from "@/hooks/use-debounced-actions";
+import { RateLimitDebugPanel } from "@/components/debug/rate-limit-debug-panel";
 
 export default function CoursesIndex() {
   // State for filters

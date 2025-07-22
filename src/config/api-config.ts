@@ -21,12 +21,12 @@ export const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || FALLBACK_API_
 // SignalR Configuration for rate limiting prevention
 export const SIGNALR_CONFIG = {
   // Connection settings
-  minConnectionInterval: isProduction ? 15000 : 10000, // 15s in prod, 10s in dev (increased for better rate limiting)
-  maxReconnectAttempts: isProduction ? 5 : 8, // More attempts but with better backoff
-  rateLimitRetryDelay: isProduction ? 180000 : 90000, // 3 minutes in prod, 1.5 minutes in dev (increased)
+  minConnectionInterval: isProduction ? 30000 : 15000, // 30s in prod, 15s in dev (increased significantly)
+  maxReconnectAttempts: isProduction ? 3 : 5, // Reduced attempts to prevent rate limiting
+  rateLimitRetryDelay: isProduction ? 300000 : 180000, // 5 minutes in prod, 3 minutes in dev (increased)
   
-  // Monitoring settings
-  connectionCheckInterval: isProduction ? 45000 : 20000, // 45s in prod, 20s in dev (increased)
+  // Monitoring settings - much less frequent to prevent 429 errors
+  connectionCheckInterval: isProduction ? 120000 : 60000, // 2 minutes in prod, 1 minute in dev (significantly increased)
   
   // Transport preferences (prefer more stable transports in production)
   transportPriority: isProduction 
@@ -34,8 +34,13 @@ export const SIGNALR_CONFIG = {
     : ['WebSockets', 'LongPolling', 'ServerSentEvents'],
     
   // Recovery settings
-  maxRecoveryAttempts: 4, // Number of progressive recovery attempts
-  recoveryBaseDelay: isProduction ? 120000 : 60000, // Base delay for recovery attempts
+  maxRecoveryAttempts: 3, // Reduced recovery attempts
+  recoveryBaseDelay: isProduction ? 240000 : 120000, // 4 minutes in prod, 2 minutes in dev (increased)
+  
+  // New: API request batching and coordination
+  batchNotificationRequests: true,
+  notificationCheckInterval: isProduction ? 60000 : 30000, // 1 minute in prod, 30s in dev
+  maxConcurrentApiRequests: 2, // Limit concurrent API requests
 };
 
 // For image URLs, we need to handle them differently in production vs development

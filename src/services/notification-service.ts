@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import { backgroundRequest, highPriorityRequest } from "@/lib/rate-limiter";
 
 export interface CreateNotificationRequest {
   title: string;
@@ -97,18 +98,22 @@ export const NotificationService = {
     );
   },
 
-  // Get course notifications for a user
+  // Get course notifications for a user with rate limiting
   getCourseNotifications: async (courseId: number, unreadOnly: boolean = false): Promise<NotificationResponse[]> => {
     const params = new URLSearchParams({
       unreadOnly: unreadOnly.toString()
     });
     
-    return apiRequest<NotificationResponse[]>(
-      `/Notifications/course/${courseId}?${params}`,
-      {
-        method: 'GET',
-      },
-      true
+    return backgroundRequest(
+      () => apiRequest<NotificationResponse[]>(
+        `/Notifications/course/${courseId}?${params}`,
+        {
+          method: 'GET',
+        },
+        true
+      ),
+      `notifications-course-${courseId}`,
+      2000 // 2 second debounce for course notifications
     );
   },
 
@@ -157,14 +162,18 @@ export const NotificationService = {
     );
   },
 
-  // Get unread count
+  // Get unread count with rate limiting
   getUnreadCount: async (): Promise<{ unreadCount: number }> => {
-    return apiRequest<{ unreadCount: number }>(
-      `/Notifications/unread-count`,
-      {
-        method: 'GET',
-      },
-      true
+    return backgroundRequest(
+      () => apiRequest<{ unreadCount: number }>(
+        `/Notifications/unread-count`,
+        {
+          method: 'GET',
+        },
+        true
+      ),
+      'notifications-unread-count',
+      5000 // 5 second debounce for unread count checks
     );
   },
 

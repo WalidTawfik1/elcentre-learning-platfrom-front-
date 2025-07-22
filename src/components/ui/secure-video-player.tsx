@@ -40,11 +40,13 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
   const [showSettings, setShowSettings] = useState(false);
   const [currentVideoSrc, setCurrentVideoSrc] = useState(src);
   const [originalDuration, setOriginalDuration] = useState(0);
+  const [isQualitySwitching, setIsQualitySwitching] = useState(false);
+  const [lastSeekTime, setLastSeekTime] = useState<number | null>(null);
 
   // Extract Cloudinary public ID from URL if not provided as prop
   const getPublicIdFromUrl = (url: string): string | null => {
     // Match Cloudinary video URL pattern and extract public ID (with or without extension)
-    const match = url.match(/\/video\/upload\/(?:v\d+\/)?([^\/]+?)(?:\.[^.]+)?$/);
+    const match = url.match(/\/video\/upload\/(?:v\d+\/)?([^/]+?)(?:\.[^.]+)?$/);
     return match ? match[1] : null;
   };
 
@@ -96,7 +98,11 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
     if (!video) return;
 
     // Video event handlers
-    const handleTimeUpdate = () => setCurrentTime(video.currentTime);
+    const handleTimeUpdate = () => {
+      if (!isQualitySwitching) {
+        setCurrentTime(video.currentTime);
+      }
+    };
     const handleDurationChange = () => {
       setDuration(video.duration);
       // Store original duration only once
@@ -249,7 +255,7 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
         container.removeEventListener('mouseleave', handleMouseLeave);
       }
     };
-  }, [isPlaying, allowFullscreen, showSettings]);
+  }, [isPlaying, allowFullscreen, showSettings, originalDuration]);
 
   // Control functions
   const togglePlayPause = () => {
@@ -289,8 +295,15 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
   };
 
   const handleSeek = (time: number) => {
-    if (videoRef.current) {
+    if (videoRef.current && !isQualitySwitching) {
+      console.log('Seeking to time:', time);
+      setLastSeekTime(time);
       videoRef.current.currentTime = time;
+      setCurrentTime(time);
+    } else if (isQualitySwitching) {
+      console.log('Seek blocked - quality switching in progress');
+      // Store the seek time to apply after quality switch completes
+      setLastSeekTime(time);
     }
   };
 
@@ -312,12 +325,27 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
   };
 
   const handleQualityChange = (quality: string) => {
+    // Prevent multiple simultaneous quality switches
+    if (isQualitySwitching) {
+      console.log('Quality switch already in progress, ignoring request');
+      return;
+    }
+    
     setSelectedQuality(quality);
     
     if (publicId) {
+      setIsQualitySwitching(true);
+      
       // Store current playback state
-      const currentTimeBeforeSwitch = videoRef.current?.currentTime || 0;
+      const currentTimeBeforeSwitch = lastSeekTime ?? videoRef.current?.currentTime ?? 0;
       const wasPlaying = isPlaying;
+      const currentVolume = videoRef.current?.volume || volume;
+      const currentMuted = videoRef.current?.muted || isMuted;
+      
+      console.log('Starting quality change to:', quality, 'at time:', currentTimeBeforeSwitch);
+      
+      // Clear last seek time since we're handling it
+      setLastSeekTime(null);
       
       // Generate new Cloudinary URL with quality transformation
       const newSrc = getCloudinaryUrl(publicId, quality);
@@ -326,55 +354,80 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
       if (videoRef.current) {
         const video = videoRef.current;
         
-        // Pause the video first to avoid issues
-        video.pause();
+        // Pause video if playing
+        if (wasPlaying) {
+          video.pause();
+        }
+        
+        // Store the previous src for comparison
+        const previousSrc = video.src;
         
         // Set new source
         video.src = newSrc;
         setCurrentVideoSrc(newSrc);
         
-        // Load the new video
-        video.load();
+        // Use loadstart event to detect when loading begins
+        const handleLoadStart = () => {
+          console.log('Video loading started for quality:', quality);
+        };
         
-        // Handle successful loading and seeking
-        const handleCanPlay = () => {
-          if (video && currentTimeBeforeSwitch > 0) {
-            // Set the time when video can play
+        // Use loadedmetadata instead of loadeddata - fires once when metadata is loaded
+        const handleLoadedMetadata = () => {
+          console.log('Video metadata loaded, duration:', video.duration);
+          
+          // Restore volume and mute state
+          video.volume = currentVolume;
+          video.muted = currentMuted;
+          video.playbackRate = playbackSpeed;
+        };
+        
+        // Use loadeddata to set the time position
+        const handleLoadedData = () => {
+          console.log('Video data loaded, setting time to:', currentTimeBeforeSwitch);
+          
+          // Set the time if we had a previous position
+          if (currentTimeBeforeSwitch > 0 && currentTimeBeforeSwitch <= video.duration) {
             video.currentTime = currentTimeBeforeSwitch;
-            
-            // Listen for when seeking is complete
-            const handleSeeked = () => {
-              // Update UI state
-              setCurrentTime(currentTimeBeforeSwitch);
-              
-              // Resume playing if it was playing before
-              if (wasPlaying) {
-                video.play().catch(error => {
-                  console.error('Error resuming playback:', error);
-                });
-              }
-              
-              // Cleanup
-              video.removeEventListener('seeked', handleSeeked);
-            };
-            
-            video.addEventListener('seeked', handleSeeked);
-            video.removeEventListener('canplay', handleCanPlay);
-          } else {
-            // If starting from beginning or no previous time
-            setCurrentTime(0);
-            if (wasPlaying) {
-              video.play().catch(error => {
-                console.error('Error resuming playback:', error);
-              });
-            }
-            video.removeEventListener('canplay', handleCanPlay);
+            setCurrentTime(currentTimeBeforeSwitch);
           }
+        };
+        
+        // Use canplaythrough event - fires when enough data is loaded to play through
+        const handleCanPlayThrough = () => {
+          console.log('Video can play through, current time:', video.currentTime);
+          
+          // Double-check the time is set correctly
+          if (currentTimeBeforeSwitch > 0 && Math.abs(video.currentTime - currentTimeBeforeSwitch) > 1) {
+            console.log('Correcting time position to:', currentTimeBeforeSwitch);
+            video.currentTime = currentTimeBeforeSwitch;
+            setCurrentTime(currentTimeBeforeSwitch);
+          }
+          
+          // Resume playing if it was playing before
+          if (wasPlaying) {
+            video.play().catch(error => {
+              console.error('Error resuming playback:', error);
+            });
+          }
+          
+          // Quality switch complete
+          setIsQualitySwitching(false);
+          
+          // Remove event listeners
+          video.removeEventListener('loadstart', handleLoadStart);
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+          video.removeEventListener('loadeddata', handleLoadedData);
+          video.removeEventListener('canplaythrough', handleCanPlayThrough);
+          video.removeEventListener('error', handleError);
         };
         
         // Handle loading errors
         const handleError = (error: Event) => {
           console.error('Error loading video quality:', error);
+          
+          // Quality switch failed
+          setIsQualitySwitching(false);
+          
           toast({
             title: "Quality Change Failed",
             description: "Failed to load the selected quality. Please try again.",
@@ -386,12 +439,56 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
           video.load();
           setCurrentVideoSrc(src);
           setSelectedQuality('auto');
+          
+          // Remove event listeners
+          video.removeEventListener('loadstart', handleLoadStart);
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+          video.removeEventListener('loadeddata', handleLoadedData);
+          video.removeEventListener('canplaythrough', handleCanPlayThrough);
           video.removeEventListener('error', handleError);
         };
         
         // Add event listeners
-        video.addEventListener('canplay', handleCanPlay);
-        video.addEventListener('error', handleError);
+        video.addEventListener('loadstart', handleLoadStart, { once: true });
+        video.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
+        video.addEventListener('loadeddata', handleLoadedData, { once: true });
+        video.addEventListener('canplaythrough', handleCanPlayThrough, { once: true });
+        video.addEventListener('error', handleError, { once: true });
+        
+        // Add a timeout as fallback in case events don't fire
+        const qualityChangeTimeout = setTimeout(() => {
+          console.warn('Quality change timeout - forcing completion');
+          setIsQualitySwitching(false);
+          
+          // Remove event listeners
+          video.removeEventListener('loadstart', handleLoadStart);
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+          video.removeEventListener('loadeddata', handleLoadedData);
+          video.removeEventListener('canplaythrough', handleCanPlayThrough);
+          video.removeEventListener('error', handleError);
+        }, 10000); // 10 second timeout
+        
+        // Clear timeout when quality change completes
+        const originalHandleCanPlayThrough = handleCanPlayThrough;
+        const wrappedHandleCanPlayThrough = () => {
+          clearTimeout(qualityChangeTimeout);
+          originalHandleCanPlayThrough();
+        };
+        
+        const originalHandleError = handleError;
+        const wrappedHandleError = (error: Event) => {
+          clearTimeout(qualityChangeTimeout);
+          originalHandleError(error);
+        };
+        
+        // Replace the event listeners with wrapped versions
+        video.removeEventListener('canplaythrough', handleCanPlayThrough);
+        video.removeEventListener('error', handleError);
+        video.addEventListener('canplaythrough', wrappedHandleCanPlayThrough, { once: true });
+        video.addEventListener('error', wrappedHandleError, { once: true });
+        
+        // Load the new video
+        video.load();
       }
     }
     // If not using Cloudinary, just update the state (for other video sources)
@@ -469,6 +566,16 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
         {duration === 0 && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          </div>
+        )}
+
+        {/* Quality switching overlay */}
+        {isQualitySwitching && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-10">
+            <div className="flex flex-col items-center gap-3 text-white">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+              <div className="text-sm font-medium">Switching quality...</div>
+            </div>
           </div>
         )}
 
@@ -603,12 +710,19 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
                         {/* Quality Settings */}
                         {allowQualityChange && (
                           <div>
-                            <label className="text-xs text-white/80 mb-2 block">Quality</label>
+                            <label className="text-xs text-white/80 mb-2 block">
+                              Quality {isQualitySwitching && (
+                                <span className="text-blue-400">(switching...)</span>
+                              )}
+                            </label>
                             <div className="relative">
                               <select
                                 value={selectedQuality}
                                 onChange={(e) => handleQualityChange(e.target.value)}
-                                className="w-full h-8 text-xs bg-black/70 border border-white/30 text-white rounded px-2 cursor-pointer focus:outline-none focus:border-white/50"
+                                disabled={isQualitySwitching}
+                                className={`w-full h-8 text-xs bg-black/70 border border-white/30 text-white rounded px-2 cursor-pointer focus:outline-none focus:border-white/50 ${
+                                  isQualitySwitching ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
                               >
                                 {qualityOptions.map(option => (
                                   <option key={option.value} value={option.value} className="bg-black text-white">
@@ -616,6 +730,11 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
                                   </option>
                                 ))}
                               </select>
+                              {isQualitySwitching && (
+                                <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b border-white"></div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}
@@ -683,7 +802,7 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
         />
         
         {/* Watermark */}
-        <div className="absolute bottom-20 right-4 bg-black/70 text-white px-3 py-1 text-xs rounded backdrop-blur-sm pointer-events-none z-20 font-medium">
+        <div className="absolute bottom-20 right-2 bg-black/70 text-white px-3 py-1 text-xs rounded backdrop-blur-sm pointer-events-none z-20 font-medium">
           ElCentre
         </div>
       </div>
