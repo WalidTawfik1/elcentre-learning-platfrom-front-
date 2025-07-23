@@ -298,7 +298,6 @@ export const AuthService = {
           isExpired = payload.exp && payload.exp < currentTime;
         }
       } catch (error) {
-        console.warn('Could not decode JWT token:', error);
       }
     }
     

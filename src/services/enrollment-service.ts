@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import { API } from "@/lib/api";
 import { Enrollment } from "@/types/api";
 import { backgroundRequest, highPriorityRequest } from "@/lib/rate-limiter";
 
@@ -35,11 +36,61 @@ export const EnrollmentService = {
   },
   
   getCourseEnrollments: async (courseId: number): Promise<any[]> => {
-    return await backgroundRequest(
-      () => apiRequest<any[]>(`/Enrollment/get-course-enrollments?courseId=${courseId}`),
-      `course-enrollments-${courseId}`,
-      120000 // 2 minute cache for course enrollment lists
-    );
+    try {
+      const result = await API.enrollments.getCoursesEnrollments(courseId);
+      // Ensure we return an array
+      const enrollments = Array.isArray(result) ? result : [];
+      return enrollments;
+    } catch (error) {
+      // Return empty array on error to prevent dashboard from breaking
+      return [];
+    }
+  },
+
+  // Calculate student count from enrollment response
+  calculateStudentCount: (enrollments: any[]): number => {
+    if (!Array.isArray(enrollments)) {
+      return 0;
+    }
+    return enrollments.length;
+  },
+
+  // Calculate completion rate for a specific course
+  calculateCourseCompletionRate: (enrollments: any[]): number => {
+    if (!Array.isArray(enrollments) || enrollments.length === 0) {
+      return 0;
+    }
+
+    
+    // Count completed enrollments (assuming progress >= 100 or completed flag)
+    const completedCount = enrollments.filter(enrollment => {
+      const progress = enrollment.progress || enrollment.Progress || 0;
+      const isCompleted = enrollment.completed || enrollment.Completed || progress >= 100;
+      return isCompleted;
+    }).length;
+
+    const completionRate = enrollments.length > 0 ? (completedCount / enrollments.length) * 100 : 0;
+    
+    return Math.round(completionRate); // Round to integer
+  },
+
+  // Calculate average completion rate across multiple courses
+  calculateAverageCompletionRate: (coursesEnrollments: { courseId: number, enrollments: any[] }[]): number => {
+    if (!Array.isArray(coursesEnrollments) || coursesEnrollments.length === 0) {
+      return 0;
+    }
+    
+    const courseRates = coursesEnrollments.map(({ courseId, enrollments }) => {
+      const rate = EnrollmentService.calculateCourseCompletionRate(enrollments);
+      return rate;
+    });
+
+    const validRates = courseRates.filter(rate => !isNaN(rate) && rate >= 0);
+    const averageRate = validRates.length > 0 
+      ? validRates.reduce((sum, rate) => sum + rate, 0) / validRates.length 
+      : 0;
+
+    return Math.round(averageRate); // Round to integer
   },
   
   completeLesson: async (lessonId: number): Promise<any> => {

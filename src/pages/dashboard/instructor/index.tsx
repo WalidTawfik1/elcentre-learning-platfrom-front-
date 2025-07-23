@@ -69,46 +69,36 @@ export default function InstructorDashboard() {
             return [];
           }
           
-          // Get stats for all courses in parallel with individual timeouts
-          const courseStatsPromises = coursesData.map(async (course: any) => {
+          // Get stats for all courses using single enrollment API call per course
+          // Add staggered delays to prevent overwhelming the server
+          const courseStatsPromises = coursesData.map(async (course: any, index: number) => {
             try {
-              // Each course stat fetch has its own timeout
-              const statsPromise = Promise.allSettled([
-                Promise.race([
-                  CourseService.getEnrollmentCount(course.id),
-                  new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Enrollment timeout')), 3000)
-                  )
-                ]),
-                Promise.race([
-                  CourseService.getCourseCompletionRate(course.id),
-                  new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Completion timeout')), 3000)
-                  )
-                ])
-              ]);
+              // Add a small delay between requests to prevent rate limiting
+              if (index > 0) {
+                await new Promise(resolve => setTimeout(resolve, index * 200)); // 200ms delay per course
+              }
 
-              const [enrollmentResult, completionResult] = await statsPromise;
               
-              const enrollmentCount = enrollmentResult.status === 'fulfilled' 
-                ? (enrollmentResult.value || 0) 
-                : 0;
-              const completionRate = completionResult.status === 'fulfilled' 
-                ? (completionResult.value || 0) 
-                : 0;
+              // Direct API call - removed timeout race for now to debug
+              const enrollments = await EnrollmentService.getCourseEnrollments(course.id);
+              
+              // Use dedicated service functions to calculate stats
+              const studentsCount = EnrollmentService.calculateStudentCount(enrollments);
+              const completionRate = EnrollmentService.calculateCourseCompletionRate(enrollments);
               
               return {
                 ...course,
-                studentsCount: enrollmentCount,
-                completionRate: completionRate
+                studentsCount: studentsCount,
+                completionRate: completionRate,
+                enrollments: enrollments // Keep for average calculation
               };
             } catch (error) {
               // Return course with default stats if individual course fails
-              console.warn(`Failed to get stats for course ${course.id}:`, error);
               return {
                 ...course,
                 studentsCount: 0,
-                completionRate: 0
+                completionRate: 0,
+                enrollments: []
               };
             }
           });
@@ -124,18 +114,18 @@ export default function InstructorDashboard() {
       }
     },
     enabled: isAuthenticated && user?.userType === "Instructor" && !authLoading,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 3 * 60 * 1000, // 3 minutes - data stays fresh longer since we optimized API calls
+    gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer
     retry: (failureCount, error) => {
-      // Don't retry on timeout errors, but retry on network errors
-      if (error?.message?.includes('timeout')) {
-        return failureCount < 1;
+      // Don't retry on timeout or rate limit errors
+      if (error?.message?.includes('timeout') || error?.message?.includes('429')) {
+        return false;
       }
-      return failureCount < 2;
+      return failureCount < 1; // Reduce retry attempts since we have better caching
     },
-    retryDelay: 1000,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
     refetchOnWindowFocus: false,
-    refetchOnMount: true
+    refetchOnMount: false, // Don't refetch on mount if data exists
   });
   
   // Set greeting based on time of day
@@ -191,10 +181,15 @@ export default function InstructorDashboard() {
   const coursesArray = Array.isArray(courses) ? courses : [];
   const totalStudents = coursesArray.reduce((acc, course) => acc + (course.studentsCount || 0), 0);
   
-  // Calculate overall completion rate
-  const averageCompletionRate = coursesArray.length > 0
-    ? Math.floor(coursesArray.reduce((acc, course) => acc + (course.completionRate || 0), 0) / coursesArray.length)
-    : 0;
+  // Calculate overall completion rate using the service function
+  const coursesEnrollmentData = coursesArray.map(course => ({
+    courseId: course.id,
+    enrollments: course.enrollments || []
+  }));
+  
+  const averageCompletionRate = Math.floor(
+    EnrollmentService.calculateAverageCompletionRate(coursesEnrollmentData)
+  );
 
   return (
     <MainLayout>

@@ -107,7 +107,6 @@ export const checkApiConnection = async (): Promise<boolean> => {
     clearTimeout(timeoutId);
     return response.ok;
   } catch (error) {
-    console.warn('API connection check failed:', error);
     return false;
   }
 };

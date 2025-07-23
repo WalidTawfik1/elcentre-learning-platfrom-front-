@@ -448,7 +448,6 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
         
         // Add a timeout as fallback in case events don't fire
         const qualityChangeTimeout = setTimeout(() => {
-          console.warn('Quality change timeout - forcing completion');
           setIsQualitySwitching(false);
           
           // Remove event listeners

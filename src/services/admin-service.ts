@@ -320,7 +320,6 @@ export const AdminService = {  // Get total courses count
       }
       
       // Fallback if response structure is unexpected
-      console.warn("Unexpected API response structure:", response);
       return {
         users: [],
         totalCount: 0,
@@ -332,7 +331,6 @@ export const AdminService = {  // Get total courses count
       
       // For development, provide mock data if API is not available
       if (process.env.NODE_ENV === 'development') {
-        console.warn("API not available, returning mock data for development");
         const mockUsers: User[] = [
           {
             id: "1",
@@ -474,7 +472,6 @@ export const AdminService = {  // Get total courses count
       }
       
       // Fallback if response structure is unexpected
-      console.warn("Unexpected API response structure:", response);
       return {
         courses: [],
         totalCount: 0,
