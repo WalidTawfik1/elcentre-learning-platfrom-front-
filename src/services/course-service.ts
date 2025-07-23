@@ -49,34 +49,48 @@ export const CourseService = {
   
   // Course modules
   getModulesByCourseId: async (courseId: string | number): Promise<any> => {
-    return API.modules.getAll(Number(courseId));
+    return await highPriorityRequest(
+      () => API.modules.getAll(Number(courseId)),
+      `course-modules-${courseId}`
+    );
   },
   
   // Alias for more readable calls in components
   getModules: async (courseId: string | number): Promise<any> => {
-    return API.modules.getAll(Number(courseId));
+    return await highPriorityRequest(
+      () => API.modules.getAll(Number(courseId)),
+      `course-modules-${courseId}`
+    );
   },
   
   // Lessons
   getLessonsByModuleId: async (moduleId: string | number): Promise<any> => {
-    return API.lessons.getByModule(Number(moduleId));
+    return await highPriorityRequest(
+      () => API.lessons.getByModule(Number(moduleId)),
+      `module-lessons-${moduleId}`
+    );
   },
   
   // Alias for more readable calls in components
   getLessons: async (courseId: string | number, moduleId: string | number): Promise<any> => {
-    return API.lessons.getByModule(Number(moduleId));
+    return await highPriorityRequest(
+      () => API.lessons.getByModule(Number(moduleId)),
+      `module-lessons-${moduleId}`
+    );
   },
   
   getLessonById: async (id: string | number): Promise<any> => {
-    return API.lessons.getById(Number(id));
+    return await highPriorityRequest(
+      () => API.lessons.getById(Number(id)),
+      `lesson-${id}`
+    );
   },
   
   // Reviews
   getCourseReviews: async (courseId: string | number): Promise<any> => {
-    return await backgroundRequest(
+    return await highPriorityRequest(
       () => API.reviews.getByCourse(Number(courseId)),
-      `course-reviews-${courseId}`,
-      180000 // 3 minute cache for course reviews
+      `course-reviews-${courseId}`
     );
   },
   
@@ -121,7 +135,10 @@ export const CourseService = {
   },
   // Get enrollment count for a course
   getEnrollmentCount: async (courseId: string | number): Promise<any> => {
-   return API.enrollments.getStudentsCount(Number(courseId));
+    return await highPriorityRequest(
+      () => API.enrollments.getStudentsCount(Number(courseId)),
+      `enrollment-count-${courseId}`
+    );
   },
 
   // Get completion rate for a course
@@ -152,14 +169,13 @@ export const CourseService = {
 
   // Get course reviews with count information
   getCourseReviewsWithCount: async (courseId: string | number): Promise<number> => {
-    return await backgroundRequest(
+    return await highPriorityRequest(
       async () => {
         const reviews = await API.reviews.getByCourse(Number(courseId)) as { studentId: string, studentName: string, id: number, rating: number, reviewContent: string, createdAt: string, count: number }[];
         const reviewCount = reviews[0]?.count || 0;  // Assuming reviews is an array and you're interested in the first one
         return reviewCount;
       },
-      `course-reviews-count-${courseId}`,
-      180000 // 3 minute cache for review counts
+      `course-reviews-count-${courseId}`
     );
   },
 

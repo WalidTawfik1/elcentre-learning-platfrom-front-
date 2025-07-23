@@ -246,6 +246,15 @@ export default function CourseLearn() {
             setCourseProgress(0);
           }
         }
+        
+        // Preload reviews for faster access
+        try {
+          const reviewsData = await CourseService.getCourseReviews(id);
+          setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+        } catch (error) {
+          // Silent error handling for reviews preloading
+        }
+        
       } catch (error) {
         console.error("Error fetching course:", error);
         toast({
@@ -481,7 +490,7 @@ export default function CourseLearn() {
     }
   }, [activeTab, course?.useAIAssistant, isInstructorViewing]);
   
-  // Fetch course reviews when the reviews tab is clicked
+  // Fetch course reviews when the reviews tab is clicked (if not already loaded)
   const handleFetchReviews = async () => {
     if (!id || reviews.length > 0) return; // Don't fetch if we already have reviews
     
@@ -490,7 +499,6 @@ export default function CourseLearn() {
       const reviewsData = await CourseService.getCourseReviews(id);
       setReviews(Array.isArray(reviewsData) ? reviewsData : []);
     } catch (error) {
-      console.error("Error fetching course reviews:", error);
       toast({
         title: "Error",
         description: "Failed to load course reviews. Please try again later.",

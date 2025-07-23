@@ -225,6 +225,7 @@ export default function CourseDetail() {
     const fetchCourse = async () => {
       setIsLoading(true);
       try {
+        // Fetch course data first (most important)
         const courseData = await CourseService.getCourseById(id);
         setCourse(courseData);
         
@@ -234,67 +235,66 @@ export default function CourseDetail() {
           setIsInWishlist(inWishlist);
         }
         
-        // Get modules and lessons for this course
-        try {
-          const modulesData = await CourseService.getModules(id);
-          // Handle case where modulesData is null or undefined
-          if (modulesData) {
-            const modulesWithLessons = await Promise.all(
-              (Array.isArray(modulesData) ? modulesData : []).map(async (module) => {
-                try {
-                  const lessons = await CourseService.getLessons(id, module.id);
-                  return {
-                    ...module,
-                    lessons: Array.isArray(lessons) ? lessons : []
-                  };
-                } catch (error) {
-                  return { ...module, lessons: [] };
-                }
-              })
-            );
-            setModules(modulesWithLessons);
-          } else {
-            // If no modules, set empty array instead of treating it as an error
-            setModules([]);
-          }
-        } catch (moduleError) {
-          setModules([]); // Set empty array instead of letting it fail
-        }
-
-        // Fetch enrollment count
-        try {
-          const count = await CourseService.getEnrollmentCount(id);
-          setEnrollmentCount(count);
-        } catch (error) {
-          console.error("Error fetching enrollment count:", error);
-        }
-        
-        // Fetch reviews with count
-        try {
-          const reviewsWithCount = await CourseService.getCourseReviewsWithCount(id);
+        // Fetch all other data in parallel for better performance
+        const [modulesData, enrollmentCountData, reviewsCountData, enrollmentStatus, reviewsData] = await Promise.allSettled([
+          // Get modules and lessons
+          CourseService.getModules(id).then(async (modules) => {
+            if (!modules) return [];
+            const modulesArray = Array.isArray(modules) ? modules : [];
+            return Promise.all(modulesArray.map(async (module) => {
+              try {
+                const lessons = await CourseService.getLessons(id, module.id);
+                return {
+                  ...module,
+                  lessons: Array.isArray(lessons) ? lessons : []
+                };
+              } catch (error) {
+                return { ...module, lessons: [] };
+              }
+            }));
+          }),
           
-          // Directly set the review count, defaulting to 0 if it's undefined
-          setReviewCount(reviewsWithCount || 0);
-      } catch (error) {
-          console.error("Error fetching reviews with count:", error);
-          setReviewCount(0);  // Optional: set to 0 if there's an error fetching
-      }
-      
+          // Get enrollment count
+          CourseService.getEnrollmentCount(id),
+          
+          // Get reviews count
+          CourseService.getCourseReviewsWithCount(id),
+          
+          // Check enrollment status (only if authenticated)
+          isAuthenticated ? CourseService.isEnrolled(id) : Promise.resolve(false),
+          
+          // Get reviews data for faster loading
+          CourseService.getCourseReviews(id)
+        ]);
         
-        // Check if user is enrolled - with better debugging
-        if (isAuthenticated) {
-          try {
-            const isUserEnrolled = await CourseService.isEnrolled(id);
-            setIsEnrolled(!!isUserEnrolled);
-          } catch (error) {
-            console.error("Error checking enrollment status:", error);
-            // Don't change the enrollment status if there's an error checking it
-          }
+        // Handle modules
+        if (modulesData.status === 'fulfilled') {
+          setModules(modulesData.value);
         } else {
-          
+          setModules([]);
         }
+        
+        // Handle enrollment count
+        if (enrollmentCountData.status === 'fulfilled') {
+          setEnrollmentCount(enrollmentCountData.value);
+        }
+        
+        // Handle reviews count
+        if (reviewsCountData.status === 'fulfilled') {
+          setReviewCount(reviewsCountData.value || 0);
+        }
+        
+        // Handle enrollment status
+        if (enrollmentStatus.status === 'fulfilled') {
+          setIsEnrolled(!!enrollmentStatus.value);
+        }
+        
+        // Handle reviews data
+        if (reviewsData.status === 'fulfilled') {
+          setReviews(Array.isArray(reviewsData.value) ? reviewsData.value : []);
+        }
+        
       } catch (error) {
-        console.error("Error fetching course:", error);
         toast({
           title: "Error",
           description: "Failed to load course details. Please try again later.",
@@ -308,7 +308,7 @@ export default function CourseDetail() {
     fetchCourse();
   }, [id, isAuthenticated]);
 
-  // Fetch course reviews when the reviews tab is clicked
+  // Fetch course reviews when the reviews tab is clicked (if not already loaded)
   const handleFetchReviews = async () => {
     if (!id || reviews.length > 0) return; // Don't fetch if we already have reviews
     
@@ -317,7 +317,6 @@ export default function CourseDetail() {
       const reviewsData = await CourseService.getCourseReviews(id);
       setReviews(Array.isArray(reviewsData) ? reviewsData : []);
     } catch (error) {
-      console.error("Error fetching course reviews:", error);
       toast({
         title: "Error",
         description: "Failed to load course reviews. Please try again later.",

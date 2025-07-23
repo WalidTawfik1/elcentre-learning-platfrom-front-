@@ -5,44 +5,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, CheckCircle, XCircle, Users, BookOpen, TrendingUp, Settings, RefreshCw, Tag } from "lucide-react";
-import { useState, useEffect } from "react";
-import { CourseService } from "@/services/course-service";
 import { AdminService } from "@/services/admin-service";
+import { useQuery } from "@tanstack/react-query";
 
 export default function AdminDashboard() {
-  const [pendingCount, setPendingCount] = useState<number>(0);
-  const [adminStats, setAdminStats] = useState({
-    totalCourses: 0,
-    activeCourses: 0,
-    totalInstructors: 0,
-    totalEnrollments: 0
+  const {
+    data: adminStats,
+    isLoading: loading,
+    refetch: loadAdminData,
+    error
+  } = useQuery({
+    queryKey: ['admin-statistics'],
+    queryFn: () => AdminService.getAdminStatistics(),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes (formerly cacheTime)
+    refetchOnWindowFocus: false,
+    retry: 2
   });
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const pendingCount = adminStats?.pendingCourses || 0;
+
+  const handleRefresh = () => {
     loadAdminData();
-  }, []);
-  const loadAdminData = async () => {
-    try {
-      setLoading(true);
-      
-      const stats = await AdminService.getAdminStatistics();
-      
-      
-      setPendingCount(stats.pendingCourses);
-      setAdminStats({
-        totalCourses: stats.totalCourses,
-        activeCourses: stats.activeCourses,
-        totalInstructors: stats.totalInstructors,
-        totalEnrollments: stats.totalEnrollments
-      });
-      
-      
-    } catch (error) {
-      console.error("Error loading admin data:", error);
-    } finally {
-      setLoading(false);
-    }
   };const adminActions = [
     {
       title: "Pending Course Approvals",
@@ -98,21 +82,21 @@ export default function AdminDashboard() {
     },
     {
       title: "Active Courses",
-      value: loading ? "..." : adminStats.activeCourses.toString(),
+      value: loading ? "..." : (adminStats?.activeCourses || 0).toString(),
       icon: BookOpen,
       color: "text-blue-600",
       description: "Published courses"
     },
     {
       title: "Total Instructors",
-      value: loading ? "..." : adminStats.totalInstructors.toString(),
+      value: loading ? "..." : (adminStats?.totalInstructors || 0).toString(),
       icon: Users,
       color: "text-green-600",
       description: "Registered instructors"
     },
     {
       title: "Total Enrollments",
-      value: loading ? "..." : adminStats.totalEnrollments.toString(),
+      value: loading ? "..." : (adminStats?.totalEnrollments || 0).toString(),
       icon: TrendingUp,
       color: "text-purple-600",
       description: "Student enrollments"
@@ -129,7 +113,7 @@ export default function AdminDashboard() {
               </p>
             </div>
             <Button 
-              onClick={loadAdminData} 
+              onClick={handleRefresh} 
               variant="outline" 
               size="sm"
               disabled={loading}

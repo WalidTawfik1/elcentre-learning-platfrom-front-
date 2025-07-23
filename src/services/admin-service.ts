@@ -1,6 +1,7 @@
 import { API } from "@/lib/api";
 import { CourseService } from "./course-service";
 import { CategoryService } from "./category-service";
+import { highPriorityRequest } from "@/lib/rate-limiter";
 
 interface User {
   id: string;
@@ -150,49 +151,106 @@ export const AdminService = {  // Get total courses count
     pendingCourses: number;
   }> => {
     try {
+      // Optimize by making all API calls in parallel and sharing course data
       const [
-        totalCourses,
-        activeCourses,
-        totalInstructors,
-        totalCategories,
-        totalEnrollments
-      ] = await Promise.all([
-        AdminService.getTotalCoursesCount(),
-        AdminService.getActiveCoursesCount(),
-        AdminService.getTotalInstructorsCount(),
-        AdminService.getTotalCategoriesCount(),
-        AdminService.getTotalEnrollmentsCount()
-      ]);      // Fetch pending courses separately for better debugging
-      const pendingCoursesResponse = await CourseService.getPendingCourses();
+        allCoursesResponse,
+        instructorsResponse,
+        categoriesResponse,
+        pendingCoursesResponse
+      ] = await Promise.allSettled([
+        highPriorityRequest(() => CourseService.getAllCourses(1, 1000), 'admin-all-courses'),
+        highPriorityRequest(() => API.auth.getAllInstructors(), 'admin-instructors'),
+        highPriorityRequest(() => CategoryService.getAllCategories(), 'admin-categories'),
+        highPriorityRequest(() => CourseService.getPendingCourses(), 'admin-pending-courses')
+      ]);
+
+      // Extract courses data
+      const allCourses = allCoursesResponse.status === 'fulfilled' 
+        ? ((allCoursesResponse.value as any)?.data || (allCoursesResponse.value as any)?.items || allCoursesResponse.value || [])
+        : [];
       
-      // Handle different response structures
+      // Calculate statistics from shared course data
+      const totalCourses = Array.isArray(allCourses) ? allCourses.length : 0;
+      const activeCourses = Array.isArray(allCourses) 
+        ? allCourses.filter((course: any) => course.isActive === true).length 
+        : 0;
+
+      // Extract other statistics
+      const totalInstructors = instructorsResponse.status === 'fulfilled'
+        ? (Array.isArray((instructorsResponse.value as any)?.data || instructorsResponse.value) 
+           ? ((instructorsResponse.value as any)?.data || instructorsResponse.value).length 
+           : 0)
+        : 0;
+
+      const totalCategories = categoriesResponse.status === 'fulfilled'
+        ? (Array.isArray(categoriesResponse.value) ? categoriesResponse.value.length : 0)
+        : 0;
+
+      // Handle pending courses with flexible response structure
       let coursesArray = [];
-      if (pendingCoursesResponse?.data && Array.isArray(pendingCoursesResponse.data)) {
-        coursesArray = pendingCoursesResponse.data;
-      } else if (pendingCoursesResponse?.items && Array.isArray(pendingCoursesResponse.items)) {
-        coursesArray = pendingCoursesResponse.items;
-      } else if (Array.isArray(pendingCoursesResponse)) {
-        coursesArray = pendingCoursesResponse;
+      if (pendingCoursesResponse.status === 'fulfilled') {
+        const pendingData = pendingCoursesResponse.value;
+        if (pendingData?.data && Array.isArray(pendingData.data)) {
+          coursesArray = pendingData.data;
+        } else if (pendingData?.items && Array.isArray(pendingData.items)) {
+          coursesArray = pendingData.items;
+        } else if (Array.isArray(pendingData)) {
+          coursesArray = pendingData;
+        }
       }
       
-      // Normalize the status field - check for different possible status field names
+      // Normalize the status field and count pending courses
       coursesArray = coursesArray.map((course: any) => {
         const statusField = course.status || course.courseStatus || course.Status || course.CourseStatus;
         return {
           ...course,
-          status: statusField || 'Pending' // Default to Pending if no status found
+          status: statusField || 'Pending'
         };
       });
       
-      // Count pending courses with flexible status matching
       const pendingCourses = coursesArray.filter((course: any) => {
         const normalizedStatus = course.status?.toLowerCase();
         return normalizedStatus === 'pending' ||
                normalizedStatus === 'Pending' || 
                normalizedStatus === 'PENDING' ||
-               !course.status; // Also count courses without status as pending
+               !course.status;
       }).length;
-      
+
+      // Calculate total enrollments more efficiently by getting a sample of courses
+      // and making parallel enrollment requests for performance
+      let totalEnrollments = 0;
+      if (Array.isArray(allCourses) && allCourses.length > 0) {
+        try {
+          // Get enrollment counts for up to 50 courses in parallel for better performance
+          const coursesToCheck = allCourses.slice(0, 50);
+          const enrollmentPromises = coursesToCheck.map(async (course: any) => {
+            try {
+              return await highPriorityRequest(
+                () => CourseService.getEnrollmentCount(course.id), 
+                `enrollment-${course.id}`
+              );
+            } catch (error) {
+              return 0;
+            }
+          });
+
+          const enrollmentCounts = await Promise.allSettled(enrollmentPromises);
+          const validCounts = enrollmentCounts
+            .filter(result => result.status === 'fulfilled')
+            .map(result => (result as PromiseFulfilledResult<number>).value || 0);
+          
+          totalEnrollments = validCounts.reduce((total, count) => total + count, 0);
+          
+          // If we have more courses, estimate based on average
+          if (allCourses.length > 50) {
+            const averageEnrollments = totalEnrollments / coursesToCheck.length;
+            totalEnrollments = Math.round(averageEnrollments * allCourses.length);
+          }
+        } catch (error) {
+          console.error("Error calculating total enrollments:", error);
+          totalEnrollments = 0;
+        }
+      }
 
       return {
         totalCourses,

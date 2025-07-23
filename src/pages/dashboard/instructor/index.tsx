@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,10 +37,106 @@ const instructorTips = [
 
 export default function InstructorDashboard() {
   const navigate = useNavigate();
-  const { isAuthenticated, user, isLoading: authLoading } = useAuth();  const [courses, setCourses] = useState<any[]>([]);
+  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const [greeting, setGreeting] = useState<string>("");
   const [tip, setTip] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // Optimized data fetching with React Query and timeouts
+  const { 
+    data: courses = [], 
+    isLoading, 
+    error,
+    refetch 
+  } = useQuery({
+    queryKey: ['instructorCourses'],
+    queryFn: async () => {
+      try {
+        // Add timeout wrapper for the entire operation
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 15000)
+        );
+
+        const mainPromise = async () => {
+          // Get instructor courses first with timeout
+          const coursesData = await Promise.race([
+            CourseService.getInstructorCourses(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Courses fetch timeout')), 8000)
+            )
+          ]);
+          
+          if (!Array.isArray(coursesData) || coursesData.length === 0) {
+            return [];
+          }
+          
+          // Get stats for all courses in parallel with individual timeouts
+          const courseStatsPromises = coursesData.map(async (course: any) => {
+            try {
+              // Each course stat fetch has its own timeout
+              const statsPromise = Promise.allSettled([
+                Promise.race([
+                  CourseService.getEnrollmentCount(course.id),
+                  new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Enrollment timeout')), 3000)
+                  )
+                ]),
+                Promise.race([
+                  CourseService.getCourseCompletionRate(course.id),
+                  new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Completion timeout')), 3000)
+                  )
+                ])
+              ]);
+
+              const [enrollmentResult, completionResult] = await statsPromise;
+              
+              const enrollmentCount = enrollmentResult.status === 'fulfilled' 
+                ? (enrollmentResult.value || 0) 
+                : 0;
+              const completionRate = completionResult.status === 'fulfilled' 
+                ? (completionResult.value || 0) 
+                : 0;
+              
+              return {
+                ...course,
+                studentsCount: enrollmentCount,
+                completionRate: completionRate
+              };
+            } catch (error) {
+              // Return course with default stats if individual course fails
+              console.warn(`Failed to get stats for course ${course.id}:`, error);
+              return {
+                ...course,
+                studentsCount: 0,
+                completionRate: 0
+              };
+            }
+          });
+          
+          return await Promise.all(courseStatsPromises);
+        };
+
+        return await Promise.race([mainPromise(), timeoutPromise]);
+      } catch (error) {
+        console.error('Error fetching instructor courses:', error);
+        // Return empty array instead of throwing to prevent infinite loading
+        return [];
+      }
+    },
+    enabled: isAuthenticated && user?.userType === "Instructor" && !authLoading,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    retry: (failureCount, error) => {
+      // Don't retry on timeout errors, but retry on network errors
+      if (error?.message?.includes('timeout')) {
+        return failureCount < 1;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true
+  });
   
   // Set greeting based on time of day
   useEffect(() => {
@@ -67,59 +164,23 @@ export default function InstructorDashboard() {
     setTip(instructorTips[randomIndex]);
   }, [user]);
 
-  // Fetch instructor courses
+  // Handle authentication redirect
   useEffect(() => {
-    // Only fetch data if user is authenticated and is an instructor
     if (!authLoading && (!isAuthenticated || user?.userType !== "Instructor")) {
       navigate("/login?redirect=/dashboard/instructor", { replace: true });
-      return;
     }
-    
-    if (isAuthenticated && user?.userType === "Instructor") {
-      const fetchInstructorCourses = async () => {
-        setIsLoading(true);
-        try {
-          // Use the CourseService instead of direct fetch
-          const coursesData = await CourseService.getInstructorCourses();
-          
-          // Add enrollment counts and calculate stats
-          const coursesWithStats = await Promise.all(            coursesData.map(async (course: any) => {
-              try {
-                // Get enrollment count
-                const enrollmentCount = await CourseService.getEnrollmentCount(course.id);
-                
-                // Get actual completion rate from enrollment data
-                const completionRate = await CourseService.getCourseCompletionRate(course.id);
-                
-                return {
-                  ...course,
-                  studentsCount: enrollmentCount,
-                  completionRate: completionRate
-                };
-              } catch (error) {
-                console.error(`Error fetching stats for course ${course.id}:`, error);
-                return {
-                  ...course,
-                  studentsCount: 0,
-                  completionRate: 0 // Default to 0 if there's an error
-                };
-              }
-            })
-          );          setCourses(Array.isArray(coursesWithStats) ? coursesWithStats : []);
-        } catch (error) {
-          console.error("Error fetching instructor courses:", error);
-          toast({
-            title: "Error",
-            description: "Failed to load your courses. Please try again.",
-            variant: "destructive",
-          });
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      
-      fetchInstructorCourses();
-    }  }, [isAuthenticated, user, navigate, authLoading]);
+  }, [authLoading, isAuthenticated, user, navigate]);
+
+  // Handle query errors
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load your courses. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [error]);
   
   // Format the thumbnail URL properly using getImageUrl function
   const formatThumbnailUrl = (thumbnail: string | undefined): string => {
@@ -127,10 +188,12 @@ export default function InstructorDashboard() {
   };
 
   // Calculate total students across all courses
-  const totalStudents = courses.reduce((acc, course) => acc + (course.studentsCount || 0), 0);
-    // Calculate overall completion rate
-  const averageCompletionRate = courses.length > 0
-    ? Math.floor(courses.reduce((acc, course) => acc + (course.completionRate || 0), 0) / courses.length)
+  const coursesArray = Array.isArray(courses) ? courses : [];
+  const totalStudents = coursesArray.reduce((acc, course) => acc + (course.studentsCount || 0), 0);
+  
+  // Calculate overall completion rate
+  const averageCompletionRate = coursesArray.length > 0
+    ? Math.floor(coursesArray.reduce((acc, course) => acc + (course.completionRate || 0), 0) / coursesArray.length)
     : 0;
 
   return (
@@ -138,7 +201,30 @@ export default function InstructorDashboard() {
       <div className="container py-8">
         {/* Header Section with Greeting and Tip */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{greeting}</h1>
+          <div className="flex justify-between items-start mb-4">
+            <h1 className="text-3xl font-bold">{greeting}</h1>
+            <Button 
+              onClick={() => refetch()} 
+              variant="outline" 
+              size="sm"
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh
+                </>
+              )}
+            </Button>
+          </div>
           <div className="flex items-center bg-amber-50 p-4 rounded-lg border border-amber-100">
             <LightbulbIcon className="h-6 w-6 mr-3 text-amber-500" />
             <p className="text-amber-700 italic">Instructor Tip: {tip}</p>
@@ -184,10 +270,10 @@ export default function InstructorDashboard() {
                 <CardContent>
                   <div className="flex items-center">
                     <Layers className="h-5 w-5 mr-2 text-primary" />
-                    <div className="text-3xl font-bold">{courses.length}</div>
+                    <div className="text-3xl font-bold">{coursesArray.length}</div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    {courses.filter(c => c.isActive).length} published, {courses.length - courses.filter(c => c.isActive).length} drafts
+                    {coursesArray.filter(c => c.isActive).length} published, {coursesArray.length - coursesArray.filter(c => c.isActive).length} drafts
                   </p>
                 </CardContent>
               </Card>
@@ -227,7 +313,7 @@ export default function InstructorDashboard() {
               </Card>
             </div>
             
-            {courses.length === 0 ? (
+            {coursesArray.length === 0 ? (
               <div className="text-center py-12 border rounded-lg bg-muted/20">
                 <div className="flex justify-center">
                   <BookOpen className="h-12 w-12 text-muted-foreground/50" />
@@ -254,7 +340,7 @@ export default function InstructorDashboard() {
                     </Button>
                   </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {courses.slice(0, 3).map((course) => (
+                    {coursesArray.slice(0, 3).map((course) => (
                       <Card key={course.id} className="overflow-hidden flex flex-col h-full">
                         <div className="aspect-video relative overflow-hidden">
                           <img
