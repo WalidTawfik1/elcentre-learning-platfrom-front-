@@ -144,6 +144,8 @@ export const LessonService = {
     durationInMinutes?: number;
     description?: string;
     isPublished?: boolean;
+    content?: string;
+    contentType?: string;
   }): Promise<any> => {
     try {
       // Validate the lesson data first (partial validation for updates)
@@ -159,11 +161,21 @@ export const LessonService = {
       // Transform the data to match API expectations (PascalCase)
       const formattedData: any = {
         Id: lessonData.id
-      };      // Add properties that are defined - content and contentType are not editable
+      };
+
+      // Add properties that are defined
       if (lessonData.title !== undefined) formattedData.Title = lessonData.title;
       if (lessonData.durationInMinutes !== undefined) formattedData.DurationInMinutes = lessonData.durationInMinutes;
       if (lessonData.description !== undefined) formattedData.Description = lessonData.description;
       if (lessonData.isPublished !== undefined) formattedData.IsPublished = lessonData.isPublished;
+      
+      // Handle content - only for text lessons, send empty for video lessons
+      if (lessonData.contentType === 'text' && lessonData.content !== undefined) {
+        formattedData.Content = lessonData.content;
+      } else {
+        // Send empty content as per backend requirement for video lessons
+        formattedData.Content = '';
+      }
       
       const result = await API.lessons.update(formattedData);
       return result;

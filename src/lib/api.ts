@@ -704,9 +704,21 @@ export const API = {
       DurationInMinutes?: number;
       Description?: string;
       IsPublished?: boolean;
+      Content?: string;
     }) => {
-      // Send as JSON (backend expects JSON format, not FormData)
-      return apiRequest('/Lesson/update-lesson', 'PUT', data, true, false);
+      // Create FormData for the update request
+      const formData = new FormData();
+      formData.append('Id', data.Id.toString());
+      
+      if (data.Title !== undefined) formData.append('Title', data.Title);
+      if (data.DurationInMinutes !== undefined) formData.append('DurationInMinutes', data.DurationInMinutes.toString());
+      if (data.Description !== undefined) formData.append('Description', data.Description);
+      if (data.IsPublished !== undefined) formData.append('IsPublished', data.IsPublished.toString());
+      
+      // Content field - always include it, send empty string if not provided
+      formData.append('Content', data.Content || '');
+      
+      return apiRequest('/Lesson/update-lesson', 'PUT', formData, true, true);
     },
     
     delete: (id: number) => 

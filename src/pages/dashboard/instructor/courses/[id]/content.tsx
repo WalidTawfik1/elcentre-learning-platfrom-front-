@@ -378,14 +378,20 @@ export default function CourseContentManagement() {
     
     try {
       if (isEditingLesson && currentLessonId) {
-        // Update existing lesson - content and contentType are not editable
+        // Update existing lesson
         const updateData: any = {
           id: currentLessonId,
           title: lessonFormData.title,
           description: lessonFormData.description,
           durationInMinutes: lessonFormData.durationInMinutes,
-          isPublished: lessonFormData.isPublished
+          isPublished: lessonFormData.isPublished,
+          contentType: lessonFormData.contentType
         };
+        
+        // Only include content for text lessons
+        if (lessonFormData.contentType === 'text') {
+          updateData.content = lessonFormData.contentText;
+        }
         
         await LessonService.updateLesson(updateData);
         
@@ -995,15 +1001,33 @@ export default function CourseContentManagement() {
                 )}
                 
                 {isEditingLesson && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                    <p className="text-sm text-blue-800">
-                      <strong>Note:</strong> Content and content type cannot be edited for existing lessons.
-                    </p>
-                  </div>
+                  <>
+                    {lessonFormData.contentType === 'text' ? (
+                      <div className="grid gap-3">
+                        <Label htmlFor="contentText" className="text-sm font-medium">Content</Label>
+                        <RichTextEditor
+                          id="contentText"
+                          value={lessonFormData.contentText}
+                          onChange={(value) => setLessonFormData({...lessonFormData, contentText: value})}
+                          placeholder="Enter lesson content..."
+                          rows={12}
+                          required={lessonFormData.contentType === 'text'}
+                        />
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <p className="text-sm text-blue-800">
+                          <strong>Note:</strong> Video content cannot be edited for existing lessons.
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
                 
                 <div className="grid gap-3">
-                  <Label htmlFor="durationInMinutes" className="text-sm font-medium">Duration (minutes)</Label>
+                  <Label htmlFor="durationInMinutes" className="text-sm font-medium">
+                    {lessonFormData.contentType === 'text' ? 'Reading Duration (minutes)' : 'Duration (minutes)'}
+                  </Label>
                   <Input
                     id="durationInMinutes"
                     type="number"
