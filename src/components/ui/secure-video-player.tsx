@@ -519,6 +519,30 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
           } else if (e.code === 'ArrowRight') {
             e.preventDefault();
             seekForward();
+          } else if (e.code === 'ArrowUp') {
+            e.preventDefault();
+            // Volume up
+            if (videoRef.current) {
+              const newVolume = Math.min(volume + 0.1, 1);
+              setVolume(newVolume);
+              videoRef.current.volume = newVolume;
+              if (newVolume > 0 && isMuted) {
+                setIsMuted(false);
+                videoRef.current.muted = false;
+              }
+            }
+          } else if (e.code === 'ArrowDown') {
+            e.preventDefault();
+            // Volume down
+            if (videoRef.current) {
+              const newVolume = Math.max(volume - 0.1, 0);
+              setVolume(newVolume);
+              videoRef.current.volume = newVolume;
+              if (newVolume === 0) {
+                setIsMuted(true);
+                videoRef.current.muted = true;
+              }
+            }
           } else if (e.code === 'KeyF' && allowFullscreen) {
             e.preventDefault();
             toggleFullscreen();
@@ -656,7 +680,7 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
                     size="sm"
                     onClick={toggleMute}
                     className="text-white hover:bg-white/30 h-8 w-8 p-0 transition-all duration-200 rounded-md"
-                    title={isMuted ? "Unmute (M)" : "Mute (M)"}
+                    title={isMuted ? "Unmute (M) • Volume: ↑↓" : "Mute (M) • Volume: ↑↓"}
                   >
                     {isMuted || volume === 0 ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                   </Button>
@@ -669,7 +693,7 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
                     value={isMuted ? 0 : volume}
                     onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
                     className="w-16 h-1 bg-white/30 rounded-lg cursor-pointer"
-                    title="Volume"
+                    title="Volume (↑ Up / ↓ Down)"
                   />
                 </div>
               </div>

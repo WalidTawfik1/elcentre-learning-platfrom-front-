@@ -151,11 +151,11 @@ export default function Index() {
     queryKey: ['featuredCourses'],
     queryFn: async () => {
       try {
-        // Fetch all courses using the specified endpoint with pagination
-        const result = await CourseService.getAllCourses(1, 16);
+        // Fetch featured courses sorted by rating using the new endpoint
+        const result = await CourseService.getFeaturedCourses(16);
         return result?.data || [];
       } catch (error) {
-        console.error("Failed to fetch courses, using mock data:", error);
+        console.error("Failed to fetch featured courses, using mock data:", error);
         return [];
       }
     }
@@ -191,7 +191,7 @@ export default function Index() {
     "url": "https://elcentre-learn.vercel.app/",
     "mainEntity": {
       "@type": "ItemList",
-      "name": "Featured Courses",
+      "name": "Top Rated Courses",
       "itemListElement": courses.slice(0, 6).map((course, index) => ({
         "@type": "Course",
         "position": index + 1,
@@ -204,7 +204,12 @@ export default function Index() {
         "instructor": {
           "@type": "Person",
           "name": course.instructor?.name || "Expert Instructor"
-        }
+        },
+        "aggregateRating": course.rating ? {
+          "@type": "AggregateRating",
+          "ratingValue": course.rating,
+          "bestRating": "5"
+        } : undefined
       }))
     }
   };

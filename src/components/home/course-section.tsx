@@ -36,8 +36,8 @@ export function CourseSection({ courses, isLoading, error, mockCourses }: Course
     <section className="py-16 container">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-3xl font-bold">Featured Courses</h2>
-          <p className="text-muted-foreground">Explore our most popular courses</p>
+          <h2 className="text-3xl font-bold">Top Rated Courses</h2>
+          <p className="text-muted-foreground">Discover our highest-rated courses from expert instructors</p>
         </div>
         <Button variant="outline" className="border-eduBlue-500 text-eduBlue-500 hover:bg-eduBlue-50" asChild>
           <Link to="/courses">View All</Link>

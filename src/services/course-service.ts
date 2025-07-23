@@ -39,6 +39,19 @@ export const CourseService = {
       `courses-${JSON.stringify(params)}`
     );
   },
+
+  getFeaturedCourses: async (pageSize: number = 16): Promise<any> => {
+    const params = {
+      pagenum: 1,
+      pagesize: pageSize,
+      sort: "Rating"
+    };
+    
+    return await highPriorityRequest(
+      () => API.courses.getAll(params),
+      `featured-courses-${pageSize}`
+    );
+  },
   
   getCourseById: async (id: string | number): Promise<any> => {
     return await highPriorityRequest(
