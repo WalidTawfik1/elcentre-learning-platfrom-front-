@@ -76,7 +76,7 @@ export function CourseCard({
           />
           {/* Category Badge */}
           <div className="absolute top-3 right-3">
-            <span className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs font-medium">
+            <span className="bg-eduBlue-500 text-white px-2 py-1 rounded-md text-xs font-medium">
               {category}
             </span>
           </div>
@@ -89,7 +89,7 @@ export function CourseCard({
           <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem] leading-tight">
             <Link 
               to={`/courses/${id}`} 
-              className="hover:text-blue-600 transition-colors duration-200"
+              className="hover:text-eduBlue-600 transition-colors duration-200"
             >
               {title}
             </Link>
@@ -102,7 +102,7 @@ export function CourseCard({
                 src={avatarSrc} 
                 alt={instructor.name} 
               />
-              <AvatarFallback className="bg-blue-50 text-blue-600 text-xs font-medium">
+              <AvatarFallback className="bg-eduBlue-50 text-eduBlue-600 text-xs font-medium">
                 {getInitials(instructor.name)}
               </AvatarFallback>
             </Avatar>
@@ -140,7 +140,7 @@ export function CourseCard({
             variant="outline" 
             size="sm" 
             asChild
-            className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300 font-medium px-3 py-1.5 rounded-md transition-colors duration-200"
+            className="bg-eduBlue-50 border-eduBlue-200 text-eduBlue-600 hover:bg-eduBlue-100 hover:border-eduBlue-300 font-medium px-3 py-1.5 rounded-md transition-colors duration-200"
           >
             <Link to={`/courses/${id}`}>View Course</Link>
           </Button>

@@ -469,12 +469,13 @@ export default function InstructorDashboard() {
                           {/* Footer Section */}
                           <div className="flex items-center justify-center">
                             <Button 
-                              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200" 
+                              className="w-full font-medium py-2 px-4 rounded-md transition-colors duration-200" 
                               asChild
+                              variant="default"
                             >
                               <Link to={`/dashboard/instructor/courses/${course.id}/edit`}>
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Edit Course
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit Course
                               </Link>
                             </Button>
                           </div>

@@ -89,7 +89,11 @@ export default function CourseLearn() {
   const [modules, setModules] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeLesson, setActiveLesson] = useState<any>(null);
-  const [completedLessons, setCompletedLessons] = useState<number[]>([]);
+  const [completedLessons, setCompletedLessons] = useState<{
+    lessonId: number;
+    enrollmentId: number;
+    completedDate: string;
+  }[]>([]);
   const [courseProgress, setCourseProgress] = useState(0);
   const [reviews, setReviews] = useState<any[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);  const [instructor, setInstructor] = useState<any>(null);
@@ -144,6 +148,11 @@ export default function CourseLearn() {
     // Pass the detected language as override parameter
     return await transcribeVideo(videoUrl, currentLanguage);
   }, [transcribeVideo, activeLesson, detectLessonLanguage]);
+  
+  // Helper function to check if a lesson is completed
+  const isLessonCompleted = useCallback((lessonId: number) => {
+    return completedLessons.some(completed => completed.lessonId === lessonId);
+  }, [completedLessons]);
   
   // Check if instructor is viewing the course
   const isInstructorViewing = new URLSearchParams(location.search).get('instructor') === 'true' && user?.userType === 'Instructor';
@@ -575,7 +584,7 @@ export default function CourseLearn() {
   // Rate-limited lesson completion to prevent spam
   const { executeAction: completeLesson, isOnCooldown: isCompletingLesson } = useRateLimitedAction(
     async () => {
-      if (!activeLesson || completedLessons.includes(activeLesson.id)) return;
+      if (!activeLesson || isLessonCompleted(activeLesson.id)) return;
       
       await handleCompleteLesson(activeLesson.id);
     },
@@ -583,7 +592,7 @@ export default function CourseLearn() {
   );
 
   const handleCompleteLesson = async (lessonId: number) => {
-    if (completedLessons.includes(lessonId)) {
+    if (isLessonCompleted(lessonId)) {
       // Lesson already completed
       return;
     }
@@ -591,8 +600,24 @@ export default function CourseLearn() {
     try {
       await EnrollmentService.completeLesson(lessonId);
       
-      // Update the completed lessons list
-      setCompletedLessons((prev) => [...prev, lessonId]);
+      // Update the completed lessons list with new format
+      // We'll add a temporary completion object and refresh from server for accurate data
+      const tempCompletion = {
+        lessonId: lessonId,
+        enrollmentId: enrollmentId || 0,
+        completedDate: new Date().toISOString()
+      };
+      setCompletedLessons((prev) => [...prev, tempCompletion]);
+      
+      // Refresh completed lessons from server to get accurate data
+      if (id) {
+        try {
+          const completed = await EnrollmentService.getCompletedLessons(Number(id));
+          setCompletedLessons(Array.isArray(completed) ? completed : []);
+        } catch (error) {
+          console.error("Error refreshing completed lessons:", error);
+        }
+      }
       
       // Recalculate progress using the backend endpoint if we have the enrollment ID
       if (enrollmentId) {
@@ -871,7 +896,7 @@ export default function CourseLearn() {
                       <AccordionContent>
                         <ul className="space-y-1">
                           {module.lessons?.map((lesson: any, lessonIndex: number) => {
-                            const isCompleted = completedLessons.includes(lesson.id);
+                            const isCompleted = isLessonCompleted(lesson.id);
                             const isActive = activeLesson?.id === lesson.id;
                             
                             return (
@@ -940,7 +965,7 @@ export default function CourseLearn() {
                             Complete the lesson to unlock the quiz in the Quizzes tab
                           </p>
                         </div>
-                        {completedLessons.includes(activeLesson.id) && (
+                        {isLessonCompleted(activeLesson.id) && (
                           <Badge variant="default" className="bg-blue-600">
                             Quiz Unlocked
                           </Badge>
@@ -965,12 +990,12 @@ export default function CourseLearn() {
                       
                       {!isInstructorViewing && (
                         <Button
-                          variant={completedLessons.includes(activeLesson.id) ? "outline" : "default"}
+                          variant={isLessonCompleted(activeLesson.id) ? "outline" : "default"}
                           onClick={() => handleCompleteLesson(activeLesson.id)}
-                          disabled={completedLessons.includes(activeLesson.id)}
-                          className={completedLessons.includes(activeLesson.id) ? "border-eduBlue-500 text-eduBlue-500" : ""}
+                          disabled={isLessonCompleted(activeLesson.id)}
+                          className={isLessonCompleted(activeLesson.id) ? "border-eduBlue-500 text-eduBlue-500" : ""}
                         >
-                          {completedLessons.includes(activeLesson.id) ? (
+                          {isLessonCompleted(activeLesson.id) ? (
                             <>
                               <Check className="h-4 w-4 mr-2" /> Completed
                             </>

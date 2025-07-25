@@ -141,7 +141,7 @@ export default function MyCourses() {
                   
                   {/* Progress Badge */}
                   <div className="absolute top-3 right-3">
-                    <span className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs font-medium">
+                    <span className="bg-eduBlue-500 text-white px-2 py-1 rounded-md text-xs font-medium">
                       {Math.round(course.progress)}% Complete
                     </span>
                   </div>
@@ -162,7 +162,7 @@ export default function MyCourses() {
                             src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} 
                             alt={course.instructorName} 
                           />
-                          <AvatarFallback className="bg-blue-50 text-blue-600 text-xs font-medium">
+                          <AvatarFallback className="bg-eduBlue-50 text-eduBlue-600 text-xs font-medium">
                             {getInitials(course.instructorName)}
                           </AvatarFallback>
                         </Avatar>
@@ -183,11 +183,11 @@ export default function MyCourses() {
                   <div className="mb-3 py-2 px-3 bg-gray-50 rounded-lg border border-gray-100">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700">Progress</span>
-                      <span className="text-sm font-bold text-blue-600">{Math.round(course.progress)}%</span>
+                      <span className="text-sm font-bold text-eduBlue-600">{Math.round(course.progress)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
-                        className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+                        className="bg-eduBlue-500 h-2 rounded-full transition-all duration-300" 
                         style={{ width: `${course.progress}%` }}
                       />
                     </div>
@@ -213,7 +213,7 @@ export default function MyCourses() {
                   {/* Footer Section */}
                   <div className="flex items-center justify-center">
                     <Button 
-                      className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200" 
+                      className="w-full bg-eduBlue-500 hover:bg-eduBlue-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200" 
                       asChild
                     >
                       <Link to={`/my-courses/${course.id}/learn`}>

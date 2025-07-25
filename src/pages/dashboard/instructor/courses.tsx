@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, BookOpen, Users, DollarSign, Eye, Clock, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, BookOpen, Users, DollarSign, Eye, Clock, AlertCircle, CheckCircle2, TrendingUp } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
@@ -227,10 +227,12 @@ export default function InstructorCourses() {
                   {/* Status Section */}
                   <div className="flex items-center justify-between mb-3 py-2 border-t border-gray-100">
                     <div className="flex items-center gap-1 text-gray-500">
+                      <BookOpen className="h-4 w-4" />
                       <span className="text-sm">Your Course</span>
                     </div>
                     <div className="flex items-center gap-1 text-blue-600">
-                      <span className="text-sm font-medium">Manage</span>
+                      <TrendingUp className="h-4 w-4" />
+                      <span className="text-sm font-medium">Active</span>
                     </div>
                   </div>
 
@@ -267,25 +269,24 @@ export default function InstructorCourses() {
                     </AlertDialog>
 
                     <Button 
-                      className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200" 
+                      className="flex-1"
                       asChild
                     >
                       <Link to={`/my-courses/${course.id}/learn?instructor=true`}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Course
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Course
                       </Link>
                     </Button>
                     
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="border-blue-200 text-blue-600 hover:bg-blue-50 px-3"
+                    <Button
+                      className="flex-1 bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300 px-3"
+                      variant="outline"
                       asChild
                     >
                       <Link to={`/courses/${course.id}`}>
-                        Manage
+                      Manage
                       </Link>
-                    </Button>
+                    </Button> 
                   </div>
                 </div>
               </div>

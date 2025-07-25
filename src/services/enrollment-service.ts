@@ -102,12 +102,7 @@ export const EnrollmentService = {
   isLessonCompleted: async (lessonId: number): Promise<boolean> => {
     return apiRequest<boolean>(`/Enrollment/is-lesson-completed/${lessonId}`);
   },
-  getCompletedLessons: async (courseId: number): Promise<number[]> => {
-    return apiRequest<number[]>(`/Enrollment/completed-lessons/${courseId}`);
-  },
-
-  // Get detailed completed lessons with completion dates
-  getCompletedLessonsDetailed: async (courseId: number): Promise<{
+  getCompletedLessons: async (courseId: number): Promise<{
     lessonId: number;
     enrollmentId: number;
     completedDate: string;
