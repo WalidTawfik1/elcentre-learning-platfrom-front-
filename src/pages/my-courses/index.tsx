@@ -92,29 +92,36 @@ export default function MyCourses() {
         
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="border rounded-lg overflow-hidden bg-card">
-                <Skeleton className="h-48 w-full" />
-                <div className="p-4 space-y-3">
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-5/6" />
-                  <Skeleton className="h-2 w-full" />
-                  <div className="flex justify-between items-center pt-4">
-                    <Skeleton className="h-4 w-1/4" />
-                    <Skeleton className="h-9 w-32" />
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden h-full flex flex-col animate-pulse">
+                <div className="aspect-video bg-gray-200"></div>
+                <div className="flex flex-col flex-1 p-4 space-y-3">
+                  <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-5 bg-gray-200 rounded-full"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/3"></div>
                   </div>
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                  <div className="py-2 px-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                    <div className="h-2 bg-gray-200 rounded w-full"></div>
+                  </div>
+                  <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                    <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                  </div>
+                  <div className="h-9 bg-gray-200 rounded w-full"></div>
                 </div>
               </div>
             ))}
           </div>
         ) : enrollments.length === 0 ? (
-          <div className="text-center py-16 border rounded-lg">
+          <div className="text-center py-16 bg-white rounded-xl shadow-md border border-gray-100">
             <div className="flex justify-center">
-              <GraduationCap className="h-16 w-16 text-muted-foreground/50" />
+              <GraduationCap className="h-16 w-16 text-gray-400" />
             </div>
-            <h3 className="text-2xl font-medium mt-4 mb-2">You're not enrolled in any courses yet</h3>
-            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+            <h3 className="text-2xl font-semibold text-gray-900 mt-4 mb-2">You're not enrolled in any courses yet</h3>
+            <p className="text-gray-500 mb-8 max-w-md mx-auto">
               Explore our course catalog to find courses that match your interests and career goals.
             </p>
             <Button asChild>
@@ -123,64 +130,100 @@ export default function MyCourses() {
           </div>
         ) : (          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {coursesData.map((course) => (
-              <Card key={course.id} className="overflow-hidden flex flex-col h-full">
+              <div key={course.id} className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden group hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+                {/* Thumbnail Section */}
                 <div className="aspect-video relative overflow-hidden">
                   <img
                     src={getImageUrl(course.thumbnail)}
                     alt={course.title}
-                    className="object-cover w-full h-full"
+                    className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
                   />
+                  
+                  {/* Progress Badge */}
+                  <div className="absolute top-3 right-3">
+                    <span className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs font-medium">
+                      {Math.round(course.progress)}% Complete
+                    </span>
+                  </div>
                 </div>
-                <CardHeader className="p-4 pb-2 flex-shrink-0">
-                  <CardTitle className="text-lg line-clamp-1 min-h-[1.75rem]">
-                    {course.title}
-                  </CardTitle>                  {course.instructorName && (                    <div className="flex items-center mt-1 min-h-[1.5rem]">
-                      <Avatar className="h-5 w-5 mr-1.5">
-                        <AvatarImage src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} alt={course.instructorName} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(course.instructorName)}</AvatarFallback>
-                      </Avatar>
-                      <span className="text-xs text-muted-foreground">{course.instructorName}</span>
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent className="p-4 pt-0 flex-1 flex flex-col">
-                  <div className="flex-1 min-h-[3rem] mb-3">
+
+                <div className="flex flex-col flex-1 p-4">
+                  {/* Header Section */}
+                  <div className="mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem] leading-tight">
+                      {course.title}
+                    </h3>
+                    
+                    {/* Instructor Info */}
+                    {course.instructorName && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage 
+                            src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} 
+                            alt={course.instructorName} 
+                          />
+                          <AvatarFallback className="bg-blue-50 text-blue-600 text-xs font-medium">
+                            {getInitials(course.instructorName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm text-gray-600">{course.instructorName}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  <div className="flex-1 mb-3">
                     <div 
-                      className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden prose max-w-none"
+                      className="text-sm text-gray-500 line-clamp-2 leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: course.description }}
                     />
                   </div>
-                  <div className="space-y-3 mt-auto">
-                    <div className="text-sm flex items-center justify-between">
-                      <span>Progress</span>
-                      <span className="font-medium">{Math.round(course.progress)}%</span>
+
+                  {/* Progress Section */}
+                  <div className="mb-3 py-2 px-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Progress</span>
+                      <span className="text-sm font-bold text-blue-600">{Math.round(course.progress)}%</span>
                     </div>
-                    <Progress value={course.progress} />
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+                        style={{ width: `${course.progress}%` }}
+                      />
+                    </div>
                   </div>
-                </CardContent>
-                <CardFooter className="p-4 border-t mt-auto">
-                  <div className="w-full flex justify-between items-center">
-                    <div className="flex items-center text-xs text-muted-foreground">
+
+                  {/* Status Section */}
+                  <div className="flex items-center justify-between mb-3 py-2 border-t border-gray-100">
+                    <div className="flex items-center gap-1 text-gray-500">
                       {course.enrollmentStatus === "Completed" ? (
-                        <div className="flex items-center">
-                          <BookOpen className="h-4 w-4 mr-1" />
-                          <span>Completed</span>
-                        </div>
+                        <>
+                          <BookOpen className="h-4 w-4" />
+                          <span className="text-sm font-medium text-green-600">Completed</span>
+                        </>
                       ) : (
-                        <div className="flex items-center">
-                          <Clock className="h-4 w-4 mr-1" />
-                          <span>{course.durationInHours ? `${course.durationInHours} hours` : "In Progress"}</span>
-                        </div>
+                        <>
+                          <Clock className="h-4 w-4" />
+                          <span className="text-sm">{course.durationInHours ? `${course.durationInHours} hours` : "In Progress"}</span>
+                        </>
                       )}
                     </div>
-                    <Button className="bg-eduBlue-500 hover:bg-eduBlue-600" asChild>
+                  </div>
+
+                  {/* Footer Section */}
+                  <div className="flex items-center justify-center">
+                    <Button 
+                      className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200" 
+                      asChild
+                    >
                       <Link to={`/my-courses/${course.id}/learn`}>
-                        <Play className="h-4 w-4 mr-2" /> Continue Learning
+                        <Play className="h-4 w-4 mr-2" /> 
+                        {course.progress > 0 ? 'Continue Learning' : 'Start Learning'}
                       </Link>
                     </Button>
                   </div>
-                </CardFooter>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         )}

@@ -985,10 +985,11 @@ export default function CourseLearn() {
               </div>
             </div>
               {/* Course Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-full overflow-hidden">              <TabsList className="w-full justify-start border-b rounded-none mb-6 px-0 h-auto">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-full overflow-hidden">
+              <TabsList className="w-full justify-start border-b rounded-none mb-6 px-0 h-auto">
                 <TabsTrigger 
                   value="overview"
-                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-600 h-10 font-medium transition-all duration-200"
                 >
                   <Book className="h-4 w-4 mr-2" />
                   Overview
@@ -996,19 +997,19 @@ export default function CourseLearn() {
                 {(course?.useAIAssistant || isInstructorViewing) && (
                   <TabsTrigger 
                     value="ai-assistant"
-                    className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+                    className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-600 h-10 font-medium transition-all duration-200"
                   >
                     <Bot className="h-4 w-4 mr-2" />
                     AI Assistant
                     {(isProcessingContent || isTranscribing) && (
-                      <div className="ml-2 h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
+                      <div className="ml-2 h-2 w-2 bg-cyan-500 rounded-full animate-pulse" />
                     )}
                   </TabsTrigger>
                 )}
                 {!isInstructorViewing && (
                   <TabsTrigger 
                     value="quizzes"
-                    className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+                    className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-600 h-10 font-medium transition-all duration-200"
                   >
                     <HelpCircle className="h-4 w-4 mr-2" />
                     Quizzes
@@ -1016,14 +1017,14 @@ export default function CourseLearn() {
                 )}
                 <TabsTrigger 
                   value="qa"
-                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-600 h-10 font-medium transition-all duration-200"
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Q&A
                 </TabsTrigger>
                 <TabsTrigger 
                   value="reviews"
-                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-600 h-10 font-medium transition-all duration-200"
                   onClick={handleFetchReviews}
                 >
                   <StarIcon className="h-4 w-4 mr-2" />
@@ -1032,7 +1033,7 @@ export default function CourseLearn() {
                 {!isInstructorViewing && (
                   <TabsTrigger 
                     value="notifications"
-                    className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+                    className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-600 h-10 font-medium transition-all duration-200"
                   >
                     <Bell className="h-4 w-4 mr-2" />
                     Announcements

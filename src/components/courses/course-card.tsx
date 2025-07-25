@@ -1,9 +1,8 @@
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { StarIcon } from "lucide-react";
+import { StarIcon, ClockIcon } from "lucide-react";
 import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
 
@@ -38,11 +37,11 @@ export function CourseCard({
   // Helper function to render stars based on rating
   const renderRating = (rating: number) => {
     return (
-      <div className="flex items-center">
+      <div className="flex items-center gap-1">
         {[...Array(5)].map((_, i) => (
           <StarIcon
             key={i}
-            className={`h-4 w-4 ${
+            className={`h-3 w-3 ${
               i < Math.floor(rating) 
                 ? "text-yellow-400 fill-yellow-400" 
                 : i < rating 
@@ -51,74 +50,102 @@ export function CourseCard({
             }`}
           />
         ))}
-        <span className="ml-2 text-xs text-muted-foreground">{rating.toFixed(1)}</span>
+        <span className="ml-1 text-xs text-gray-600 font-medium">{rating.toFixed(1)}</span>
       </div>
     );
-  };  // Format the thumbnail URL correctly
+  };
+
+  // Format the thumbnail URL correctly
   const formattedThumbnail = getImageUrl(thumbnail);
 
   // Handle avatar source properly
   const avatarSrc = (instructor.image || instructor.avatar) ? getImageUrl(instructor.image || instructor.avatar) : "";
+
   return (
-    <Card className="overflow-hidden group hover:shadow-md transition-shadow h-full flex flex-col">
-      <Link to={`/courses/${id}`}>
+    <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden group hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+      {/* Thumbnail Section */}
+      <Link to={`/courses/${id}`} className="block">
         <div className="aspect-video relative overflow-hidden">
           <img
             src={formattedThumbnail}
             alt={title}
             width={320}
             height={180}
-            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
           />
-          <Badge className="absolute top-2 right-2 bg-primary/90">{category}</Badge>
+          {/* Category Badge */}
+          <div className="absolute top-3 right-3">
+            <span className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs font-medium">
+              {category}
+            </span>
+          </div>
         </div>
       </Link>
-      <div className="flex flex-col flex-1">
-        <CardHeader className="p-4 flex-shrink-0">
-          <CardTitle className="text-lg line-clamp-1 min-h-[1.75rem]">
-            <Link to={`/courses/${id}`} className="hover:text-primary transition-colors">
+
+      <div className="flex flex-col flex-1 p-4">
+        {/* Header Section */}
+        <div className="mb-3">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem] leading-tight">
+            <Link 
+              to={`/courses/${id}`} 
+              className="hover:text-blue-600 transition-colors duration-200"
+            >
               {title}
             </Link>
-          </CardTitle>
-          <div className="flex items-center mt-1 min-h-[1.5rem]">
-            <Avatar className="h-6 w-6 mr-2">
+          </h3>
+          
+          {/* Instructor Info */}
+          <div className="flex items-center gap-2 mb-2">
+            <Avatar className="h-5 w-5">
               <AvatarImage 
                 src={avatarSrc} 
                 alt={instructor.name} 
               />
-              <AvatarFallback className="bg-primary/10 text-primary text-xs">
+              <AvatarFallback className="bg-blue-50 text-blue-600 text-xs font-medium">
                 {getInitials(instructor.name)}
               </AvatarFallback>
             </Avatar>
-            <span className="text-xs text-muted-foreground">{instructor.name}</span>
+            <span className="text-sm text-gray-600">{instructor.name}</span>
           </div>
-        </CardHeader>
-        <CardContent className="p-4 pt-0 flex-1 flex flex-col">
-          <div className="flex-1 min-h-[3rem] mb-2">
-            <div 
-              className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: description }}
-            />
+        </div>
+
+        {/* Description */}
+        <div className="flex-1 mb-3">
+          <div 
+            className="text-sm text-gray-500 line-clamp-2 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: description }}
+          />
+        </div>
+
+        {/* Stats Section */}
+        <div className="flex items-center justify-between mb-3 py-2 border-t border-gray-100">
+          <div className="flex items-center gap-1 text-gray-500">
+            <ClockIcon className="h-4 w-4" />
+            <span className="text-sm">{duration}</span>
           </div>
-          <div className="flex justify-between text-xs text-muted-foreground mt-auto">
-            <span>{duration}</span>
-            {renderRating(rating)}
-          </div>
-        </CardContent>
-        <CardFooter className="p-4 flex justify-between items-center border-t mt-auto">
-          <div className="font-semibold">
+          {renderRating(rating)}
+        </div>
+
+        {/* Footer Section */}
+        <div className="flex items-center justify-between">
+          <div className="text-lg font-bold">
             {price === 0 ? (
-              <span className="text-eduAccent">Free</span>
+              <span className="text-green-600">Free</span>
             ) : (
-              <span>{price.toFixed(2)} EGP</span>
+              <span className="text-gray-900">{price.toFixed(2)} EGP</span>
             )}
           </div>
-          <Button variant="outline" size="sm" asChild>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            asChild
+            className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300 font-medium px-3 py-1.5 rounded-md transition-colors duration-200"
+          >
             <Link to={`/courses/${id}`}>View Course</Link>
           </Button>
-        </CardFooter>
+        </div>
       </div>
-    </Card>
+    </div>
   );
 }

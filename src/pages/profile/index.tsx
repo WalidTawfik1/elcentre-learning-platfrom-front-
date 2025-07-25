@@ -295,11 +295,11 @@ export default function ProfilePage() {
             </TabsList>
             
             <TabsContent value="information" className="py-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+              <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+                <div className="flex flex-row items-center justify-between p-6 border-b border-gray-100">
                   <div>
-                    <CardTitle>Personal Information</CardTitle>
-                    <CardDescription>View and edit your personal information</CardDescription>
+                    <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+                    <p className="text-sm text-gray-500">View and edit your personal information</p>
                   </div>
                   {!isEditing ? (
                     <Button onClick={startEditing}>Edit Profile</Button>
@@ -308,10 +308,10 @@ export default function ProfilePage() {
                       Cancel
                     </Button>
                   )}
-                </CardHeader>
+                </div>
                 
                 <form onSubmit={handleSubmit}>
-                  <CardContent className="space-y-4">
+                  <div className="p-6 space-y-4">
                     {formError && (
                       <Alert variant="destructive">
                         <AlertDescription>{formError}</AlertDescription>
@@ -453,10 +453,10 @@ export default function ProfilePage() {
                         </div>
                       )}
                     </div>
-                  </CardContent>
+                  </div>
                   
                   {isEditing && (
-                    <CardFooter>
+                    <div className="px-6 py-4 border-t border-gray-100">
                       <Button type="submit" className="ml-auto" disabled={isSaving}>
                         {isSaving ? (
                           <>
@@ -470,10 +470,10 @@ export default function ProfilePage() {
                           </>
                         )}
                       </Button>
-                    </CardFooter>
+                    </div>
                   )}
                 </form>
-              </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

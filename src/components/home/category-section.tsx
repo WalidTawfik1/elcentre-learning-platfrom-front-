@@ -30,12 +30,18 @@ export function CategorySection({ categories, isLoading, error, mockCategories }
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white rounded-lg p-6 text-center">
-                <Skeleton className="h-12 w-12 rounded-full mx-auto mb-4" />
-                <Skeleton className="h-6 w-3/4 mx-auto mb-2" />
-                <Skeleton className="h-4 w-full" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div key={i} className="bg-white rounded-xl shadow-md border border-gray-100 p-6 h-full flex flex-col animate-pulse">
+                <div className="h-12 w-12 rounded-xl bg-gray-200 mb-4 flex-shrink-0"></div>
+                <div className="h-6 w-3/4 bg-gray-200 rounded mb-2"></div>
+                <div className="flex-1 mb-4">
+                  <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
+                  <div className="h-4 w-2/3 bg-gray-200 rounded"></div>
+                </div>
+                <div className="border-t border-gray-100 pt-3">
+                  <div className="h-4 w-1/2 bg-gray-200 rounded"></div>
+                </div>
               </div>
             ))}
           </div>

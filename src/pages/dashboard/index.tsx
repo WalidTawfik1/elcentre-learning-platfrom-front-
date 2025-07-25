@@ -24,6 +24,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
+import WeeklyProgressChart from "@/components/charts/weekly-progress-chart";
 
 // Learning quotes and tips
 const motivationalQuotes = [
@@ -46,6 +47,11 @@ export default function StudentDashboard() {
   const [currentCourses, setCurrentCourses] = useState<any[]>([]);
   const [suggestedCourses, setSuggestedCourses] = useState<any[]>([]);
   const [wishlistCourses, setWishlistCourses] = useState<any[]>([]);
+  const [completedLessons, setCompletedLessons] = useState<{
+    lessonId: number;
+    enrollmentId: number;
+    completedDate: string;
+  }[]>([]);
   const [greeting, setGreeting] = useState<string>("");
   const [quote, setQuote] = useState<string>("");
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
@@ -112,7 +118,28 @@ export default function StudentDashboard() {
               .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
               .map(result => result.value);
             
-            setCurrentCourses(successfulCourses);            
+            setCurrentCourses(successfulCourses);
+            
+            // Fetch completed lessons for all enrolled courses
+            try {
+              const allCompletedLessons = await Promise.allSettled(
+                enrollmentsData.map(async (enrollment) => {
+                  const lessons = await EnrollmentService.getCompletedLessonsDetailed(enrollment.courseId);
+                  return lessons;
+                })
+              );
+              
+              // Flatten all completed lessons into a single array
+              const completedLessonsData = allCompletedLessons
+                .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+                .flatMap(result => result.value);
+              
+              setCompletedLessons(completedLessonsData);
+            } catch (error) {
+              // Silently handle completed lessons error
+              console.warn("Failed to fetch completed lessons:", error);
+            }
+            
             // Get suggested courses based on the first course's category (if available)
             if (successfulCourses.length > 0 && successfulCourses[0].categoryId) {
               try {
@@ -199,6 +226,11 @@ export default function StudentDashboard() {
           </div>
         </div>
 
+        {/* Weekly Progress Chart - Show even during loading with empty data */}
+        <div className="mb-8">
+          <WeeklyProgressChart completedLessons={completedLessons} />
+        </div>
+
         {isLoading || isLoadingDashboard ? (
           <div className="space-y-8">
             {/* Skeleton loaders for all sections */}
@@ -251,73 +283,100 @@ export default function StudentDashboard() {
                   </Button>
                 </div>              ) : (                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {currentCourses.slice(0, 3).map((course) => (
-                    <Card key={course.id} className="overflow-hidden flex flex-col h-full">
+                    <div key={course.id} className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden group hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+                      {/* Thumbnail Section */}
                       <div className="aspect-video relative overflow-hidden">
                         <img
                           src={formatThumbnailUrl(course.thumbnail)}
                           alt={course.title}
-                          className="object-cover w-full h-full"
+                          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
                         />
-                      </div>
-                      
-                      <div className="flex flex-col flex-1">
-                        <CardHeader className="p-4 pb-2 flex-shrink-0">
-                          <CardTitle className="text-lg line-clamp-1 min-h-[1.75rem]">
-                            {course.title}
-                          </CardTitle>
-                          <div className="min-h-[1.5rem] flex items-center">
-                            {course.instructorName && (
-                              <div className="flex items-center mt-1">
-                                <Avatar className="h-5 w-5 mr-1.5">
-                                  <AvatarImage src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} alt={course.instructorName} />
-                                  <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(course.instructorName)}</AvatarFallback>
-                                </Avatar>
-                                <span className="text-xs text-muted-foreground">{course.instructorName}</span>
-                              </div>
-                            )}
-                          </div>
-                        </CardHeader>
                         
-                        <CardContent className="p-4 pt-0 flex-1 flex flex-col">
-                          <div className="flex-1 min-h-[3rem] mb-3">
+                        {/* Progress Badge */}
+                        <div className="absolute top-3 right-3">
+                          <span className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs font-medium">
+                            {Math.round(course.progress)}% Complete
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col flex-1 p-4">
+                        {/* Header Section */}
+                        <div className="mb-3">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem] leading-tight">
+                            {course.title}
+                          </h3>
+                          
+                          {/* Instructor Info */}
+                          {course.instructorName && (
+                            <div className="flex items-center gap-2 mb-2">
+                              <Avatar className="h-5 w-5">
+                                <AvatarImage 
+                                  src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} 
+                                  alt={course.instructorName} 
+                                />
+                                <AvatarFallback className="bg-blue-50 text-blue-600 text-xs font-medium">
+                                  {getInitials(course.instructorName)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm text-gray-600">{course.instructorName}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Description */}
+                        <div className="flex-1 mb-3">
+                          <div 
+                            className="text-sm text-gray-500 line-clamp-2 leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: course.description || "No description available" }}
+                          />
+                        </div>
+
+                        {/* Progress Section */}
+                        <div className="mb-3 py-2 px-3 bg-gray-50 rounded-lg border border-gray-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700">Progress</span>
+                            <span className="text-sm font-bold text-blue-600">{Math.round(course.progress)}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
-                              className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden prose max-w-none"
-                              dangerouslySetInnerHTML={{ __html: course.description || "No description available" }}
+                              className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+                              style={{ width: `${course.progress}%` }}
                             />
                           </div>
-                          
-                          <div className="space-y-3 mt-auto">
-                            <div className="text-sm flex items-center justify-between">
-                              <span>Progress</span>
-                              <span className="font-medium">{Math.round(course.progress)}%</span>
-                            </div>
-                            <Progress value={course.progress} />
-                          </div>
-                        </CardContent>
-                      </div>
-                      <CardFooter className="p-4 border-t">
-                        <div className="w-full flex justify-between items-center">
-                          <div className="flex items-center text-xs text-muted-foreground">
+                        </div>
+
+                        {/* Status Section */}
+                        <div className="flex items-center justify-between mb-3 py-2 border-t border-gray-100">
+                          <div className="flex items-center gap-1 text-gray-500">
                             {course.enrollmentStatus === "Completed" ? (
-                              <div className="flex items-center">
-                                <BookOpen className="h-4 w-4 mr-1" />
-                                <span>Completed</span>
-                              </div>
+                              <>
+                                <BookOpen className="h-4 w-4" />
+                                <span className="text-sm font-medium text-green-600">Completed</span>
+                              </>
                             ) : (
-                              <div className="flex items-center">
-                                <Clock className="h-4 w-4 mr-1" />
-                                <span>{course.durationInHours ? `${course.durationInHours} hours` : "In Progress"}</span>
-                              </div>
+                              <>
+                                <Clock className="h-4 w-4" />
+                                <span className="text-sm">{course.durationInHours ? `${course.durationInHours} hours` : "In Progress"}</span>
+                              </>
                             )}
                           </div>
-                          <Button asChild>
+                        </div>
+
+                        {/* Footer Section */}
+                        <div className="flex items-center justify-center">
+                          <Button 
+                            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200" 
+                            asChild
+                          >
                             <Link to={`/my-courses/${course.id}/learn`}>
-                              <Play className="h-4 w-4 mr-2" /> Continue
+                              <Play className="h-4 w-4 mr-2" /> 
+                              {course.progress > 0 ? 'Continue Learning' : 'Start Learning'}
                             </Link>
                           </Button>
                         </div>
-                      </CardFooter>
-                    </Card>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -337,12 +396,13 @@ export default function StudentDashboard() {
                 </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {suggestedCourses.map((course) => (
-                    <Card key={course.id} className="overflow-hidden flex flex-col h-full">
+                    <div key={course.id} className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden group hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+                      {/* Thumbnail Section */}
                       <div className="aspect-video relative overflow-hidden">
                         <img
                           src={formatThumbnailUrl(course.thumbnail)}
                           alt={course.title}
-                          className="object-cover w-full h-full"
+                          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
                         />
                         <button 
                           onClick={() => toggleWishlist(course)}
@@ -357,58 +417,72 @@ export default function StudentDashboard() {
                         </button>
                       </div>
                       
-                      <div className="flex flex-col flex-1">
-                        <CardHeader className="p-4 pb-2 flex-shrink-0">
-                          <CardTitle className="text-lg line-clamp-1 min-h-[1.75rem]">
+                      <div className="flex flex-col flex-1 p-4">
+                        {/* Header Section */}
+                        <div className="mb-3">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem] leading-tight">
                             {course.title}
-                          </CardTitle>
-                          <div className="min-h-[1.5rem] flex items-center">
-                            {course.instructorName && (
-                              <div className="flex items-center mt-1">
-                                <Avatar className="h-5 w-5 mr-1.5">
-                                  <AvatarImage src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} alt={course.instructorName} />
-                                  <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(course.instructorName)}</AvatarFallback>
-                                </Avatar>
-                                <span className="text-xs text-muted-foreground">{course.instructorName}</span>
-                              </div>
-                            )}
-                          </div>
-                        </CardHeader>
-                        
-                        <CardContent className="p-4 pt-0 flex-1 flex flex-col">
-                          <div className="flex-1 min-h-[3rem] mb-3">
-                            <div 
-                              className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden prose max-w-none"
-                              dangerouslySetInnerHTML={{ __html: course.description || "No description available" }}
-                            />
-                          </div>
+                          </h3>
                           
-                          {/* Recommendation reason - Fixed height section */}
-                          <div className="min-h-[1.5rem] mb-3 flex items-start">
-                            {currentCourses.length > 0 && currentCourses[0].categoryId === course.categoryId ? (
-                              <div className="text-xs px-3 py-1 bg-muted rounded-full inline-flex items-center">
-                                <span>Because you're learning {currentCourses[0].title}</span>
-                              </div>
-                            ) : (
-                              <div className="h-6"></div> /* Placeholder for consistent spacing */
-                            )}
+                          {/* Instructor Info */}
+                          {course.instructorName && (
+                            <div className="flex items-center gap-2 mb-2">
+                              <Avatar className="h-5 w-5">
+                                <AvatarImage 
+                                  src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} 
+                                  alt={course.instructorName} 
+                                />
+                                <AvatarFallback className="bg-blue-50 text-blue-600 text-xs font-medium">
+                                  {getInitials(course.instructorName)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm text-gray-600">{course.instructorName}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Description */}
+                        <div className="flex-1 mb-3">
+                          <div 
+                            className="text-sm text-gray-500 line-clamp-2 leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: course.description || "No description available" }}
+                          />
+                        </div>
+
+                        {/* Recommendation reason - Fixed height section */}
+                        <div className="mb-3 py-2 px-3 bg-blue-50 rounded-lg border border-blue-100">
+                          {currentCourses.length > 0 && currentCourses[0].categoryId === course.categoryId ? (
+                            <div className="text-xs text-blue-600 font-medium text-center">
+                              <span>Because you're learning {currentCourses[0].title}</span>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-blue-600 font-medium text-center">
+                              <span>Recommended for you</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Status Section */}
+                        <div className="flex items-center justify-between mb-3 py-2 border-t border-gray-100">
+                          <div className="flex items-center gap-1 text-gray-500">
+                            <BookOpen className="h-4 w-4" />
+                            <span className="text-sm">{course.durationInHours ? `${course.durationInHours} hours` : "Course"}</span>
                           </div>
-                        </CardContent>
-                      </div>
-                      <CardFooter className="p-4 border-t">
-                        <div className="w-full flex justify-between items-center">
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <BookOpen className="h-4 w-4 mr-1" />
-                            <span>{course.durationInHours ? `${course.durationInHours} hours` : "Course"}</span>
-                          </div>
-                          <Button asChild>
+                        </div>
+
+                        {/* Footer Section */}
+                        <div className="flex items-center justify-center">
+                          <Button 
+                            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200" 
+                            asChild
+                          >
                             <Link to={`/courses/${course.id}`}>
                               View Details
                             </Link>
                           </Button>
                         </div>
-                      </CardFooter>
-                    </Card>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </section>
@@ -434,7 +508,7 @@ export default function StudentDashboard() {
                 </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {wishlistCourses.map((course) => (
-                    <Card key={course.id} className="overflow-hidden flex flex-col h-full">
+                    <div key={course.id} className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden flex flex-col h-full transition-all duration-200 hover:shadow-lg">
                       <div className="aspect-video relative overflow-hidden">
                         <img
                           src={formatThumbnailUrl(course.thumbnail)}
@@ -450,37 +524,37 @@ export default function StudentDashboard() {
                         </button>
                       </div>
                       
-                      <div className="flex flex-col flex-1">
-                        <CardHeader className="p-4 pb-2 flex-shrink-0">
-                          <CardTitle className="text-lg line-clamp-1 min-h-[1.75rem]">
+                      <div className="flex flex-col flex-1 p-6">
+                        <div className="flex-shrink-0 mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900 line-clamp-1 min-h-[1.75rem]">
                             {course.title}
-                          </CardTitle>
+                          </h3>
                           <div className="min-h-[1.5rem] flex items-center">
                             {course.instructorName && (
                               <div className="flex items-center mt-1">
                                 <Avatar className="h-5 w-5 mr-1.5">
                                   <AvatarImage src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} alt={course.instructorName} />
-                                  <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(course.instructorName)}</AvatarFallback>
+                                  <AvatarFallback className="bg-blue-50 text-blue-500 text-xs">{getInitials(course.instructorName)}</AvatarFallback>
                                 </Avatar>
-                                <span className="text-xs text-muted-foreground">{course.instructorName}</span>
+                                <span className="text-xs text-gray-500">{course.instructorName}</span>
                               </div>
                             )}
                           </div>
-                        </CardHeader>
+                        </div>
                         
-                        <CardContent className="p-4 pt-0 flex-1 flex flex-col">
+                        <div className="flex-1 flex flex-col">
                           <div className="flex-1 min-h-[3rem] mb-3">
                             <div 
-                              className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden prose max-w-none"
+                              className="text-sm text-gray-500 line-clamp-2 h-10 overflow-hidden prose max-w-none"
                               dangerouslySetInnerHTML={{ __html: course.description || "No description available" }}
                             />
                           </div>
                           
                           {/* Price section - Fixed height */}
-                          <div className="min-h-[1.5rem] mb-3 flex items-start">
+                          <div className="min-h-[1.5rem] mb-4 flex items-start">
                             {course.price !== undefined ? (
                               <div className="mb-3">
-                                <span className="font-semibold">
+                                <span className="font-semibold text-gray-900">
                                   {course.price === 0 ? "Free" : `${course.price} EGP`}
                                 </span>
                               </div>
@@ -488,22 +562,23 @@ export default function StudentDashboard() {
                               <div className="h-6"></div> /* Placeholder for consistent spacing */
                             )}
                           </div>
-                        </CardContent>
-                      </div>
-                      <CardFooter className="p-4 border-t">
-                        <div className="w-full flex justify-between items-center">
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <Clock className="h-4 w-4 mr-1" />
-                            <span>Added {new Date().toLocaleDateString()}</span>
-                          </div>
-                          <Button asChild>
-                            <Link to={`/courses/${course.id}`}>
-                              View Details
-                            </Link>
-                          </Button>
                         </div>
-                      </CardFooter>
-                    </Card>
+                        
+                        <div className="border-t border-gray-100 pt-4">
+                          <div className="w-full flex justify-between items-center">
+                            <div className="flex items-center text-xs text-gray-500">
+                              <Clock className="h-4 w-4 mr-1" />
+                              <span>Added {new Date().toLocaleDateString()}</span>
+                            </div>
+                            <Button asChild>
+                              <Link to={`/courses/${course.id}`}>
+                                View Details
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </section>

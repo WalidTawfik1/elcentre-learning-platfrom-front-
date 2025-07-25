@@ -64,10 +64,10 @@ export function CourseSection({ courses, isLoading, error, mockCourses }: Course
       ) : error ? (
         <div className="text-center py-8">
           <p className="text-red-500 mb-4">Could not connect to course data.</p>
-          <FeaturedCourses courses={mockCourses} />
+          <FeaturedCourses courses={mockCourses} showHeader={false} />
         </div>
       ) : (
-        <FeaturedCourses courses={mappedCourses} />
+        <FeaturedCourses courses={mappedCourses} showHeader={false} />
       )}
     </section>
   );

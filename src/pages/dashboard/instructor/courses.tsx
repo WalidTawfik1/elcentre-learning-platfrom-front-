@@ -144,138 +144,151 @@ export default function InstructorCourses() {
           </div>        ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map((course) => (
-              <Card key={course.id} className="overflow-hidden flex flex-col h-full">
+              <div key={course.id} className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden group hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+                {/* Thumbnail Section */}
                 <div className="aspect-video relative overflow-hidden">
                   <img
                     src={formatThumbnailUrl(course.thumbnail)}
                     alt={course.title}
-                    className="object-cover w-full h-full"
+                    className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
                   />
-                  <Badge 
-                    variant={course.isActive ? "default" : "secondary"}
-                    className="absolute top-2 right-2"
-                  >
-                    {course.isActive ? (
-                      <>
-                        <div className="h-1.5 w-1.5 rounded-full bg-green-500 mr-1.5" />
-                        Published
-                      </>
-                    ) : (
-                      <>
-                        <div className="h-1.5 w-1.5 rounded-full bg-gray-400 mr-1.5" />
-                        Draft
-                      </>
-                    )}
-                  </Badge>
-                </div>
-                
-                <div className="flex flex-col flex-1">
-                  <CardHeader className="p-4 pb-2 flex-shrink-0">
-                    <CardTitle className="text-lg line-clamp-1 min-h-[1.75rem]">
-                      {course.title}
-                    </CardTitle>
-                  </CardHeader>
                   
-                  <CardContent className="p-4 pt-0 flex-1 flex flex-col">
-                    <div className="flex-1 min-h-[3rem] mb-3">
-                      <div 
-                        className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden prose max-w-none"
-                        dangerouslySetInnerHTML={{ __html: course.description || "No description available" }}
-                      />
-                    </div>
-                    
-                    {/* Course Status Badge - Fixed height section */}
-                    <div className="min-h-[2rem] mb-3 flex items-start">
-                      {course.courseStatus ? (
-                        <Badge 
-                          variant={
-                            course.courseStatus === "Approved" ? "default" : 
-                            course.courseStatus === "Pending" ? "secondary" : 
-                            "destructive"
-                          }
-                          className={
-                            course.courseStatus === "Approved" ? "bg-green-100 text-green-800 hover:bg-green-200" :
-                            course.courseStatus === "Pending" ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200" :
-                            "bg-red-100 text-red-800 hover:bg-red-200"
-                          }
-                        >
-                          {course.courseStatus === "Approved" && "✓ Approved"}
-                          {course.courseStatus === "Pending" && "⏳ Pending Review"}
-                          {course.courseStatus === "Rejected" && "✗ Rejected"}
-                          {!["Approved", "Pending", "Rejected"].includes(course.courseStatus) && course.courseStatus}
-                        </Badge>
+                  {/* Status Badge - Top Left */}
+                  <div className="absolute top-2 left-2">
+                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+                      course.isActive 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-500 text-white'
+                    }`}>
+                      {course.isActive ? (
+                        <>
+                          <div className="inline-block h-1.5 w-1.5 rounded-full bg-white mr-1.5" />
+                          Published
+                        </>
                       ) : (
-                        <div className="h-6"></div> /* Placeholder for consistent spacing */
+                        <>
+                          <div className="inline-block h-1.5 w-1.5 rounded-full bg-white mr-1.5" />
+                          Draft
+                        </>
                       )}
+                    </span>
+                  </div>
+
+                  {/* Course Status Badge - Top Right */}
+                  {course.courseStatus && (
+                    <div className="absolute top-3 right-3">
+                      <span className="bg-green-500 text-white px-2 py-1 rounded-md text-xs font-medium">
+                        {course.courseStatus === "Approved" && "✓ Approved"}
+                        {course.courseStatus === "Pending" && "⏳ Pending"}
+                        {course.courseStatus === "Rejected" && "✗ Rejected"}
+                      </span>
                     </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col flex-1 p-4">
+                  {/* Header Section */}
+                  <div className="mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem] leading-tight">
+                      {course.title}
+                    </h3>
                     
-                    <div className="grid grid-cols-2 gap-2 text-sm mt-auto">
-                      <div className="flex items-center">
-                        <Users className="h-4 w-4 mr-1 text-muted-foreground" />
+                    {/* Course Info */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Clock className="h-3 w-3" />
+                        <span>{course.durationInHours ? `${course.durationInHours} hours` : "Course"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div className="flex-1 mb-3">
+                    <div 
+                      className="text-sm text-gray-500 line-clamp-2 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: course.description || "No description available" }}
+                    />
+                  </div>
+
+                  {/* Stats Section */}
+                  <div className="mb-3 py-2 px-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <div className="flex items-center justify-between text-xs text-gray-600">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
                         <span>{course.studentsCount?.toLocaleString() || 0} students</span>
                       </div>
-                      <div className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" />
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="h-3 w-3" />
                         <span>{course.price === 0 ? "Free" : `${course.price} EGP`}</span>
                       </div>
                     </div>
-                  </CardContent>
-                </div>
-                <CardFooter className="p-4 border-t">
-                  <div className="w-full flex justify-between items-center">
-                    <div className="flex gap-2">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="icon">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete your
-                              course and remove all related data.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteCourse(course.id)}
-                              className="bg-red-500 hover:bg-red-600"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                  </div>
+
+                  {/* Status Section */}
+                  <div className="flex items-center justify-between mb-3 py-2 border-t border-gray-100">
+                    <div className="flex items-center gap-1 text-gray-500">
+                      <span className="text-sm">Your Course</span>
                     </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="hover:bg-blue-100 hover:text-blue-600" 
-                        asChild
-                      >
-                        <Link to={`/my-courses/${course.id}/learn?instructor=true`}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Course
-                        </Link>
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="hover:bg-gray-100" 
-                        asChild
-                      >
-                        <Link to={`/courses/${course.id}`}>
-                          Preview & Manage
-                        </Link>
-                      </Button>
+                    <div className="flex items-center gap-1 text-blue-600">
+                      <span className="text-sm font-medium">Manage</span>
                     </div>
                   </div>
-                </CardFooter>
-              </Card>
+
+                  {/* Footer Section */}
+                  <div className="flex items-center gap-2">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="bg-red-50 border-red-200 text-red-600 hover:bg-red-100 hover:border-red-300 px-2 py-1.5 rounded-md transition-colors duration-200"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete your
+                            course and remove all related data.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteCourse(course.id)}
+                            className="bg-red-500 hover:bg-red-600"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+
+                    <Button 
+                      className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200" 
+                      asChild
+                    >
+                      <Link to={`/my-courses/${course.id}/learn?instructor=true`}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Course
+                      </Link>
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="border-blue-200 text-blue-600 hover:bg-blue-50 px-3"
+                      asChild
+                    >
+                      <Link to={`/courses/${course.id}`}>
+                        Manage
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         )}

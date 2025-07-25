@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { MainLayout } from "@/components/layouts/main-layout";
@@ -7,13 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// Icons from lucide-react
 import { 
   BookOpen, 
   Users, 
   Layers,
   LightbulbIcon,
   BadgeCheck,
-  Pencil
+  Pencil,
+  TrendingUp
 } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { EnrollmentService } from "@/services/enrollment-service";
@@ -41,95 +44,116 @@ export default function InstructorDashboard() {
   const [greeting, setGreeting] = useState<string>("");
   const [tip, setTip] = useState<string>("");
   
-  // Optimized data fetching with React Query and timeouts
+  // Separate queries for better performance - load basic course data first
   const { 
-    data: courses = [], 
-    isLoading, 
-    error,
-    refetch 
+    data: basicCourses = [], 
+    isLoading: coursesLoading, 
+    error: coursesError
   } = useQuery({
-    queryKey: ['instructorCourses'],
-    queryFn: async () => {
-      try {
-        // Add timeout wrapper for the entire operation
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout')), 15000)
-        );
-
-        const mainPromise = async () => {
-          // Get instructor courses first with timeout
-          const coursesData = await Promise.race([
-            CourseService.getInstructorCourses(),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Courses fetch timeout')), 8000)
-            )
-          ]);
-          
-          if (!Array.isArray(coursesData) || coursesData.length === 0) {
-            return [];
-          }
-          
-          // Get stats for all courses using single enrollment API call per course
-          // Add staggered delays to prevent overwhelming the server
-          const courseStatsPromises = coursesData.map(async (course: any, index: number) => {
-            try {
-              // Add a small delay between requests to prevent rate limiting
-              if (index > 0) {
-                await new Promise(resolve => setTimeout(resolve, index * 200)); // 200ms delay per course
-              }
-
-              
-              // Direct API call - removed timeout race for now to debug
-              const enrollments = await EnrollmentService.getCourseEnrollments(course.id);
-              
-              // Use dedicated service functions to calculate stats
-              const studentsCount = EnrollmentService.calculateStudentCount(enrollments);
-              const completionRate = EnrollmentService.calculateCourseCompletionRate(enrollments);
-              
-              return {
-                ...course,
-                studentsCount: studentsCount,
-                completionRate: completionRate,
-                enrollments: enrollments // Keep for average calculation
-              };
-            } catch (error) {
-              // Return course with default stats if individual course fails
-              return {
-                ...course,
-                studentsCount: 0,
-                completionRate: 0,
-                enrollments: []
-              };
-            }
-          });
-          
-          return await Promise.all(courseStatsPromises);
-        };
-
-        return await Promise.race([mainPromise(), timeoutPromise]);
-      } catch (error) {
-        console.error('Error fetching instructor courses:', error);
-        // Return empty array instead of throwing to prevent infinite loading
-        return [];
-      }
-    },
+    queryKey: ['instructorCourses', 'basic'],
+    queryFn: () => CourseService.getInstructorCourses(),
     enabled: isAuthenticated && user?.userType === "Instructor" && !authLoading,
-    staleTime: 3 * 60 * 1000, // 3 minutes - data stays fresh longer since we optimized API calls
-    gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer
-    retry: (failureCount, error) => {
-      // Don't retry on timeout or rate limit errors
-      if (error?.message?.includes('timeout') || error?.message?.includes('429')) {
-        return false;
-      }
-      return failureCount < 1; // Reduce retry attempts since we have better caching
-    },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+    retry: 1,
     refetchOnWindowFocus: false,
-    refetchOnMount: false, // Don't refetch on mount if data exists
+    refetchOnMount: false,
   });
+
+  // Load enrollment stats separately and in background
+  const { 
+    data: enrollmentStats = {}, 
+    isLoading: statsLoading 
+  } = useQuery({
+    queryKey: ['instructorEnrollmentStats', basicCourses.map(c => c.id)],
+    queryFn: async () => {
+      if (!basicCourses.length) return {};
+      
+      const stats = {};
+      
+      // Process courses in smaller batches for better performance
+      const batchSize = 2;
+      for (let i = 0; i < basicCourses.length; i += batchSize) {
+        const batch = basicCourses.slice(i, i + batchSize);
+        
+        const batchPromises = batch.map(async (course) => {
+          try {
+            const enrollments = await EnrollmentService.getCourseEnrollments(course.id);
+            return {
+              courseId: course.id,
+              studentsCount: EnrollmentService.calculateStudentCount(enrollments),
+              completionRate: EnrollmentService.calculateCourseCompletionRate(enrollments),
+              enrollments: enrollments
+            };
+          } catch (error) {
+            return {
+              courseId: course.id,
+              studentsCount: 0,
+              completionRate: 0,
+              enrollments: []
+            };
+          }
+        });
+        
+        const batchResults = await Promise.all(batchPromises);
+        batchResults.forEach(result => {
+          stats[result.courseId] = result;
+        });
+        
+        // Small delay between batches to prevent overwhelming the server
+        if (i + batchSize < basicCourses.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      return stats;
+    },
+    enabled: basicCourses.length > 0,
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  // Memoize expensive calculations
+  const dashboardData = useMemo(() => {
+    const coursesArray = Array.isArray(basicCourses) ? basicCourses : [];
+    
+    // Combine course data with enrollment stats
+    const coursesWithStats = coursesArray.map(course => ({
+      ...course,
+      studentsCount: enrollmentStats[course.id]?.studentsCount || 0,
+      completionRate: enrollmentStats[course.id]?.completionRate || 0,
+      enrollments: enrollmentStats[course.id]?.enrollments || []
+    }));
+    
+    const totalStudents = coursesWithStats.reduce((acc, course) => acc + course.studentsCount, 0);
+    
+    const coursesEnrollmentData = coursesWithStats.map(course => ({
+      courseId: course.id,
+      enrollments: course.enrollments
+    }));
+    
+    const averageCompletionRate = coursesEnrollmentData.length > 0
+      ? EnrollmentService.calculateAverageCompletionRate(coursesEnrollmentData)
+      : 0;
+
+    return {
+      courses: coursesWithStats,
+      totalStudents,
+      averageCompletionRate: Math.floor(averageCompletionRate),
+      publishedCount: coursesWithStats.filter(c => c.isActive).length,
+      draftCount: coursesWithStats.length - coursesWithStats.filter(c => c.isActive).length
+    };
+  }, [basicCourses, enrollmentStats]);
+
+  // Memoize thumbnail URL formatting
+  const formatThumbnailUrl = useMemo(() => {
+    return (thumbnail: string | undefined): string => getImageUrl(thumbnail);
+  }, []);
   
-  // Set greeting based on time of day
-  useEffect(() => {
+  // Set greeting and tip - memoized to prevent unnecessary recalculations
+  const greetingAndTip = useMemo(() => {
     const hours = new Date().getHours();
     let greetingText = "";
     
@@ -147,12 +171,19 @@ export default function InstructorDashboard() {
       greetingText = `${greetingText}!`;
     }
     
-    setGreeting(greetingText);
-    
-    // Set a random instructor tip
     const randomIndex = Math.floor(Math.random() * instructorTips.length);
-    setTip(instructorTips[randomIndex]);
+    
+    return {
+      greeting: greetingText,
+      tip: instructorTips[randomIndex]
+    };
   }, [user]);
+
+  // Update state only when memoized values change
+  useEffect(() => {
+    setGreeting(greetingAndTip.greeting);
+    setTip(greetingAndTip.tip);
+  }, [greetingAndTip]);
 
   // Handle authentication redirect
   useEffect(() => {
@@ -163,33 +194,17 @@ export default function InstructorDashboard() {
 
   // Handle query errors
   useEffect(() => {
-    if (error) {
+    if (coursesError) {
       toast({
         title: "Error",
         description: "Failed to load your courses. Please try again.",
         variant: "destructive",
       });
     }
-  }, [error]);
-  
-  // Format the thumbnail URL properly using getImageUrl function
-  const formatThumbnailUrl = (thumbnail: string | undefined): string => {
-    return getImageUrl(thumbnail);
-  };
+  }, [coursesError]);
 
-  // Calculate total students across all courses
-  const coursesArray = Array.isArray(courses) ? courses : [];
-  const totalStudents = coursesArray.reduce((acc, course) => acc + (course.studentsCount || 0), 0);
-  
-  // Calculate overall completion rate using the service function
-  const coursesEnrollmentData = coursesArray.map(course => ({
-    courseId: course.id,
-    enrollments: course.enrollments || []
-  }));
-  
-  const averageCompletionRate = Math.floor(
-    EnrollmentService.calculateAverageCompletionRate(coursesEnrollmentData)
-  );
+  const isLoading = coursesLoading;
+  const isStatsLoading = statsLoading && !coursesLoading;
 
   return (
     <MainLayout>
@@ -199,7 +214,7 @@ export default function InstructorDashboard() {
           <div className="flex justify-between items-start mb-4">
             <h1 className="text-3xl font-bold">{greeting}</h1>
             <Button 
-              onClick={() => refetch()} 
+              onClick={() => window.location.reload()} 
               variant="outline" 
               size="sm"
               disabled={isLoading}
@@ -254,61 +269,67 @@ export default function InstructorDashboard() {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Stats Overview Cards */}
+            {/* Stats Overview Cards - Show basic data immediately, update with stats when available */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Total Courses
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center">
-                    <Layers className="h-5 w-5 mr-2 text-primary" />
-                    <div className="text-3xl font-bold">{coursesArray.length}</div>
+              <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-600 mb-1">Total Courses</h3>
+                    <div className="flex items-center">
+                      <Layers className="h-5 w-5 mr-2 text-blue-500" />
+                      <div className="text-3xl font-bold text-gray-900">{dashboardData.courses.length}</div>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {coursesArray.filter(c => c.isActive).length} published, {coursesArray.length - coursesArray.filter(c => c.isActive).length} drafts
-                  </p>
-                </CardContent>
-              </Card>
+                </div>
+                <p className="text-xs text-gray-500 border-t border-gray-100 pt-3">
+                  {dashboardData.publishedCount} published, {dashboardData.draftCount} drafts
+                </p>
+              </div>
               
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Total Students
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center">
-                    <Users className="h-5 w-5 mr-2 text-indigo-500" />
-                    <div className="text-3xl font-bold">{totalStudents.toLocaleString()}</div>
+              <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-600 mb-1">Total Students</h3>
+                    <div className="flex items-center">
+                      <Users className="h-5 w-5 mr-2 text-indigo-500" />
+                      <div className="text-3xl font-bold text-gray-900">
+                        {isStatsLoading ? (
+                          <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+                        ) : (
+                          dashboardData.totalStudents
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Across all your courses
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Average Completion Rate
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center">
-                    <BadgeCheck className="h-5 w-5 mr-2 text-green-500" />
-                    <div className="text-3xl font-bold">{averageCompletionRate}%</div>
+                </div>
+                <p className="text-xs text-gray-500 border-t border-gray-100 pt-3">
+                  Across all your courses
+                </p>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-600 mb-1">Avg. Completion Rate</h3>
+                    <div className="flex items-center">
+                      <TrendingUp className="h-5 w-5 mr-2 text-green-500" />
+                      <div className="text-3xl font-bold text-gray-900">
+                        {isStatsLoading ? (
+                          <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+                        ) : (
+                          `${dashboardData.averageCompletionRate}%`
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="mt-2">
-                    <Progress value={averageCompletionRate} className="h-1.5" />
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+                <p className="text-xs text-gray-500 border-t border-gray-100 pt-3">
+                  Student course completion
+                </p>
+              </div>
             </div>
             
-            {coursesArray.length === 0 ? (
+            {dashboardData.courses.length === 0 ? (
               <div className="text-center py-12 border rounded-lg bg-muted/20">
                 <div className="flex justify-center">
                   <BookOpen className="h-12 w-12 text-muted-foreground/50" />
@@ -334,142 +355,166 @@ export default function InstructorDashboard() {
                       <Link to="/instructor/courses">View All Courses</Link>
                     </Button>
                   </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {coursesArray.slice(0, 3).map((course) => (
-                      <Card key={course.id} className="overflow-hidden flex flex-col h-full">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {dashboardData.courses.slice(0, 3).map((course) => (
+                      <div key={course.id} className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden group hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+                        {/* Thumbnail Section */}
                         <div className="aspect-video relative overflow-hidden">
                           <img
                             src={formatThumbnailUrl(course.thumbnail)}
                             alt={course.title}
-                            className="object-cover w-full h-full"
+                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                            loading="lazy"
                           />
-                          <Badge 
-                            variant={course.isActive ? "default" : "secondary"}
-                            className="absolute top-2 right-2"
-                          >
-                            {course.isActive ? (
-                              <>
-                                <div className="h-1.5 w-1.5 rounded-full bg-green-500 mr-1.5" />
-                                Published
-                              </>
-                            ) : (
-                              <>
-                                <div className="h-1.5 w-1.5 rounded-full bg-gray-400 mr-1.5" />
-                                Draft
-                              </>
-                            )}
-                          </Badge>
+                          <div className="absolute top-2 left-2">
+                            <Badge 
+                              variant={course.isActive ? "default" : "secondary"}
+                              className={course.isActive ? "bg-green-500 text-white" : "bg-gray-500 text-white"}
+                            >
+                              {course.isActive ? (
+                                <>
+                                  <div className="h-1.5 w-1.5 rounded-full bg-white mr-1.5" />
+                                  Published
+                                </>
+                              ) : (
+                                <>
+                                  <div className="h-1.5 w-1.5 rounded-full bg-white mr-1.5" />
+                                  Draft
+                                </>
+                              )}
+                            </Badge>
+                          </div>
+                          
+                          {/* Approval Status Badge - Top Right */}
+                          <div className="absolute top-3 right-3">
+                            {course.courseStatus ? (
+                              <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+                                course.courseStatus === "Approved" ? "bg-green-500 text-white" :
+                                course.courseStatus === "Pending" ? "bg-green-500 text-white" :
+                                "bg-green-500 text-white"
+                              }`}>
+                                {course.courseStatus === "Approved" && "✓ Approved"}
+                                {course.courseStatus === "Pending" && "⏳ Pending"}
+                                {course.courseStatus === "Rejected" && "✗ Rejected"}
+                                {!["Approved", "Pending", "Rejected"].includes(course.courseStatus) && course.courseStatus}
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
                         
-                        <div className="flex flex-col flex-1">
-                          <CardHeader className="p-4 pb-2 flex-shrink-0">
-                            <CardTitle className="text-lg line-clamp-1 min-h-[1.75rem]">
+                        <div className="flex flex-col flex-1 p-4">
+                          {/* Header Section */}
+                          <div className="mb-3">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem] leading-tight">
                               {course.title}
-                            </CardTitle>
-                            <div className="flex items-center mt-1 text-xs text-muted-foreground min-h-[1rem]">
-                              {course.categoryName && `${course.categoryName} • `}
-                              {course.durationInHours} hours
-                            </div>
-                          </CardHeader>
-                          
-                          <CardContent className="p-4 pt-0 flex-1 flex flex-col">
-                            <div className="flex-1 min-h-[3rem] mb-3">
-                              <div 
-                                className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden prose max-w-none"
-                                dangerouslySetInnerHTML={{ __html: course.description || "No description available" }}
-                              />
-                            </div>
+                            </h3>
                             
-                            {/* Course Status Badge - Fixed height section */}
-                            <div className="min-h-[2rem] mb-3 flex items-start">
-                              {course.courseStatus ? (
-                                <Badge 
-                                  variant={
-                                    course.courseStatus === "Approved" ? "default" : 
-                                    course.courseStatus === "Pending" ? "secondary" : 
-                                    "destructive"
-                                  }
-                                  className={
-                                    course.courseStatus === "Approved" ? "bg-green-100 text-green-800 hover:bg-green-200" :
-                                    course.courseStatus === "Pending" ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200" :
-                                    "bg-red-100 text-red-800 hover:bg-red-200"
-                                  }
-                                >
-                                  {course.courseStatus === "Approved" && "✓ Approved"}
-                                  {course.courseStatus === "Pending" && "⏳ Pending Review"}
-                                  {course.courseStatus === "Rejected" && "✗ Rejected"}
-                                  {!["Approved", "Pending", "Rejected"].includes(course.courseStatus) && course.courseStatus}
-                                </Badge>
+                            {/* Course Info */}
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="text-xs text-gray-500">
+                                {course.categoryName && `${course.categoryName} • `}
+                                {course.durationInHours} hours
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Description */}
+                          <div className="flex-1 mb-3">
+                            <div 
+                              className="text-sm text-gray-500 line-clamp-2 leading-relaxed"
+                              dangerouslySetInnerHTML={{ __html: course.description || "No description available" }}
+                            />
+                          </div>
+
+                          {/* Stats Section */}
+                          <div className="mb-3 grid grid-cols-2 gap-3">
+                            <div className="flex flex-col">
+                              <span className="text-xs text-gray-500 mb-1">Students</span>
+                              {isStatsLoading ? (
+                                <div className="h-5 w-8 bg-gray-200 rounded animate-pulse"></div>
                               ) : (
-                                <div className="h-6"></div> /* Placeholder for consistent spacing */
+                                <span className="font-medium text-gray-900">{course.studentsCount}</span>
                               )}
                             </div>
-                            
-                            <div className="grid grid-cols-2 gap-2 mt-auto">
-                              <div className="flex flex-col">
-                                <span className="text-xs text-muted-foreground">Students</span>
-                                <span className="font-medium">{course.studentsCount || 0}</span>
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-xs text-muted-foreground">Completion Rate</span>
-                                <div className="flex items-center">
-                                  <span className="font-medium mr-2">{course.completionRate || 0}%</span>
-                                  <Progress value={course.completionRate || 0} className="h-1.5 flex-1" />
-                                </div>
+                            <div className="flex flex-col">
+                              <span className="text-xs text-gray-500 mb-1">Completion</span>
+                              <div className="flex items-center">
+                                {isStatsLoading ? (
+                                  <>
+                                    <div className="h-5 w-8 mr-2 bg-gray-200 rounded animate-pulse"></div>
+                                    <div className="h-1.5 flex-1 bg-gray-200 rounded animate-pulse"></div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="font-medium mr-2 text-gray-900 text-xs">{course.completionRate}%</span>
+                                    <Progress value={course.completionRate} className="h-1.5 flex-1" />
+                                  </>
+                                )}
                               </div>
                             </div>
-                          </CardContent>
-                        </div>                        <CardFooter className="p-4 border-t">
-                          <div className="w-full flex justify-center">
+                          </div>
+
+                          {/* Status Section */}
+                          <div className="flex items-center justify-between mb-3 py-2 border-t border-gray-100">
+                            <div className="flex items-center gap-1 text-gray-500">
+                              <BookOpen className="h-4 w-4" />
+                              <span className="text-sm">Your Course</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-blue-600">
+                              <TrendingUp className="h-4 w-4" />
+                              <span className="text-sm font-medium">Active</span>
+                            </div>
+                          </div>
+
+                          {/* Footer Section */}
+                          <div className="flex items-center justify-center">
                             <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="text-xs flex items-center" 
+                              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200" 
                               asChild
                             >
                               <Link to={`/dashboard/instructor/courses/${course.id}/edit`}>
-                                <Pencil className="h-3 w-3 mr-1" /> Edit Course
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit Course
                               </Link>
                             </Button>
                           </div>
-                        </CardFooter>
-                      </Card>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </section>
   
-                
                 {/* Quick Actions */}
                 <section>
                   <h2 className="text-2xl font-semibold mb-4">Quick Actions</h2>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="hover:bg-accent hover:text-accent-foreground transition-colors">
-                      <Link to="/dashboard/instructor/courses/new" className="block p-4">
+                    <div className="bg-white rounded-xl shadow-md border border-gray-100 transition-all duration-200 hover:shadow-lg hover:scale-105">
+                      <Link to="/dashboard/instructor/courses/new" className="block p-6">
                         <div className="flex items-center h-full">
-                          <div className="bg-primary/10 rounded-full p-3 mr-4">
-                            <BookOpen className="h-6 w-6 text-primary" />
+                          <div className="bg-blue-50 rounded-full p-3 mr-4">
+                            <BookOpen className="h-6 w-6 text-blue-500" />
                           </div>
                           <div>
-                            <h3 className="font-semibold">Create New Course</h3>
-                            <p className="text-sm text-muted-foreground">Add new content to your teaching portfolio</p>
+                            <h3 className="font-semibold text-gray-900">Create New Course</h3>
+                            <p className="text-sm text-gray-500">Add new content to your teaching portfolio</p>
                           </div>
                         </div>
                       </Link>
-                    </Card>
+                    </div>
                     
-                    <Card className="hover:bg-accent hover:text-accent-foreground transition-colors">
-                      <Link to="/instructor/courses" className="block p-4">
+                    <div className="bg-white rounded-xl shadow-md border border-gray-100 transition-all duration-200 hover:shadow-lg hover:scale-105">
+                      <Link to="/instructor/courses" className="block p-6">
                         <div className="flex items-center h-full">
-                          <div className="bg-blue-500/10 rounded-full p-3 mr-4">
+                          <div className="bg-blue-50 rounded-full p-3 mr-4">
                             <Users className="h-6 w-6 text-blue-500" />
                           </div>
                           <div>
-                            <h3 className="font-semibold">Manage Courses</h3>
-                            <p className="text-sm text-muted-foreground">Update and organize your existing courses</p>
+                            <h3 className="font-semibold text-gray-900">Manage Courses</h3>
+                            <p className="text-sm text-gray-500">Update and organize your existing courses</p>
                           </div>
                         </div>
                       </Link>
-                    </Card>
+                    </div>
                   </div>
                 </section>
               </>

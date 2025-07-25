@@ -675,52 +675,66 @@ export default function CourseDetail() {
             </div>
             
             <div className="md:w-96">
-              <div className="rounded-lg border overflow-hidden bg-card">
-                <div className="aspect-video">
+              <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+                <div className="aspect-video relative overflow-hidden">
                   <img 
                     src={getImageUrl(courseData.thumbnail)} 
                     alt={courseData.title} 
                     className="w-full h-full object-cover"
                   />
+                  
+                  {/* Price Badge - Top Right */}
+                  <div className="absolute top-3 right-3">
+                    <span className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs font-medium">
+                      {courseData.price === 0 ? "Free" : `${courseData.price} EGP`}
+                    </span>
+                  </div>
                 </div>
-                <div className="p-6">
-                  <div className="mb-4">
-                    <p className="text-2xl font-bold mb-2">
+                
+                <div className="p-4">
+                  {/* Header Section */}
+                  <div className="mb-3">
+                    <div className="text-2xl font-bold mb-2">
                       {courseData.price === 0 ? (
-                        <span className="text-eduAccent">Free</span>
+                        <span className="text-blue-600">Free Course</span>
                       ) : (
                         <span>{courseData.price} EGP</span>
                       )}
-                    </p>
+                    </div>
                   </div>
                   
-                  <div className="flex flex-col gap-3 mb-6">
-                    <div className="flex gap-2">
-                      <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
-                      <div>
-                        <p className="font-medium">Course Length</p>
-                        <p className="text-sm text-muted-foreground">{calculateTotalDuration()}</p>
+                  {/* Course Stats Section */}
+                  <div className="mb-3 py-2 px-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-gray-500" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-700">Course Length</p>
+                          <p className="text-xs text-gray-500">{calculateTotalDuration()}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Book className="h-5 w-5 text-muted-foreground shrink-0" />
-                      <div>
-                        <p className="font-medium">Total Lessons</p>
-                        <p className="text-sm text-muted-foreground">{getTotalLessons()} lessons</p>
+                      <div className="flex items-center gap-2">
+                        <Book className="h-4 w-4 text-gray-500" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-700">Total Lessons</p>
+                          <p className="text-xs text-gray-500">{getTotalLessons()} lessons</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <User className="h-5 w-5 text-muted-foreground shrink-0" />
-                      <div>
-                        <p className="font-medium">Students Enrolled</p>
-                        <p className="text-sm text-muted-foreground">{enrollmentCount?.toLocaleString() || courseData.studentsCount?.toLocaleString() || 0} students</p>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-gray-500" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-700">Students Enrolled</p>
+                          <p className="text-xs text-gray-500">{enrollmentCount?.toLocaleString() || courseData.studentsCount?.toLocaleString() || 0} students</p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                    <div className="md:hidden mb-6">
+
+                  {/* Action Buttons Section */}
+                  <div className="md:hidden mb-4">
                     {isEnrolled ? (
-                      <div className="flex flex-col gap-4">
-                        <Button asChild className="w-full bg-eduBlue-500 hover:bg-eduBlue-600">
+                      <div className="flex flex-col gap-3">
+                        <Button asChild className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
                           <Link to={`/my-courses/${courseData.id}/learn`}>
                             Continue Learning
                           </Link>
@@ -741,7 +755,7 @@ export default function CourseDetail() {
                           <div className="flex flex-col gap-2">
                             <Button 
                               asChild
-                              className="w-full bg-eduBlue-500 hover:bg-eduBlue-600"
+                              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
                             >
                               <Link to={`/dashboard/instructor/courses/${courseData.id}/edit`}>
                                 <Edit className="h-4 w-4 mr-2" />
@@ -750,8 +764,8 @@ export default function CourseDetail() {
                             </Button>
                             <Button 
                               asChild
-                              variant="secondary"
-                              className="w-full"
+                              variant="outline"
+                              className="w-full border-blue-200 text-blue-600 hover:bg-blue-50"
                             >
                               <Link to={`/dashboard/instructor/courses/${courseData.id}/content`}>
                                 <BookOpen className="h-4 w-4 mr-2" />
@@ -759,10 +773,11 @@ export default function CourseDetail() {
                               </Link>
                             </Button>
                           </div>
-                        ) : (                          <Button 
+                        ) : (
+                          <Button 
                             onClick={handleEnroll} 
                             disabled={isEnrolling || !canEnroll()} 
-                            className="w-full bg-eduBlue-500 hover:bg-eduBlue-600"
+                            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
                             title={!canEnroll() ? "Only students can enroll in courses" : ""}
                           >
                             {isEnrolling ? "Enrolling..." : 
@@ -774,7 +789,7 @@ export default function CourseDetail() {
                         {!isInstructor() && (
                           <Button 
                             variant="outline" 
-                            className="w-full"
+                            className="w-full border-red-200 text-red-600 hover:bg-red-50"
                             onClick={handleToggleWishlist}
                           >
                             <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-red-500 text-red-500" : ""}`} />
@@ -797,25 +812,19 @@ export default function CourseDetail() {
           <TabsList className="w-full justify-start border-b rounded-none mb-8 px-0 h-auto">
             <TabsTrigger 
               value="curriculum"
-              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-600 h-10 font-medium transition-all duration-200"
             >
               Curriculum
             </TabsTrigger>
             <TabsTrigger 
               value="overview"
-              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-600 h-10 font-medium transition-all duration-200"
             >
               Overview
             </TabsTrigger>
-            {/* <TabsTrigger 
-              value="instructor"
-              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
-            >
-              Instructor
-            </TabsTrigger> */}
             <TabsTrigger 
               value="reviews"
-              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-eduBlue-500 h-10"
+              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 data-[state=active]:text-cyan-600 h-10 font-medium transition-all duration-200"
               onClick={handleFetchReviews}
             >
               Reviews ({reviewCount} reviews)

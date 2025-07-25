@@ -1,11 +1,4 @@
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { StarIcon } from "lucide-react";
-import { getImageUrl } from "@/config/api-config";
-import { getInitials } from "@/lib/utils";
+import { CourseCard } from "@/components/courses/course-card";
 
 interface Course {
   id: string;
@@ -25,88 +18,62 @@ interface Course {
 
 interface FeaturedCoursesProps {
   courses: Course[];
+  showHeader?: boolean; // Optional prop to control header display
 }
 
-export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
-  // Helper function to render stars based on rating
-  const renderRating = (rating: number) => {
-    return (
-      <div className="flex items-center">
-        {[...Array(5)].map((_, i) => (
-          <StarIcon
-            key={i}
-            className={`h-4 w-4 ${
-              i < Math.floor(rating) 
-                ? "text-yellow-400 fill-yellow-400" 
-                : i < rating 
-                  ? "text-yellow-400 fill-yellow-400 opacity-50" 
-                  : "text-gray-300"
-            }`}
-          />
-        ))}
-        <span className="ml-2 text-xs text-muted-foreground">{rating.toFixed(1)}</span>
+export function FeaturedCourses({ courses, showHeader = true }: FeaturedCoursesProps) {
+  if (!courses || courses.length === 0) {
+    return showHeader ? (
+      <section className="py-12">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-8">Featured Courses</h2>
+          <p className="text-center text-gray-600">No courses available at the moment.</p>
+        </div>
+      </section>
+    ) : (
+      <div className="text-center py-8">
+        <p className="text-gray-600">No courses available at the moment.</p>
       </div>
     );
-  };
-  return (
-    <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+  }
+
+  const content = (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {courses.map((course) => (
-        <Card key={course.id} className="overflow-hidden group hover:shadow-md transition-shadow h-full flex flex-col">
-          <Link to={`/courses/${course.id}`}>
-            <div className="aspect-video relative overflow-hidden">
-              <img
-                src={getImageUrl(course.thumbnail)}
-                alt={course.title}
-                width={320}
-                height={180}
-                className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                loading="lazy"
-              />
-              <Badge className="absolute top-2 right-2 bg-primary/90">{course.category}</Badge>
-            </div>
-          </Link>
-          <div className="flex flex-col flex-1">
-            <CardHeader className="p-4 flex-shrink-0">
-              <CardTitle className="text-lg line-clamp-1 min-h-[1.75rem]">
-                <Link to={`/courses/${course.id}`} className="hover:text-primary transition-colors">
-                  {course.title}
-                </Link>
-              </CardTitle>
-              <div className="flex items-center mt-1 min-h-[1.5rem]">
-                <Avatar className="h-6 w-6 mr-2">
-                  <AvatarImage src={course.instructor.avatar ? getImageUrl(course.instructor.avatar) : ""} alt={course.instructor.name} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(course.instructor.name)}</AvatarFallback>
-                </Avatar>
-                <CardDescription className="text-xs">{course.instructor.name}</CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 flex-1 flex flex-col">
-              <div className="flex-1 min-h-[3rem] mb-2">
-                <div 
-                  className="text-sm text-muted-foreground line-clamp-2 h-10 overflow-hidden prose max-w-none"
-                  dangerouslySetInnerHTML={{ __html: course.description }}
-                />
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground mt-auto">
-                <span>{course.duration}</span>
-                {renderRating(course.rating)}
-              </div>
-            </CardContent>
-            <CardFooter className="p-4 flex justify-between items-center border-t mt-auto">
-              <div className="font-semibold">
-                {course.price === 0 ? (
-                  <span className="text-eduAccent">Free</span>
-                ) : (
-                  <span>{course.price.toFixed(2)} EGP</span>
-                )}
-              </div>
-              <Button variant="outline" size="sm" asChild>
-                <Link to={`/courses/${course.id}`}>View Course</Link>
-              </Button>
-            </CardFooter>
-          </div>
-        </Card>
+        <CourseCard
+          key={course.id}
+          id={course.id}
+          title={course.title}
+          description={course.description}
+          thumbnail={course.thumbnail}
+          rating={course.rating}
+          price={course.price}
+          category={course.category}
+          instructor={course.instructor}
+          duration={course.duration}
+        />
       ))}
     </div>
+  );
+
+  if (!showHeader) {
+    return content;
+  }
+
+  return (
+    <section className="py-12">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Featured Courses</h2>
+            <p className="text-gray-600 mt-2">Discover our highest-rated courses from expert instructors</p>
+          </div>
+          <button className="text-blue-500 font-medium hover:text-blue-600 transition-colors">
+            View All
+          </button>
+        </div>
+        {content}
+      </div>
+    </section>
   );
 }

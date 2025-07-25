@@ -80,16 +80,16 @@ const MOCK_CATEGORIES = [
 const getIcon = (iconName?: string) => {
   switch (iconName) {
     case "video":
-      return <div className="h-12 w-12 bg-primary/10 text-primary flex items-center justify-center rounded-full">
+      return <div className="h-12 w-12 bg-blue-50 text-blue-500 flex items-center justify-center rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-all duration-200">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-video"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
       </div>;
     case "users":
-      return <div className="h-12 w-12 bg-primary/10 text-primary flex items-center justify-center rounded-full">
+      return <div className="h-12 w-12 bg-blue-50 text-blue-500 flex items-center justify-center rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-all duration-200">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       </div>;
     case "book":
     default:
-      return <div className="h-12 w-12 bg-primary/10 text-primary flex items-center justify-center rounded-full">
+      return <div className="h-12 w-12 bg-blue-50 text-blue-500 flex items-center justify-center rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-all duration-200">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-book"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
       </div>;
   }
@@ -175,11 +175,14 @@ export default function CategoriesIndex() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="bg-card rounded-lg p-6 border shadow-sm">
-                <Skeleton className="h-12 w-12 rounded-full mb-4" />
-                <Skeleton className="h-6 w-3/4 mb-2" />
-                <Skeleton className="h-4 w-full mb-4" />
-                <Skeleton className="h-4 w-1/3" />
+              <div key={i} className="bg-white rounded-xl shadow-md border border-gray-100 p-6 animate-pulse">
+                <div className="flex flex-col items-center text-center h-full">
+                  <div className="w-12 h-12 bg-gray-200 rounded-full mb-4"></div>
+                  <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3 mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2 mt-auto border-t border-gray-100 pt-3"></div>
+                </div>
               </div>
             ))}
           </div>
@@ -229,21 +232,21 @@ interface CategoryCardProps {
 
 function CategoryCard({ category }: CategoryCardProps) {
   return (
-    <div className="bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow h-full">
+    <div className="bg-white rounded-xl shadow-md border border-gray-100 hover:shadow-lg hover:scale-105 transition-all duration-200 h-full group">
       <Link to={`/courses?category=${category.id}`} className="block p-6 h-full">
         <div className="flex flex-col items-center text-center h-full">
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 mb-4">
             {getIcon(category.icon)}
           </div>
-          <h3 className="mt-4 text-xl font-semibold min-h-[1.75rem] flex items-center">
+          <h3 className="text-lg font-semibold text-gray-900 min-h-[1.75rem] flex items-center mb-3">
             {category.name}
           </h3>
-          <div className="flex-1 min-h-[3rem] mt-2 mb-4 flex items-start">
-            <p className="text-muted-foreground text-sm line-clamp-2">
+          <div className="flex-1 min-h-[3rem] mb-4 flex items-start">
+            <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed">
               {category.description}
             </p>
           </div>
-          <div className="mt-auto text-sm text-primary flex-shrink-0">
+          <div className="mt-auto text-sm text-gray-500 flex-shrink-0 border-t border-gray-100 pt-3 w-full text-center">
             {category.courseCount !== undefined ? (
               <span>{category.courseCount} {category.courseCount === 1 ? "course" : "courses"}</span>
             ) : (

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { HeroSection } from "@/components/home/hero-section";
 import { CourseSection } from "@/components/home/course-section";
@@ -139,8 +140,27 @@ const mockCategories = [
 ];
 
 export default function Index() {
-  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const isAdmin = isAuthenticated && user?.userType === "Admin";
+  
+  // Redirect logged-in users to their appropriate dashboard
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user) {
+      switch (user.userType) {
+        case "Admin":
+          navigate("/dashboard/admin", { replace: true });
+          break;
+        case "Instructor":
+          navigate("/dashboard/instructor", { replace: true });
+          break;
+        case "Student":
+        default:
+          navigate("/dashboard", { replace: true });
+          break;
+      }
+    }
+  }, [isAuthenticated, user, authLoading, navigate]);
   
   // Use React Query for data fetching with fallback to mock data
   const { 
