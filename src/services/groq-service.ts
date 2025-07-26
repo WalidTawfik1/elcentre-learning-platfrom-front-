@@ -95,4 +95,13 @@ Guidelines:
       };
     }
   }
+  /**
+   * Generates an explanation for a quiz question using Groq AI.
+   * Returns only the explanation string.
+   */
+  static async generateExplanation(prompt: string): Promise<string> {
+    const result = await this.sendMessage(prompt);
+    if (result.error) throw new Error(result.error);
+    return result.response;
+  }
 }

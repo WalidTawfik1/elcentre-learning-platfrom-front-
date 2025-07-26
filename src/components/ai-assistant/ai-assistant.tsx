@@ -263,6 +263,13 @@ export function AIAssistant({ lessonId, lessonTitle, lessonTranscript, isLoading
     }
   };
 
+  // Add quick prompt handler inside the component, above return
+  const handleQuickPrompt = useCallback((prompt: string) => {
+    if (isLoading) return;
+    // Directly send the prompt to AI, do not populate input field
+    sendMessage(prompt);
+  }, [isLoading, sendMessage]);
+
   return (
     <div className="w-full max-w-full space-y-6 overflow-hidden">
       <div className="flex items-center justify-between">
@@ -305,15 +312,15 @@ export function AIAssistant({ lessonId, lessonTitle, lessonTranscript, isLoading
       <Card className="h-[500px] lg:h-[600px] flex flex-col w-full max-w-full overflow-hidden relative">
         <CardHeader className="pb-3 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-lg truncate">Ask questions about this lesson</CardTitle>
-              {lessonTranscript && (
-                <Badge variant="secondary" className="text-xs flex-shrink-0">
-                  <Bot className="h-3 w-3 mr-1" />
-                  AI Ready
-                </Badge>
-              )}
-            </div>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg truncate">Ask questions about this lesson</CardTitle>
+            {lessonTranscript && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0">
+                <Bot className="h-3 w-3 mr-1" />
+                AI Ready
+              </Badge>
+            )}
+          </div>
             {messages.length > 0 && (
               <Button
                 variant="outline"
@@ -415,14 +422,15 @@ export function AIAssistant({ lessonId, lessonTitle, lessonTranscript, isLoading
             </div>
           </ScrollArea>
           
-          {/* Scroll to bottom button */}
+          {/* Scroll to bottom button - inside chat area, bottom right above input */}
           {showScrollButton && (
-            <div className="absolute bottom-20 right-6 z-10">
+            <div style={{ position: 'absolute', bottom: '160px', right: '24px', zIndex: 20 }}>
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={scrollToBottom}
                 className="h-10 w-10 rounded-full p-0 shadow-lg border"
+                aria-label="Scroll to bottom"
               >
                 <ChevronDown className="h-4 w-4" />
               </Button>
@@ -457,6 +465,36 @@ export function AIAssistant({ lessonId, lessonTitle, lessonTranscript, isLoading
                 </Button>
               </div>
             </form>
+            <div className="flex flex-wrap gap-2 mt-4 justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickPrompt('Summarize this lesson in simple terms.')}
+              >
+                Summarize Lesson
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickPrompt('List the key points of this lesson.')}
+              >
+                List Key Points
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickPrompt('Generate a quiz based on this lesson.')}
+              >
+                Generate Quiz
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickPrompt('Explain the most difficult concept in this lesson.')}
+              >
+                Explain Difficult Concept
+              </Button>
+            </div>
             <p className="text-xs text-muted-foreground mt-2">
               Press Enter to send, Shift+Enter for new line
             </p>

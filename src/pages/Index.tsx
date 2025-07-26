@@ -144,23 +144,31 @@ export default function Index() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const isAdmin = isAuthenticated && user?.userType === "Admin";
   
-  // Redirect logged-in users to their appropriate dashboard
+  // Redirect logged-in users to their appropriate dashboard only on initial mount
   useEffect(() => {
     if (!authLoading && isAuthenticated && user) {
-      switch (user.userType) {
-        case "Admin":
-          navigate("/dashboard/admin", { replace: true });
-          break;
-        case "Instructor":
-          navigate("/dashboard/instructor", { replace: true });
-          break;
-        case "Student":
-        default:
-          navigate("/dashboard", { replace: true });
-          break;
+      // Only redirect if referrer is NOT empty and NOT from this site
+      const isExternal =
+        document.referrer &&
+        !document.referrer.includes(window.location.origin);
+
+      if (isExternal) {
+        switch (user.userType) {
+          case "Admin":
+            navigate("/admin/dashboard", { replace: true });
+            break;
+          case "Instructor":
+            navigate("/instructor/dashboard", { replace: true });
+            break;
+          case "Student":
+          default:
+            navigate("/dashboard", { replace: true });
+            break;
+        }
       }
     }
-  }, [isAuthenticated, user, authLoading, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   // Use React Query for data fetching with fallback to mock data
   const { 

@@ -30,8 +30,10 @@ import {
   TrendingUp,
   Copy,
   Download,
-  Settings
+  Settings,
+  Sparkles
 } from 'lucide-react';
+import { GroqService } from '@/services/groq-service';
 import { Quiz } from '@/types/api';
 import { QuizService } from '@/services/quiz-service';
 import { toast } from '@/components/ui/use-toast';
@@ -272,6 +274,44 @@ export function QuizManagement({ lessonId, courseId, lessonTitle, onQuizChange, 
       correctAnswer: quiz.correctAnswer,
       explanation: quiz.explanation || ''
     });    setIsDialogOpen(true);
+  };
+
+  // AI explanation generation
+  const handleGenerateExplanation = async () => {
+    if (!formData.question.trim() || !formData.correctAnswer) {
+      toast({
+        title: 'AI Error',
+        description: 'Please enter a question and select the correct answer before generating an explanation.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      // Detect question language (simple heuristic: check for Arabic letters, else default to English)
+      const arabicRegex = /[\u0600-\u06FF]/;
+      const questionLang = arabicRegex.test(formData.question) ? 'Arabic' : 'English';
+      const correctAnswerText =
+        formData.correctAnswer === 'A' ? formData.optionA :
+        formData.correctAnswer === 'B' ? formData.optionB :
+        formData.correctAnswer === 'C' ? formData.optionC :
+        formData.correctAnswer === 'D' ? formData.optionD : '';
+      const prompt = `Explain why the correct answer is '${correctAnswerText}' for the following question, and answer in the same language as the question (${questionLang}):\n\n${formData.question}`;
+      const aiResponse = await GroqService.generateExplanation(prompt);
+      setFormData({ ...formData, explanation: aiResponse });
+      toast({
+        title: 'AI Explanation Generated',
+        description: 'Explanation inserted successfully.'
+      });
+    } catch (error) {
+      toast({
+        title: 'AI Error',
+        description: 'Failed to generate explanation. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSaveQuiz = async () => {
@@ -594,12 +634,26 @@ export function QuizManagement({ lessonId, courseId, lessonTitle, onQuizChange, 
                 </div>
 
                 <div className="grid gap-3">
-                  <Label htmlFor="explanation" className="text-sm font-semibold">Explanation (Optional)</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="explanation" className="text-sm font-semibold">Explanation (Optional)</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleGenerateExplanation}
+                      disabled={isSaving || !formData.question.trim() || !formData.correctAnswer}
+                      className="flex items-center gap-1"
+                      title="Generate explanation with AI"
+                    >
+                      <Sparkles className="h-4 w-4 text-blue-500" />
+                      Generate with AI
+                    </Button>
+                  </div>
                   <Textarea
                     id="explanation"
                     value={formData.explanation}
                     onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}
-                    placeholder="Provide a helpful explanation for the correct answer (recommended)"
+                    placeholder="Provide a helpful explanation for the correct answer (recommended) or use AI to generate."
                     rows={3}
                     className="resize-none"
                   />
