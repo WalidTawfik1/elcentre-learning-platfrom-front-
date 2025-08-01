@@ -16,7 +16,8 @@ import {
   LightbulbIcon,
   BadgeCheck,
   Pencil,
-  TrendingUp
+  TrendingUp,
+  Tag
 } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { EnrollmentService } from "@/services/enrollment-service";

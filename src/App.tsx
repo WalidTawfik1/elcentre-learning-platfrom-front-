@@ -40,6 +40,7 @@ import AdminDashboardNew from "@/pages/admin/index";
 import UsersManagement from "@/pages/admin/users";
 import CoursesManagement from "@/pages/admin/courses";
 import AdminApiDocs from "@/pages/admin/api-docs";
+import AdminCouponManagement from "@/pages/admin/coupon-management";
 import RequireAdminAuth from "@/components/auth/require-admin-auth";
 import InstructorsPage from "@/pages/instructors/index";
 import InstructorCoursesPage from "@/pages/instructors/[id]/courses";
@@ -132,6 +133,11 @@ const App = () => (
             <Route path="/admin/api-docs" element={
               <RequireAdminAuth>
                 <AdminApiDocs />
+              </RequireAdminAuth>
+            } />
+            <Route path="/admin/coupon-management" element={
+              <RequireAdminAuth>
+                <AdminCouponManagement />
               </RequireAdminAuth>
             } />
             <Route path="/dashboard/admin" element={

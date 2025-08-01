@@ -95,8 +95,13 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div className="space-y-2">
               <Button variant="outline" className="w-full justify-start" asChild>
-                <Link to="/dashboard/admin/categories">
-                  <Tag className="h-4 w-4 mr-2" /> Manage Categories
+                <Link to="/admin/courses">
+                  <BookOpen className="h-4 w-4 mr-2" /> Manage Courses
+                </Link>
+              </Button>
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <Link to="/admin/coupon-management">
+                  <Tag className="h-4 w-4 mr-2" /> Coupon Codes
                 </Link>
               </Button>
               <Button variant="outline" className="w-full justify-start" asChild>
@@ -187,7 +192,29 @@ const AdminDashboard: React.FC = () => {
                 <p className="text-sm text-gray-600">Review, edit or delete courses</p>
               </div>
               <div className="mt-auto">
-                <Button variant="outline">Coming Soon</Button>
+                <Link to="/admin/courses">
+                  <Button variant="default">Manage Courses</Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl shadow-md border border-gray-100 transition-all duration-200 hover:shadow-lg h-full flex flex-col">
+            <div className="p-6 border-b border-gray-100 flex-shrink-0">
+              <div className="flex items-center gap-2 mb-2">
+                <Tag className="h-5 w-5 text-blue-500" />
+                <h3 className="text-lg font-semibold text-gray-900">Coupon Codes</h3>
+              </div>
+              <p className="text-sm text-gray-500">Manage discount coupons</p>
+            </div>
+            <div className="p-6 flex-1 flex flex-col">
+              <div className="flex-1 min-h-[3rem] mb-4">
+                <p className="text-sm text-gray-600">Create and manage discount codes for courses</p>
+              </div>
+              <div className="mt-auto">
+                <Link to="/admin/coupon-management">
+                  <Button variant="default">Manage Coupons</Button>
+                </Link>
               </div>
             </div>
           </div>

@@ -103,10 +103,9 @@ async function apiRequest<T>(
         headers["Authorization"] = `Bearer ${token}`;
       }    } else {      // Don't log this warning for silent mode requests
       if (!silentMode) {
-        // No JWT token found for authenticated request
       }
     }
-  }
+  }  
   const config: RequestInit = {
     method,
     headers,

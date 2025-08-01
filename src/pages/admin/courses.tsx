@@ -25,11 +25,13 @@ import {
   Plus,
   GraduationCap,
   TrendingUp,
-  Archive
+  Archive,
+  Tag
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { AdminService } from "@/services/admin-service";
 import { CategoryService } from "@/services/category-service";
+import { CouponCodeManager } from "@/components/admin/coupon-code-manager";
 import { getImageUrl } from "@/config/api-config";
 import { useToast } from "@/hooks/use-toast";
 
@@ -83,6 +85,8 @@ export default function CoursesManagement() {
   const pageSize = 20; // Fixed page size
   const [deletingCourseId, setDeletingCourseId] = useState<number | null>(null);
   const [undeletingCourseId, setUndeletingCourseId] = useState<number | null>(null);
+  const [couponDialogOpen, setCouponDialogOpen] = useState(false);
+  const [selectedCourseForCoupon, setSelectedCourseForCoupon] = useState<AdminCourse | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -222,6 +226,11 @@ export default function CoursesManagement() {
     } finally {
       setUndeletingCourseId(null);
     }
+  };
+
+  const handleManageCoupons = (course: AdminCourse) => {
+    setSelectedCourseForCoupon(course);
+    setCouponDialogOpen(true);
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -600,15 +609,26 @@ export default function CoursesManagement() {
                           <TableCell className="text-right">
                             <div className="flex gap-2 justify-end">
                               {!course.isDeleted && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  asChild
-                                >
-                                  <Link to={`/courses/${course.id}`}>
-                                    <Eye className="h-4 w-4" />
-                                  </Link>
-                                </Button>
+                                <>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    asChild
+                                  >
+                                    <Link to={`/courses/${course.id}`}>
+                                      <Eye className="h-4 w-4" />
+                                    </Link>
+                                  </Button>
+                                  
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleManageCoupons(course)}
+                                    title="Manage Coupon Codes"
+                                  >
+                                    <Tag className="h-4 w-4" />
+                                  </Button>
+                                </>
                               )}
                               
                               {course.isDeleted ? (
@@ -727,6 +747,46 @@ export default function CoursesManagement() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Coupon Management Dialog */}
+      {selectedCourseForCoupon && couponDialogOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <Tag className="h-5 w-5" />
+                    Coupon Codes for "{selectedCourseForCoupon.title}"
+                  </h2>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    Create and manage discount codes for this course
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setCouponDialogOpen(false);
+                    setSelectedCourseForCoupon(null);
+                  }}
+                >
+                  ✕
+                </Button>
+              </div>
+            </div>
+            <div className="p-6">
+              <CouponCodeManager
+                courseId={selectedCourseForCoupon.id}
+                courseName={selectedCourseForCoupon.title}
+                title="Course Coupon Codes"
+                description={`Manage discount codes specifically for "${selectedCourseForCoupon.title}"`}
+                showGlobalCoupons={false}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }

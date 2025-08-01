@@ -9,6 +9,7 @@ export interface PaymentMethod {
 export interface CreatePaymentTokenRequest {
   courseId: number;
   paymentMethod: 'card' | 'wallet';
+  couponCode?: string;
 }
 
 export interface CreatePaymentTokenResponse {
@@ -20,8 +21,12 @@ export const PaymentService = {  /**
    */
   createPaymentToken: async (request: CreatePaymentTokenRequest): Promise<CreatePaymentTokenResponse> => {
     
-    const url = `/Payment/create-payment-token?courseID=${request.courseId}&paymentMethod=${request.paymentMethod}`;
+    let url = `/Payment/create-payment-token?courseID=${request.courseId}&paymentMethod=${request.paymentMethod}`;
     
+    // Add coupon code if provided
+    if (request.couponCode) {
+      url += `&couponCode=${encodeURIComponent(request.couponCode)}`;
+    }
     
     return apiRequest<CreatePaymentTokenResponse>(
       url, 

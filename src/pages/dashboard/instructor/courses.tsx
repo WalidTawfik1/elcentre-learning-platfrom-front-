@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, BookOpen, Users, DollarSign, Eye, Clock, AlertCircle, CheckCircle2, TrendingUp } from "lucide-react";
+import { Plus, BookOpen, Users, DollarSign, Eye, Clock, AlertCircle, CheckCircle2, TrendingUp, Tag } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
@@ -23,11 +23,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CouponCodeManager } from "@/components/admin/coupon-code-manager";
 
 export default function InstructorCourses() {
   const navigate = useNavigate();  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [couponDialogOpen, setCouponDialogOpen] = useState(false);
+  const [selectedCourseForCoupon, setSelectedCourseForCoupon] = useState<any | null>(null);
 
   useEffect(() => {
     // Don't redirect while auth is still loading
@@ -98,6 +101,11 @@ export default function InstructorCourses() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleManageCoupons = (course: any) => {
+    setSelectedCourseForCoupon(course);
+    setCouponDialogOpen(true);
   };
 
   return (
@@ -257,6 +265,16 @@ export default function InstructorCourses() {
                     </AlertDialog>
 
                     <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleManageCoupons(course)}
+                      title="Manage Coupon Codes"
+                      className="bg-yellow-50 border-yellow-200 text-yellow-600 hover:bg-yellow-100 hover:border-yellow-300 px-2 py-1.5 rounded-md transition-colors duration-200"
+                    >
+                      <Tag className="h-4 w-4" />
+                    </Button>
+
+                    <Button 
                       className="flex-1"
                       asChild
                     >
@@ -282,6 +300,43 @@ export default function InstructorCourses() {
           </div>
         )}
       </div>
+
+      {/* Coupon Management Dialog */}
+      {selectedCourseForCoupon && couponDialogOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <Tag className="h-5 w-5" />
+                    Coupon Codes for "{selectedCourseForCoupon.title}"
+                  </h2>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    Create and manage discount codes for this course
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setCouponDialogOpen(false);
+                    setSelectedCourseForCoupon(null);
+                  }}
+                >
+                  ✕
+                </Button>
+              </div>
+            </div>
+            <div className="p-6">
+              <CouponCodeManager
+                courseId={selectedCourseForCoupon.id}
+                courseName={selectedCourseForCoupon.title}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }

@@ -4,7 +4,7 @@ import { MainLayout } from "@/components/layouts/main-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle, XCircle, Users, BookOpen, TrendingUp, Settings, RefreshCw, Tag } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Users, BookOpen, TrendingUp, Settings, RefreshCw, Tag, FolderOpen } from "lucide-react";
 import { AdminService } from "@/services/admin-service";
 import { useQuery } from "@tanstack/react-query";
 
@@ -52,9 +52,16 @@ export default function AdminDashboard() {
       color: "border-indigo-200 hover:border-indigo-300 bg-indigo-50 hover:bg-indigo-100"
     },
     {
+      title: "Coupon Code Management",
+      description: "Create and manage discount codes for courses and global promotions",
+      icon: Tag,
+      href: "/admin/coupon-management",
+      color: "border-pink-200 hover:border-pink-300 bg-pink-50 hover:bg-pink-100"
+    },
+    {
       title: "Category Management",
       description: "Manage course categories and organize content structure",
-      icon: Tag,
+      icon: FolderOpen,
       href: "/dashboard/admin/categories",
       color: "border-green-200 hover:border-green-300 bg-green-50 hover:bg-green-100"
     },

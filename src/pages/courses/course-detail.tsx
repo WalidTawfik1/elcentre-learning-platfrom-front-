@@ -11,6 +11,7 @@ import { CourseService } from "@/services/course-service";
 import { LessonService } from "@/services/lesson-service";
 import { WishlistService } from "@/services/wishlist-service";
 import { PaymentService } from "@/services/payment-service";
+import { CouponService } from "@/services/coupon-service";
 import { PaymentMethodDialog } from "@/components/ui/payment-method-dialog";
 import { NotificationSubscriptionToggle } from "@/components/notifications/notification-subscription-toggle";
 import { RichTextCourseDescription } from "@/components/courses/rich-text-course-description";
@@ -409,15 +410,57 @@ export default function CourseDetail() {
     }
   };
 
-  const handlePaymentMethodSelected = async (paymentMethod: 'card' | 'wallet') => {
+  const handlePaymentMethodSelected = async (paymentMethod: 'card' | 'wallet', couponCode?: string) => {
     if (!courseData || !id) return;
 
     setIsProcessingPayment(true);
     try {
-      // Create payment token
+      // First check if there's a coupon and get the final price
+      let finalPrice = courseData.price;
+      
+      if (couponCode) {
+        try {
+          const couponResponse = await CouponService.applyCouponCode(couponCode, Number(id));
+          if (couponResponse.statusCode === 200) {
+            finalPrice = parseFloat(couponResponse.message);
+          }
+        } catch (error) {
+          console.error("Error validating coupon:", error);
+          // Continue with original price if coupon validation fails
+        }
+      }
+
+      // If final price is 0, handle as free enrollment
+      if (finalPrice === 0) {
+        // Create payment token (backend will handle free enrollment)
+        await PaymentService.createPaymentToken({
+          courseId: Number(id),
+          paymentMethod,
+          couponCode
+        });
+
+        // Close the payment method dialog
+        setPaymentDialogOpen(false);
+
+        // Show success message for free enrollment
+        toast({
+          title: "Enrollment Successful!",
+          description: "You have been successfully enrolled in this course for free!",
+        });
+
+        // Refresh enrollment status
+        setTimeout(() => {
+          checkEnrollmentStatus();
+        }, 1000);
+
+        return;
+      }
+
+      // For paid courses, proceed with normal payment flow
       const response = await PaymentService.createPaymentToken({
         courseId: Number(id),
-        paymentMethod
+        paymentMethod,
+        couponCode
       });
 
       // Open payment window
@@ -1331,6 +1374,7 @@ export default function CourseDetail() {
         isLoading={isProcessingPayment}
         courseTitle={courseData?.title}
         coursePrice={courseData?.price}
+        courseId={courseData?.id}
       />
     </MainLayout>
   );
