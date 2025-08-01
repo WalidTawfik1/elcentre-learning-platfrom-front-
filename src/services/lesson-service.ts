@@ -93,6 +93,7 @@ export const LessonService = {
       description: string;
       isPublished: boolean;
       moduleId: number;
+      isPreview?: boolean; // New optional property for preview lessons
     },
     onProgress?: (progress: number) => void,
     abortController?: AbortController
@@ -125,7 +126,8 @@ export const LessonService = {
         DurationInMinutes: lessonData.durationInMinutes,
         Description: lessonData.description,
         IsPublished: lessonData.isPublished,
-        ModuleId: lessonData.moduleId
+        ModuleId: lessonData.moduleId,
+        IsPreview: lessonData.isPreview || false // Add IsPreview property
       };
 
       // Use the new API method with progress support
@@ -146,6 +148,7 @@ export const LessonService = {
     isPublished?: boolean;
     content?: string;
     contentType?: string;
+    isPreview?: boolean; // Add IsPreview property for updates
   }): Promise<any> => {
     try {
       // Validate the lesson data first (partial validation for updates)
@@ -168,6 +171,7 @@ export const LessonService = {
       if (lessonData.durationInMinutes !== undefined) formattedData.DurationInMinutes = lessonData.durationInMinutes;
       if (lessonData.description !== undefined) formattedData.Description = lessonData.description;
       if (lessonData.isPublished !== undefined) formattedData.IsPublished = lessonData.isPublished;
+      if (lessonData.isPreview !== undefined) formattedData.IsPreview = lessonData.isPreview; // Add IsPreview update support
       
       // Handle content - only for text lessons, send empty for video lessons
       if (lessonData.contentType === 'text' && lessonData.content !== undefined) {

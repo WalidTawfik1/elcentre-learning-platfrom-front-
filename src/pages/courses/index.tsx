@@ -55,17 +55,6 @@ export default function CoursesIndex() {
       // Use sortBy parameter, pass null if "default" for default sorting
       const sortParam = sortBy === "default" ? null : sortBy;
       
-      // Get all courses from the API
-      console.log('Fetching courses with params:', {
-        currentPage,
-        coursesPerPage,
-        sortParam,
-        categoryId,
-        searchQuery,
-        priceRange,
-        languageFilter,
-        selectedLanguage
-      });
       
       const result = await CourseService.getAllCourses(
         currentPage, 
@@ -77,9 +66,7 @@ export default function CoursesIndex() {
         priceRange[1] < 5000 ? priceRange[1] : undefined,
         languageFilter
       );
-      
-      console.log('API result:', result);
-      
+            
       
       // Check if the API returned valid data with items
       if (result && result.items && Array.isArray(result.items)) {

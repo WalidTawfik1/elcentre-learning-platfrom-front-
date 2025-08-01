@@ -12,7 +12,7 @@ interface TranscriptResult {
 }
 
 export function useVideoTranscription({ 
-  courseLanguage = 'auto' // Use course language for transcription
+  courseLanguage = 'auto' // Use auto-detection if no course language provided
 }: UseVideoTranscriptionOptions = {}) {
   const [transcript, setTranscript] = useState('');
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -36,18 +36,18 @@ export function useVideoTranscription({
   // AssemblyAI transcription
   const transcribeWithAssemblyAI = useCallback(async (videoUrl: string, apiKey: string, overrideLanguage?: string): Promise<TranscriptResult> => {
     const effectiveLanguage = overrideLanguage || courseLanguage;
-    (`Starting AssemblyAI transcription with language: ${effectiveLanguage}`);
+    
+    // Use the language configuration to get Assembly AI language code
+    const languageCode = getAssemblyAILanguageCode(effectiveLanguage);
+    
+    // If the language is not supported by AssemblyAI, fall back to auto-detection or English
+    const finalLanguageCode = languageCode || (effectiveLanguage === 'auto' ? null : 'en_us');
+  
     
     // Validate the video URL
     if (!videoUrl || !videoUrl.startsWith('http')) {
       throw new Error(`Invalid video URL for transcription: ${videoUrl}`);
     }
-    
-    // Use the language configuration to get Assembly AI language code
-    const languageCode = getAssemblyAILanguageCode(effectiveLanguage) || 
-                        (effectiveLanguage === 'auto' ? null : effectiveLanguage);
-    
-    (`Mapped language code: ${languageCode}`);
 
     // Configure request body with only supported parameters
     const requestBody: any = {
@@ -57,11 +57,11 @@ export function useVideoTranscription({
     };
 
     // Add language-specific configuration
-    if (languageCode) {
-      requestBody.language_code = languageCode;
+    if (finalLanguageCode) {
+      requestBody.language_code = finalLanguageCode;
       
       // For Arabic, add specific optimizations using supported parameters
-      if (languageCode === 'ar') {
+      if (finalLanguageCode === 'ar') {
         // Use word_boost with English words only (Arabic characters not supported)
         requestBody.word_boost = [
           'API', 'Arabic', 'programming', 'course', 'lesson', 'tutorial', 'website', 'application'
@@ -108,12 +108,11 @@ export function useVideoTranscription({
       throw new Error('Failed to submit transcription request');
     }
 
-    // Step 2: Poll for completion
+    // Step 2: Poll for completion with dynamic intervals
     let transcriptResult = null;
     let attempts = 0;
-    const maxAttempts = languageCode === 'ar' ? 180 : 120; // 6 minutes for Arabic, 4 minutes for others
+    const maxAttempts = finalLanguageCode === 'ar' ? 90 : 60; // Reduced: 3 minutes for Arabic, 2 minutes for others
 
-    (`Starting transcription polling for ${languageCode || 'auto-detect'} language. Max attempts: ${maxAttempts}`);
 
     while (attempts < maxAttempts) {
       setProgress(Math.min(95, (attempts / maxAttempts) * 100));
@@ -133,26 +132,33 @@ export function useVideoTranscription({
       if (statusData.status === 'completed') {
         transcriptResult = statusData;
         setProgress(100);
-        (`Transcription completed successfully for ${languageCode} language after ${attempts + 1} attempts`);
         break;
       } else if (statusData.status === 'error') {
         throw new Error(`Transcription failed: ${statusData.error || 'Unknown error'}`);
       }
       
       // Log progress for Arabic transcription (typically takes longer)
-      if (languageCode === 'ar' && attempts % 10 === 0) {
-        (`Arabic transcription in progress... attempt ${attempts + 1}/${maxAttempts}`);
+      if (finalLanguageCode === 'ar' && attempts % 5 === 0) {
       }
       
-      // Wait 2 seconds before checking again
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Dynamic polling interval: start fast, then slow down
+      let waitTime;
+      if (attempts < 10) {
+        waitTime = 1000; // 1 second for first 10 attempts (first 10 seconds)
+      } else if (attempts < 30) {
+        waitTime = 2000; // 2 seconds for next 20 attempts (next 40 seconds)
+      } else {
+        waitTime = 3000; // 3 seconds for remaining attempts
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, waitTime));
       attempts++;
     }
 
     if (!transcriptResult) {
-      const timeoutMessage = languageCode === 'ar' 
-        ? 'Arabic transcription timeout - Arabic processing typically takes longer. Try with shorter video segments or ensure high-quality audio for better results.'
-        : 'Transcription timeout - video might be too long or processing is taking longer than expected. For Arabic content, try using shorter video segments or ensure clear audio quality.';
+      const timeoutMessage = finalLanguageCode === 'ar' 
+        ? 'Arabic transcription timeout after 3 minutes - try with shorter video segments or ensure high-quality audio.'
+        : 'Transcription timeout after 2 minutes - video might be too long or processing is taking longer than expected.';
       throw new Error(timeoutMessage);
     }
 
@@ -161,7 +167,6 @@ export function useVideoTranscription({
       confidence: transcriptResult.confidence
     };
 
-    (`Transcription completed for ${languageCode || 'auto-detect'} language. Text length: ${result.text.length}`);
 
     setTranscript(result.text);
     return result;
@@ -175,7 +180,6 @@ export function useVideoTranscription({
 
     // Use override language if provided, otherwise use the hook's courseLanguage setting
     const effectiveLanguage = overrideLanguage || courseLanguage;
-    (`Transcribing video with language: ${effectiveLanguage}`);
 
     setIsTranscribing(true);
     setError(null);

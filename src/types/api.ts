@@ -80,6 +80,7 @@ export interface Lesson {
   isPublished: boolean;
   moduleId: number;
   orderIndex: number;
+  isPreview?: boolean; // New property to mark lessons as preview
 }
 
 export interface CourseReview {

@@ -20,6 +20,7 @@ import GoogleBridge from "./pages/auth/google-bridge";
 import BlockedAccount from "./pages/auth/blocked";
 import CoursesIndex from "./pages/courses/index";
 import CourseDetail from "./pages/courses/course-detail";
+import PreviewLesson from "./pages/courses/preview-lesson";
 import ProfilePage from "./pages/profile";
 import CategoriesIndex from "./pages/categories";
 import MyCourses from "./pages/my-courses";
@@ -76,7 +77,8 @@ const App = () => (
             
             {/* Student routes */}
             <Route path="/courses" element={<CoursesIndex />} />
-            <Route path="/courses/:id" element={<CourseDetail />} />            <Route path="/categories" element={<CategoriesIndex />} />
+            <Route path="/courses/:id" element={<CourseDetail />} />
+            <Route path="/courses/:courseId/preview/:lessonId" element={<PreviewLesson />} />            <Route path="/categories" element={<CategoriesIndex />} />
             <Route path="/categories/:slug" element={<NotFound />} /> {/* Placeholder */}
             <Route path="/instructors" element={<InstructorsPage />} />
             <Route path="/instructors/:instructorId/courses" element={<InstructorCoursesPage />} />

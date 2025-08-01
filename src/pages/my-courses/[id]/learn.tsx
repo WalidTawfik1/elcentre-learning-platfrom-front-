@@ -111,17 +111,16 @@ export default function CourseLearn() {
   
   // Use course language for transcription instead of detecting from lesson title
   const { transcribeVideo, isTranscribing, error: transcriptionError } = useVideoTranscription({
-    courseLanguage: course?.CourseLanguage || 'auto' // Use course language setting
+    courseLanguage: 'auto' // Use auto-detection, override will be provided when calling transcribeVideo
   });
   
   // Use course language for video transcription
   const transcribeVideoWithCourseLanguage = useCallback(async (videoUrl: string) => {
-    // Use the course's configured language instead of detecting from lesson title
-    const courseLanguage = course?.CourseLanguage || 'auto';
-    
+    // Use the course's configured language - get it fresh from the current course state
+    const courseLanguage = course?.CourseLanguage || course?.courseLanguage || 'ar'; // Default to Arabic if no course language detected
     // Pass the course language to the transcription service
     return await transcribeVideo(videoUrl, courseLanguage);
-  }, [transcribeVideo, course?.CourseLanguage]);
+  }, [transcribeVideo, course?.CourseLanguage, course?.courseLanguage, course]);
   
   // Helper function to check if a lesson is completed
   const isLessonCompleted = useCallback((lessonId: number) => {

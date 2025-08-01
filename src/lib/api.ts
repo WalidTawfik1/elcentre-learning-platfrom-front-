@@ -1,7 +1,6 @@
 // API Service for interacting with the backend
 
 import { API_BASE_URL, DIRECT_API_URL } from "@/config/api-config";
-import { rateLimitMonitor } from "./rate-limit-monitor";
 
 // Configuration for rate limiting and retries
 const API_CONFIG = {
@@ -155,21 +154,6 @@ async function apiRequest<T>(
       if (!silentMode) {
         // Log reduced information without full URLs
         
-      }
-      
-      // Check if we got a rate limit error and should retry
-      if (API_CONFIG.retryStatusCodes.includes(response.status) && retryCount < API_CONFIG.maxRetries) {
-        // Log the rate limit error for monitoring
-        if (API_CONFIG.logRateLimitErrors) {
-          rateLimitMonitor.logRateLimitError(url, method, retryCount, {
-            endpoint: endpointPath,
-            requiresAuth,
-            timestamp: new Date().toISOString()
-          });
-        }
-        
-        retryCount++;
-        continue;
       }
       
       // For other non-OK responses
@@ -681,6 +665,7 @@ export const API = {
       Description: string;
       IsPublished: boolean;
       ModuleId: number;
+      IsPreview?: boolean;
     }) => {
       const formData = createFormData(data);
       return apiRequest('/Lesson/add-lesson', 'POST', formData, true, true);
@@ -695,6 +680,7 @@ export const API = {
         Description: string;
         IsPublished: boolean;
         ModuleId: number;
+        IsPreview?: boolean;
       },
       onProgress?: (progress: number) => void,
       abortController?: AbortController
@@ -708,6 +694,7 @@ export const API = {
       Description?: string;
       IsPublished?: boolean;
       Content?: string;
+      IsPreview?: boolean;
     }) => {
       // Create FormData for the update request
       const formData = new FormData();
@@ -717,6 +704,7 @@ export const API = {
       if (data.DurationInMinutes !== undefined) formData.append('DurationInMinutes', data.DurationInMinutes.toString());
       if (data.Description !== undefined) formData.append('Description', data.Description);
       if (data.IsPublished !== undefined) formData.append('IsPublished', data.IsPublished.toString());
+      if (data.IsPreview !== undefined) formData.append('IsPreview', data.IsPreview.toString());
       
       // Content field - always include it, send empty string if not provided
       formData.append('Content', data.Content || '');

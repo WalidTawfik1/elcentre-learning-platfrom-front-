@@ -111,7 +111,8 @@ export default function CourseContentManagement() {
     contentText: "",
     originalContent: "", // Store original content URL/path
     durationInMinutes: 10,
-    isPublished: true
+    isPublished: true,
+    isPreview: false // Add preview field
   });
 
   // Processing states
@@ -345,7 +346,8 @@ export default function CourseContentManagement() {
       contentText: "",
       originalContent: "", // Store original content URL/path
       durationInMinutes: 10,
-      isPublished: true
+      isPublished: true,
+      isPreview: false
     });
     setLessonDialogOpen(true);
   };
@@ -365,7 +367,8 @@ export default function CourseContentManagement() {
       contentText: lesson.contentType === "text" ? lesson.content || "" : "",
       originalContent: lesson.content || "", // Store original content URL/path
       durationInMinutes: lesson.durationInMinutes,
-      isPublished: lesson.isPublished
+      isPublished: lesson.isPublished,
+      isPreview: lesson.isPreview || false
     });
     
     setLessonDialogOpen(true);
@@ -385,7 +388,8 @@ export default function CourseContentManagement() {
           description: lessonFormData.description,
           durationInMinutes: lessonFormData.durationInMinutes,
           isPublished: lessonFormData.isPublished,
-          contentType: lessonFormData.contentType
+          contentType: lessonFormData.contentType,
+          isPreview: lessonFormData.isPreview
         };
         
         // Only include content for text lessons
@@ -432,7 +436,8 @@ export default function CourseContentManagement() {
               content: content,
               durationInMinutes: lessonFormData.durationInMinutes,
               isPublished: lessonFormData.isPublished,
-              moduleId: selectedModuleId
+              moduleId: selectedModuleId,
+              isPreview: lessonFormData.isPreview
             }, progressCallback, controller);
           } finally {
             setIsUploading(false);
@@ -448,7 +453,8 @@ export default function CourseContentManagement() {
             content: content,
             durationInMinutes: lessonFormData.durationInMinutes,
             isPublished: lessonFormData.isPublished,
-            moduleId: selectedModuleId
+            moduleId: selectedModuleId,
+            isPreview: lessonFormData.isPreview
           });
         }
         
@@ -695,15 +701,23 @@ export default function CourseContentManagement() {
                                 </TableCell>
                                 <TableCell>{lesson.durationInMinutes} min</TableCell>
                                 <TableCell>
-                                  {lesson.isPublished ? (
-                                    <span className="inline-flex items-center bg-green-50 text-green-700 text-xs py-0.5 px-2 rounded">
-                                      Published
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center bg-gray-100 text-gray-500 text-xs py-0.5 px-2 rounded">
-                                      Draft
-                                    </span>
-                                  )}
+                                  <div className="flex gap-1">
+                                    {lesson.isPublished ? (
+                                      <span className="inline-flex items-center bg-green-50 text-green-700 text-xs py-0.5 px-2 rounded">
+                                        Published
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center bg-gray-100 text-gray-500 text-xs py-0.5 px-2 rounded">
+                                        Draft
+                                      </span>
+                                    )}
+                                    
+                                    {lesson.isPreview && (
+                                      <span className="inline-flex items-center bg-blue-50 text-blue-700 text-xs py-0.5 px-2 rounded">
+                                        Preview
+                                      </span>
+                                    )}
+                                  </div>
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex justify-end gap-1">
@@ -1048,6 +1062,20 @@ export default function CourseContentManagement() {
                     onCheckedChange={(checked) => setLessonFormData({...lessonFormData, isPublished: checked})}
                   />
                   <Label htmlFor="lesson-isPublished" className="text-sm font-medium">Publish this lesson</Label>
+                </div>
+                
+                <div className="flex items-center gap-3 pt-2">
+                  <Switch
+                    id="lesson-isPreview"
+                    checked={lessonFormData.isPreview}
+                    onCheckedChange={(checked) => setLessonFormData({...lessonFormData, isPreview: checked})}
+                  />
+                  <Label htmlFor="lesson-isPreview" className="text-sm font-medium">
+                    Free preview lesson
+                    <span className="text-xs text-muted-foreground block">
+                      Allow all users to view this lesson before enrolling
+                    </span>
+                  </Label>
                 </div>
               </div>
               

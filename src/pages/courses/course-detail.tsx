@@ -6,8 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { StarIcon, Play, Clock, User, Book, Video, CheckCircle, Edit, Trash2, Heart, BookOpen, Globe } from "lucide-react";
+import { StarIcon, Play, Clock, User, Book, Video, CheckCircle, Edit, Trash2, Heart, BookOpen, Globe, X, Loader2 } from "lucide-react";
 import { CourseService } from "@/services/course-service";
+import { LessonService } from "@/services/lesson-service";
 import { WishlistService } from "@/services/wishlist-service";
 import { PaymentService } from "@/services/payment-service";
 import { PaymentMethodDialog } from "@/components/ui/payment-method-dialog";
@@ -17,6 +18,7 @@ import { SimpleCourseDescription } from "@/components/courses/simple-course-desc
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { getLanguageDisplayName } from "@/config/languages";
@@ -28,6 +30,9 @@ import { getImageUrl, DIRECT_API_URL } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
 import { CourseStructuredData } from "@/components/seo/course-structured-data";
 import { SEO } from "@/components/seo/seo";
+import { SecureVideoPlayer } from "@/components/ui/secure-video-player";
+import { SimpleLessonViewer } from "@/components/lessons/simple-lesson-viewer";
+import { RichTextLessonViewer } from "@/components/lessons/rich-text-lesson-viewer";
 
 
 
@@ -60,6 +65,11 @@ export default function CourseDetail() {
   // Payment related state
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  
+  // Preview lesson modal state
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewLesson, setPreviewLesson] = useState<any>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   
   // Form handling for reviews
   const form = useForm<ReviewFormValues>({
@@ -217,6 +227,43 @@ export default function CourseDetail() {
       // Update local state to reflect the change
       setIsInWishlist(!isInWishlist);
     }
+  };
+
+  // Handle opening preview lesson modal
+  const handlePreviewLesson = async (lesson: any) => {
+    if (!lesson.isPreview) {
+      toast({
+        title: "Access Denied",
+        description: "This lesson is not available for preview.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoadingPreview(true);
+    setPreviewModalOpen(true);
+    
+    try {
+      // Fetch full lesson details
+      const lessonDetails = await LessonService.getLessonById(lesson.id);
+      setPreviewLesson(lessonDetails);
+    } catch (error) {
+      console.error("Error fetching lesson preview:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load lesson preview. Please try again.",
+        variant: "destructive",
+      });
+      setPreviewModalOpen(false);
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
+  // Handle closing preview modal
+  const handleClosePreview = () => {
+    setPreviewModalOpen(false);
+    setPreviewLesson(null);
   };  // Backend base URL for serving static content
   const API_BASE_URL = DIRECT_API_URL;
   
@@ -544,6 +591,14 @@ export default function CourseDetail() {
     return user?.userType === "Student" && !isInstructorCourse();
   };
 
+  // Helper function to count preview lessons
+  const getPreviewLessonsCount = () => {
+    if (!modules || modules.length === 0) return 0;
+    return modules.reduce((total, module) => {
+      return total + (module.lessons?.filter(lesson => lesson.isPreview).length || 0);
+    }, 0);
+  };
+
   return (
     <MainLayout>
       <SEO
@@ -849,6 +904,12 @@ export default function CourseDetail() {
               
               <div className="text-sm text-muted-foreground flex items-center justify-between mb-6">
                 <span>{modules.length} modules • {getTotalLessons()} lessons • {calculateTotalDuration()} total length</span>
+                {!isEnrolled && modules.some(module => module.lessons?.some(lesson => lesson.isPreview)) && (
+                  <div className="flex items-center gap-2">
+                    <Play className="h-4 w-4 text-green-600" />
+                    <span className="text-green-600 font-medium">Free preview lessons available</span>
+                  </div>
+                )}
               </div>
               
               {modules.length > 0 ? (
@@ -880,10 +941,26 @@ export default function CourseDetail() {
                                     <span>
                                       <span className="font-medium">{moduleIndex + 1}.{lessonIndex + 1}</span>
                                       <span className="ml-2">{lesson.title}</span>
+                                      {lesson.isPreview && (
+                                        <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700">
+                                          Free Preview
+                                        </Badge>
+                                      )}
                                     </span>
                                   </div>
-                                  <div className="flex items-center text-sm text-muted-foreground">
+                                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
                                     <span>{lesson.durationInMinutes} min</span>
+                                    {lesson.isPreview && !isEnrolled && (
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => handlePreviewLesson(lesson)}
+                                        className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 text-xs px-2 py-1 h-7"
+                                      >
+                                        <Play className="h-3 w-3 mr-1" />
+                                        Preview
+                                      </Button>
+                                    )}
                                   </div>
                                 </div>
                               </li>
@@ -1105,6 +1182,144 @@ export default function CourseDetail() {
               </div>
             </form>        </Form>
         </DialogContent>
+      </Dialog>
+
+      {/* Preview Lesson Modal */}
+      <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-5xl translate-x-[-50%] translate-y-[-50%] border bg-background shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-h-[95vh] p-0">
+            <div className="flex flex-col h-full max-h-[95vh]">
+              {/* Fixed Header */}
+              <DialogHeader className="border-b px-6 py-4 flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Badge variant="secondary" className="bg-green-100 text-green-700">
+                      <Play className="h-3 w-3 mr-1" />
+                      Free Preview
+                    </Badge>
+                    <DialogTitle className="text-xl">
+                      {previewLesson?.title || "Loading..."}
+                    </DialogTitle>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleClosePreview}
+                    className="h-8 w-8"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                {previewLesson && (
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
+                    <div className="flex items-center">
+                      {previewLesson.contentType === "video" ? (
+                        <Video className="h-4 w-4 mr-1" />
+                      ) : (
+                        <Book className="h-4 w-4 mr-1" />
+                      )}
+                      <span>{previewLesson.contentType === "video" ? "Video" : "Article"}</span>
+                    </div>
+                    <span>•</span>
+                    <span>{previewLesson.durationInMinutes} minutes</span>
+                    <span>•</span>
+                    <span>From: {course?.title}</span>
+                  </div>
+                )}
+              </DialogHeader>
+              
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto">
+                {isLoadingPreview ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    <span className="ml-2 text-muted-foreground">Loading preview...</span>
+                  </div>
+                ) : previewLesson ? (
+                  <div className="p-6 space-y-6">
+                    {/* Lesson Description */}
+                    {previewLesson.description && (
+                      <div className="bg-muted/30 rounded-lg p-4">
+                        <h3 className="font-medium mb-2">About this lesson</h3>
+                        <p className="text-sm text-muted-foreground">{previewLesson.description}</p>
+                      </div>
+                    )}
+                    
+                    {/* Lesson Content */}
+                    <div className="space-y-4">
+                      {previewLesson.contentType === "video" ? (
+                        <div className="aspect-video rounded-lg overflow-hidden bg-black">
+                          <SecureVideoPlayer
+                            src={previewLesson.content.startsWith('http') ? previewLesson.content : `${API_BASE_URL}/${previewLesson.content}`}
+                            title={previewLesson.title}
+                            className="w-full h-full"
+                            allowFullscreen={false}
+                          />
+                        </div>
+                      ) : (
+                        <div className="bg-gray-50 rounded-lg p-6 border">
+                          <div 
+                            className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
+                            dangerouslySetInnerHTML={{ 
+                              __html: previewLesson.content || 'No content available'
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Call to Action */}
+                    <div className="bg-gradient-to-r from-eduBlue-50 to-green-50 rounded-lg p-6 border border-eduBlue-200">
+                      <div className="text-center">
+                        <h3 className="text-lg font-semibold text-eduBlue-900 mb-2">
+                          Enjoyed this preview?
+                        </h3>
+                        <p className="text-eduBlue-700 mb-4">
+                          Get access to all lessons, quizzes, and exclusive content by enrolling in the full course.
+                        </p>
+                        <div className="flex items-center justify-center gap-3">
+                          <Button 
+                            onClick={() => {
+                              handleClosePreview();
+                              if (!isAuthenticated) {
+                                window.location.href = `/login?redirect=/courses/${id}`;
+                              } else {
+                                // Scroll to enrollment section
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }
+                            }}
+                            className="bg-eduBlue-500 hover:bg-eduBlue-600"
+                          >
+                            {course?.price === 0 ? "Enroll for Free" : `Enroll Now - ${course?.price} EGP`}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={handleClosePreview}
+                            className="border-eduBlue-200 text-eduBlue-600 hover:bg-eduBlue-50"
+                          >
+                            Continue Browsing
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 px-6">
+                    <p className="text-muted-foreground">Failed to load preview content.</p>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleClosePreview}
+                      className="mt-4"
+                    >
+                      Close
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
       </Dialog>
 
       {/* Payment Method Dialog */}
