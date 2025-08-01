@@ -6,13 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { StarIcon, Play, Clock, User, Book, Video, CheckCircle } from "lucide-react";
+import { StarIcon, Play, Clock, User, Book, Video, CheckCircle, Globe } from "lucide-react";
 import { API } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
 import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
 import { CourseStructuredData } from "@/components/seo/course-structured-data";
 import { SEO } from "@/components/seo/seo";
+import { getLanguageDisplayName } from "@/config/languages";
 
 // Component for course description with show more/less functionality
 interface CourseDescriptionWithToggleProps {
@@ -412,6 +413,15 @@ export default function CourseDetail() {
                         <p className="text-sm text-muted-foreground">{course.studentsCount.toLocaleString()} students</p>
                       </div>
                     </div>
+                    {course.CourseLanguage && (
+                      <div className="flex gap-2">
+                        <Globe className="h-5 w-5 text-primary mb-2" />
+                        <div>
+                          <p className="font-medium">Language</p>
+                          <p className="text-sm text-muted-foreground">{getLanguageDisplayName(course.CourseLanguage)}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="md:hidden mb-6">

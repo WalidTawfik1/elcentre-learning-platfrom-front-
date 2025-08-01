@@ -58,6 +58,7 @@ export interface Course {
   courseStatus?: string; // Added to track admin approval status
   requirements?: string; // Optional requirements as string
   useAIAssistant?: boolean; // AI Assistant feature toggle
+  CourseLanguage: string; // Language of the course - required for transcription
 }
 
 export interface CourseModule {

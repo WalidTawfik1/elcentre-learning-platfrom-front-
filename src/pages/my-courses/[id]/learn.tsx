@@ -107,47 +107,21 @@ export default function CourseLearn() {
   
   // Content processing state for AI Assistant
   const [lessonTranscript, setLessonTranscript] = useState('');
-  const [detectedLanguage, setDetectedLanguage] = useState('auto');
   const [isProcessingContent, setIsProcessingContent] = useState(false);
   
-  // Detect if lesson content is likely Arabic for better transcription
-  const detectLessonLanguage = useCallback(() => {
-    if (!activeLesson) return 'auto';
-    
-    const lessonText = `${activeLesson.title} ${activeLesson.description || ''}`;
-    const arabicRegex = /[\u0600-\u06FF]/;
-    const hasArabicChars = arabicRegex.test(lessonText);
-    const totalCharCount = lessonText.replace(/\s/g, '').length;
-    
-    // Also check for common Arabic words or language indicators
-    const arabicKeywords = ['عربي', 'العربية', 'اللغة', 'كورس', 'درس', 'تعلم', 'شرح'];
-    const hasArabicKeywords = arabicKeywords.some(keyword => lessonText.includes(keyword));
-    
-    // Simple Arabic detection: any Arabic character + at least 3 total characters = Arabic content
-    const isArabicContent = (hasArabicChars && totalCharCount >= 3) || hasArabicKeywords;
-    
-    // If lesson content is likely Arabic, set language to Arabic
-    return isArabicContent ? 'ar' : 'auto';
-  }, [activeLesson]);
+  // Use course language for transcription instead of detecting from lesson title
+  const { transcribeVideo, isTranscribing, error: transcriptionError } = useVideoTranscription({
+    courseLanguage: course?.CourseLanguage || 'auto' // Use course language setting
+  });
   
-  // Update detected language when active lesson changes
-  useEffect(() => {
-    if (activeLesson) {
-      const newLanguage = detectLessonLanguage();
-      setDetectedLanguage(newLanguage);
-    }
-  }, [activeLesson, detectLessonLanguage]);
-  
-  const { transcribeVideo, isTranscribing, error: transcriptionError } = useVideoTranscription();
-  
-  // Create a wrapper function that passes the detected language
-  const transcribeVideoWithLanguage = useCallback(async (videoUrl: string) => {
-    // Detect language immediately before transcription instead of relying on state
-    const currentLanguage = activeLesson ? detectLessonLanguage() : 'auto';
+  // Use course language for video transcription
+  const transcribeVideoWithCourseLanguage = useCallback(async (videoUrl: string) => {
+    // Use the course's configured language instead of detecting from lesson title
+    const courseLanguage = course?.CourseLanguage || 'auto';
     
-    // Pass the detected language as override parameter
-    return await transcribeVideo(videoUrl, currentLanguage);
-  }, [transcribeVideo, activeLesson, detectLessonLanguage]);
+    // Pass the course language to the transcription service
+    return await transcribeVideo(videoUrl, courseLanguage);
+  }, [transcribeVideo, course?.CourseLanguage]);
   
   // Helper function to check if a lesson is completed
   const isLessonCompleted = useCallback((lessonId: number) => {
@@ -346,7 +320,7 @@ export default function CourseLearn() {
           }
 
           if (videoUrl) {
-            const result = await transcribeVideoWithLanguage(videoUrl);
+            const result = await transcribeVideoWithCourseLanguage(videoUrl);
             if (result && result.text) {
               lessonContent = `Lesson Title: ${activeLesson.title}\n\n` +
                             (activeLesson.description ? `Description: ${activeLesson.description}\n\n` : '') +
@@ -378,7 +352,7 @@ export default function CourseLearn() {
     };
 
     processLessonContent();
-  }, [activeLesson, transcribeVideoWithLanguage, transcriptionError]);
+  }, [activeLesson, transcribeVideoWithCourseLanguage, transcriptionError]);
 
   // Join course notification group when course is loaded and user is subscribed
   useEffect(() => {

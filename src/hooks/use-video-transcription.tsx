@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
+import { getAssemblyAILanguageCode } from '@/config/languages';
 
 interface UseVideoTranscriptionOptions {
-  language?: string;
+  courseLanguage?: string; // Use course language instead of generic language
 }
 
 interface TranscriptResult {
@@ -11,7 +12,7 @@ interface TranscriptResult {
 }
 
 export function useVideoTranscription({ 
-  language = 'auto' // Auto-detect language by default, but can be set to 'ar' for Arabic
+  courseLanguage = 'auto' // Use course language for transcription
 }: UseVideoTranscriptionOptions = {}) {
   const [transcript, setTranscript] = useState('');
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -34,7 +35,7 @@ export function useVideoTranscription({
 
   // AssemblyAI transcription
   const transcribeWithAssemblyAI = useCallback(async (videoUrl: string, apiKey: string, overrideLanguage?: string): Promise<TranscriptResult> => {
-    const effectiveLanguage = overrideLanguage || language;
+    const effectiveLanguage = overrideLanguage || courseLanguage;
     (`Starting AssemblyAI transcription with language: ${effectiveLanguage}`);
     
     // Validate the video URL
@@ -42,26 +43,10 @@ export function useVideoTranscription({
       throw new Error(`Invalid video URL for transcription: ${videoUrl}`);
     }
     
-    // Map common language codes to AssemblyAI supported codes
-    const getLanguageCode = (lang: string) => {
-      const languageMap: { [key: string]: string } = {
-        'auto': null,   // Let AssemblyAI auto-detect by not setting language_code
-        'ar': 'ar',     // Arabic
-        'en': 'en_us',  // English (US format)
-        'es': 'es',     // Spanish
-        'fr': 'fr',     // French
-        'de': 'de',     // German
-        'it': 'it',     // Italian
-        'pt': 'pt',     // Portuguese
-        'hi': 'hi',     // Hindi
-        'ja': 'ja',     // Japanese
-        'ko': 'ko',     // Korean
-        'zh': 'zh',     // Chinese
-      };
-      return languageMap[lang] || null;
-    };
-
-    const languageCode = getLanguageCode(effectiveLanguage);
+    // Use the language configuration to get Assembly AI language code
+    const languageCode = getAssemblyAILanguageCode(effectiveLanguage) || 
+                        (effectiveLanguage === 'auto' ? null : effectiveLanguage);
+    
     (`Mapped language code: ${languageCode}`);
 
     // Configure request body with only supported parameters
@@ -180,7 +165,7 @@ export function useVideoTranscription({
 
     setTranscript(result.text);
     return result;
-  }, [language]);
+  }, [courseLanguage]);
 
   const transcribeVideo = useCallback(async (videoUrl: string, overrideLanguage?: string): Promise<TranscriptResult | null> => {
     if (!videoUrl) {
@@ -188,8 +173,8 @@ export function useVideoTranscription({
       return null;
     }
 
-    // Use override language if provided, otherwise use the hook's language setting
-    const effectiveLanguage = overrideLanguage || language;
+    // Use override language if provided, otherwise use the hook's courseLanguage setting
+    const effectiveLanguage = overrideLanguage || courseLanguage;
     (`Transcribing video with language: ${effectiveLanguage}`);
 
     setIsTranscribing(true);
@@ -216,7 +201,7 @@ export function useVideoTranscription({
       setIsTranscribing(false);
       setProgress(0);
     }
-  }, [language, transcribeWithAssemblyAI]);
+  }, [courseLanguage, transcribeWithAssemblyAI]);
 
   const clearTranscript = useCallback(() => {
     setTranscript('');

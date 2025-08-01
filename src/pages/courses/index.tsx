@@ -16,11 +16,13 @@ import { useLocation } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
 import { useDebouncedSearch } from "@/hooks/use-debounced-actions";
+import { SUPPORTED_LANGUAGES, getLanguageDisplayName } from "@/config/languages";
 
 export default function CoursesIndex() {
   // State for filters
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(0); // 0 is "All Categories"
+  const [selectedLanguage, setSelectedLanguage] = useState("all"); // "all" is "All Languages"
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
   const [sortBy, setSortBy] = useState<string>("default"); // Sort parameter: "PriceAsc", "PriceDesc", "Rating", or "default" for default
   const [filteredCourses, setFilteredCourses] = useState<any[]>([]);
@@ -39,10 +41,13 @@ export default function CoursesIndex() {
     isLoading: isCoursesLoading,
     error: coursesError
   } = useQuery({
-    queryKey: ['courses', currentPage, selectedCategory, searchTerm, priceRange, sortBy],
+    queryKey: ['courses', currentPage, selectedCategory, selectedLanguage, searchTerm, priceRange, sortBy],
     queryFn: async () => {
       // Only filter by category if not "All Categories"
       const categoryId = selectedCategory > 0 ? selectedCategory : undefined;
+      
+      // Only filter by language if not "All Languages"
+      const languageFilter = selectedLanguage !== "all" ? selectedLanguage : undefined;
       
       // Convert string search term to a format the API expects
       const searchQuery = searchTerm.trim() || undefined;
@@ -51,6 +56,17 @@ export default function CoursesIndex() {
       const sortParam = sortBy === "default" ? null : sortBy;
       
       // Get all courses from the API
+      console.log('Fetching courses with params:', {
+        currentPage,
+        coursesPerPage,
+        sortParam,
+        categoryId,
+        searchQuery,
+        priceRange,
+        languageFilter,
+        selectedLanguage
+      });
+      
       const result = await CourseService.getAllCourses(
         currentPage, 
         coursesPerPage, 
@@ -58,8 +74,11 @@ export default function CoursesIndex() {
         categoryId,
         searchQuery,
         priceRange[0] > 0 ? priceRange[0] : undefined,
-        priceRange[1] < 5000 ? priceRange[1] : undefined
+        priceRange[1] < 5000 ? priceRange[1] : undefined,
+        languageFilter
       );
+      
+      console.log('API result:', result);
       
       
       // Check if the API returned valid data with items
@@ -110,6 +129,7 @@ export default function CoursesIndex() {
         image: instructorImage,
       },
       duration: course.durationInHours ? `${course.durationInHours} hours` : course.duration || "0 hours",
+      language: course.CourseLanguage || course.courseLanguage || "en", // Default to English if not specified
     };
   };
 
@@ -125,6 +145,12 @@ export default function CoursesIndex() {
     const categoryId = parseInt(value);
     setSelectedCategory(categoryId);
     setCurrentPage(1); // Reset to page 1 when changing category
+  };
+
+  // Handle language change
+  const handleLanguageChange = (value: string) => {
+    setSelectedLanguage(value);
+    setCurrentPage(1); // Reset to page 1 when changing language
   };
 
   // Apply price filter
@@ -161,6 +187,7 @@ export default function CoursesIndex() {
   const handleResetFilters = () => {
     setSearchTerm("");
     setSelectedCategory(0);
+    setSelectedLanguage("all");
     setPriceRange([0, 5000]);
     setSortBy("default");
     setCurrentPage(1);
@@ -254,6 +281,23 @@ export default function CoursesIndex() {
             </div>
             
             <div>
+              <h3 className="font-medium mb-4">Filter by Language</h3>
+              <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Languages" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Languages</SelectItem>
+                  {SUPPORTED_LANGUAGES.map((language) => (
+                    <SelectItem key={language.code} value={language.code}>
+                      {getLanguageDisplayName(language.code)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
               <h3 className="font-medium mb-4">Sort By</h3>
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger>
@@ -327,6 +371,7 @@ export default function CoursesIndex() {
                       category={course.category}
                       instructor={course.instructor}
                       duration={course.duration}
+                      language={course.language}
                     />
                   ))}
                 </div>

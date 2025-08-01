@@ -12,7 +12,8 @@ export const CourseService = {
     categoryId?: number,
     search?: string,
     minPrice?: number,
-    maxPrice?: number
+    maxPrice?: number,
+    language?: string
   ): Promise<any> => {
     const params: any = {
       pagenum: pageNum,
@@ -24,6 +25,7 @@ export const CourseService = {
     if (search) params.search = search;
     if (minPrice !== undefined) params.minPrice = minPrice;
     if (maxPrice !== undefined) params.maxPrice = maxPrice;
+    if (language) params.language = language;
     
     // Use rate limiting for course searches
     if (search) {
@@ -210,6 +212,7 @@ export const CourseService = {
     durationInHours: number;
     requirements?: string;
     useAIAssistant?: boolean;
+    CourseLanguage: string;
   }): Promise<any> => {
     // Transform the data to match API expectations (PascalCase)
     const formattedData = {
@@ -221,7 +224,8 @@ export const CourseService = {
       CategoryId: courseData.categoryId,
       DurationInHours: courseData.durationInHours,
       Requirements: courseData.requirements || "",
-      UseAIAssistant: courseData.useAIAssistant ?? false
+      UseAIAssistant: courseData.useAIAssistant ?? false,
+      CourseLanguage: courseData.CourseLanguage
     };
 
     return API.courses.add(formattedData);
@@ -238,6 +242,7 @@ export const CourseService = {
     durationInHours?: number;
     requirements?: string;
     useAIAssistant?: boolean;
+    CourseLanguage?: string;
   }): Promise<any> => {
     // Transform the data to match API expectations (PascalCase)
     const formattedData = {
@@ -250,7 +255,8 @@ export const CourseService = {
       CategoryId: courseData.categoryId,
       DurationInHours: courseData.durationInHours,
       Requirements: courseData.requirements || undefined,
-      UseAIAssistant: courseData.useAIAssistant
+      UseAIAssistant: courseData.useAIAssistant,
+      CourseLanguage: courseData.CourseLanguage
     };
 
     return API.courses.update(formattedData);

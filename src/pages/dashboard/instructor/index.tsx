@@ -23,6 +23,7 @@ import { EnrollmentService } from "@/services/enrollment-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { getImageUrl } from "@/config/api-config";
+import { getLanguageDisplayName } from "@/config/languages";
 
 // Teaching tips for instructors
 const instructorTips = [
@@ -414,6 +415,7 @@ export default function InstructorDashboard() {
                               <div className="text-xs text-gray-500">
                                 {course.categoryName && `${course.categoryName} • `}
                                 {course.durationInHours} hours
+                                {course.CourseLanguage && ` • ${getLanguageDisplayName(course.CourseLanguage)}`}
                               </div>
                             </div>
                           </div>
@@ -451,18 +453,6 @@ export default function InstructorDashboard() {
                                   </>
                                 )}
                               </div>
-                            </div>
-                          </div>
-
-                          {/* Status Section */}
-                          <div className="flex items-center justify-between mb-3 py-2 border-t border-gray-100">
-                            <div className="flex items-center gap-1 text-gray-500">
-                              <BookOpen className="h-4 w-4" />
-                              <span className="text-sm">Your Course</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-blue-600">
-                              <TrendingUp className="h-4 w-4" />
-                              <span className="text-sm font-medium">Active</span>
                             </div>
                           </div>
 

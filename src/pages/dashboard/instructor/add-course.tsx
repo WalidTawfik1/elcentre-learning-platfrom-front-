@@ -11,6 +11,7 @@ import { CategoryService } from "@/services/category-service";
 import { CourseService } from "@/services/course-service";
 import { toast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
+import { SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE, getLanguageDisplayName } from "@/config/languages";
 
 export default function AddCourse() {
   const navigate = useNavigate();
@@ -24,7 +25,8 @@ export default function AddCourse() {
     categoryId: 0,
     durationInHours: 0,
     requirements: "", // Add requirements as a string that will be split into array
-    useAIAssistant: false // Default to false to match backend default
+    useAIAssistant: false, // Default to false to match backend default
+    CourseLanguage: DEFAULT_LANGUAGE // Default language for the course
   });
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
@@ -146,6 +148,32 @@ export default function AddCourse() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Course Language</label>
+              <Select 
+                value={formData.CourseLanguage} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, CourseLanguage: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select course language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_LANGUAGES.map((language) => (
+                    <SelectItem key={language.code} value={language.code}>
+                      <div className="flex items-center gap-2">
+                        <span>{language.flag}</span>
+                        <span>{language.name}</span>
+                        <span className="text-muted-foreground text-sm">({language.englishName})</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground mt-1">
+                This will be used for video transcription and AI assistant features
+              </p>
             </div>
 
             <div>

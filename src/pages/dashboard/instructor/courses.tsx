@@ -224,18 +224,6 @@ export default function InstructorCourses() {
                     </div>
                   </div>
 
-                  {/* Status Section */}
-                  <div className="flex items-center justify-between mb-3 py-2 border-t border-gray-100">
-                    <div className="flex items-center gap-1 text-gray-500">
-                      <BookOpen className="h-4 w-4" />
-                      <span className="text-sm">Your Course</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-blue-600">
-                      <TrendingUp className="h-4 w-4" />
-                      <span className="text-sm font-medium">Active</span>
-                    </div>
-                  </div>
-
                   {/* Footer Section */}
                   <div className="flex items-center gap-2">
                     <AlertDialog>

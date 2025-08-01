@@ -30,6 +30,7 @@ export function CourseSection({ courses, isLoading, error, mockCourses }: Course
       avatar: course.instructorImage || "",
     },
     duration: `${course.durationInHours || 0} hours`,
+    language: course.CourseLanguage || course.courseLanguage || "en", // Default to English if not specified
   })) : mockCourses;
 
   return (

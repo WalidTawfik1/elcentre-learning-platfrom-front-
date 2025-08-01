@@ -13,6 +13,7 @@ import { CourseService } from "@/services/course-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { BookOpen, BookText } from "lucide-react";
+import { SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE, getLanguageDisplayName } from "@/config/languages";
 
 import { DIRECT_API_URL } from "@/config/api-config";
 
@@ -34,7 +35,8 @@ export default function EditCourse() {
     categoryId: 0,
     durationInHours: 0,
     requirements: "", // Add requirements as a string
-    useAIAssistant: false // Default to false to match backend default
+    useAIAssistant: false, // Default to false to match backend default
+    CourseLanguage: DEFAULT_LANGUAGE // Default language for the course
   });
   const [isLoading, setIsLoading] = useState(true); // Add loading state
 
@@ -97,7 +99,8 @@ export default function EditCourse() {
           categoryId: courseData.categoryId,
           durationInHours: courseData.durationInHours || 0,
           requirements: courseData.requirements || "", // Use the string directly
-          useAIAssistant: courseData.useAIAssistant ?? false // Use nullish coalescing to handle null/undefined
+          useAIAssistant: courseData.useAIAssistant ?? false, // Use nullish coalescing to handle null/undefined
+          CourseLanguage: courseData.CourseLanguage || DEFAULT_LANGUAGE // Use course language or default
         });
       } catch (error) {
         console.error("Error fetching course:", error);
@@ -145,7 +148,8 @@ export default function EditCourse() {
         categoryId: formData.categoryId,
         durationInHours: formData.durationInHours,
         requirements: formData.requirements,
-        useAIAssistant: formData.useAIAssistant
+        useAIAssistant: formData.useAIAssistant,
+        CourseLanguage: formData.CourseLanguage
       };
 
       // Only include thumbnail if user selected a new one
@@ -247,6 +251,32 @@ export default function EditCourse() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Course Language</label>
+              <Select 
+                value={formData.CourseLanguage} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, CourseLanguage: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select course language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_LANGUAGES.map((language) => (
+                    <SelectItem key={language.code} value={language.code}>
+                      <div className="flex items-center gap-2">
+                        <span>{language.flag}</span>
+                        <span>{language.name}</span>
+                        <span className="text-muted-foreground text-sm">({language.englishName})</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground mt-1">
+                This will be used for video transcription and AI assistant features
+              </p>
             </div>
 
             <div>

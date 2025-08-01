@@ -75,6 +75,11 @@ export function NavBar() {
                 My Courses
               </Link>
             )}
+             {isAuthenticated && user?.userType === "Student" && (
+              <Link to="/dashboard" className="transition-colors hover:text-foreground/80">
+                Dashboard
+              </Link>
+            )}
             {isAuthenticated && user?.userType === "Instructor" && (
               <Link to="/instructor/courses" className="transition-colors hover:text-foreground/80">
                 My Courses

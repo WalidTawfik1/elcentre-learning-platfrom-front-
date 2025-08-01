@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { StarIcon, Play, Clock, User, Book, Video, CheckCircle, Edit, Trash2, Heart, BookOpen } from "lucide-react";
+import { StarIcon, Play, Clock, User, Book, Video, CheckCircle, Edit, Trash2, Heart, BookOpen, Globe } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { WishlistService } from "@/services/wishlist-service";
 import { PaymentService } from "@/services/payment-service";
@@ -19,6 +19,7 @@ import { toast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import { getLanguageDisplayName } from "@/config/languages";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -602,6 +603,10 @@ export default function CourseDetail() {
                   <User className="h-4 w-4 mr-1" />
                   <span>{enrollmentCount?.toLocaleString() || courseData.studentsCount?.toLocaleString() || 0} students</span>
                 </div>
+                <div className="flex items-center">
+                  <Globe className="h-4 w-4 mr-1" />
+                  <span>{getLanguageDisplayName(courseData.CourseLanguage || courseData.courseLanguage || 'en')}</span>
+                </div>
               </div>
                 <div className="hidden md:block">
                 {isEnrolled ? (
@@ -696,7 +701,7 @@ export default function CourseDetail() {
                   <div className="mb-3">
                     <div className="text-2xl font-bold mb-2">
                       {courseData.price === 0 ? (
-                        <span className="text-blue-600">Free Course</span>
+                        <span className="text-green-600">Free Course</span>
                       ) : (
                         <span>{courseData.price} EGP</span>
                       )}
@@ -725,6 +730,13 @@ export default function CourseDetail() {
                         <div className="flex-1">
                           <p className="text-sm font-medium text-gray-700">Students Enrolled</p>
                           <p className="text-xs text-gray-500">{enrollmentCount?.toLocaleString() || courseData.studentsCount?.toLocaleString() || 0} students</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-gray-500" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-700">Language</p>
+                          <p className="text-xs text-gray-500">{getLanguageDisplayName(courseData.CourseLanguage || courseData.courseLanguage || 'en')}</p>
                         </div>
                       </div>
                     </div>

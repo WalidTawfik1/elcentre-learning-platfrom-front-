@@ -2,9 +2,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { StarIcon, ClockIcon } from "lucide-react";
+import { StarIcon, ClockIcon, Globe } from "lucide-react";
 import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
+import { getLanguageDisplayName } from "@/config/languages";
 
 interface CourseCardProps {
   id: string;
@@ -21,6 +22,7 @@ interface CourseCardProps {
     image?: string; // Support for instructorImage field
   };
   duration: string;
+  language?: string; // Course language code
 }
 
 export function CourseCard({
@@ -33,6 +35,7 @@ export function CourseCard({
   category,
   instructor,
   duration,
+  language,
 }: CourseCardProps) {
   // Helper function to render stars based on rating
   const renderRating = (rating: number) => {
@@ -119,12 +122,22 @@ export function CourseCard({
         </div>
 
         {/* Stats Section */}
-        <div className="flex items-center justify-between mb-3 py-2 border-t border-gray-100">
-          <div className="flex items-center gap-1 text-gray-500">
-            <ClockIcon className="h-4 w-4" />
-            <span className="text-sm">{duration}</span>
+        <div className="mb-3 py-2 border-t border-gray-100">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1 text-gray-500">
+              <ClockIcon className="h-4 w-4" />
+              <span className="text-sm">{duration}</span>
+            </div>
+            {renderRating(rating)}
           </div>
-          {renderRating(rating)}
+          
+          {/* Language Display */}
+          {language && (
+            <div className="flex items-center gap-1 text-gray-500">
+              <Globe className="h-4 w-4" />
+              <span className="text-sm">{getLanguageDisplayName(language)}</span>
+            </div>
+          )}
         </div>
 
         {/* Footer Section */}

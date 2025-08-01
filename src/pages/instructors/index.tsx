@@ -16,10 +16,12 @@ import { getImageUrl } from "@/config/api-config";
 import { getInitials } from "@/lib/utils";
 import { UserDTO } from "@/types/api";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function InstructorsPage() {
   const [instructors, setInstructors] = useState<UserDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const {isAuthenticated} = useAuth();
 
   useEffect(() => {
     const fetchInstructors = async () => {
@@ -144,7 +146,7 @@ export default function InstructorsPage() {
         )}
 
         {/* Call to Action */}
-        {!isLoading && instructors.length > 0 && (
+        {!isLoading && instructors.length > 0 && !isAuthenticated && (
           <div className="text-center mt-16 py-12 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg">
             <h2 className="text-2xl font-bold mb-4">Interested in Teaching?</h2>
             <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">

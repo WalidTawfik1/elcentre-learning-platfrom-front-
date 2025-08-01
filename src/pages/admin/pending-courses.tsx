@@ -8,9 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CourseService } from "@/services/course-service";
-import { CheckCircle, XCircle, Clock, User, Calendar, DollarSign, BookOpen, AlertCircle, Eye, ExternalLink } from "lucide-react";
+import { CheckCircle, XCircle, Clock, User, Calendar, DollarSign, BookOpen, AlertCircle, Eye, ExternalLink, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { getImageUrl } from "@/config/api-config";
+import { getLanguageDisplayName } from "@/config/languages";
 
 interface PendingCourse {
   id: number;
@@ -26,6 +27,7 @@ interface PendingCourse {
   createdAt: string;
   status: string; // Made flexible to handle different status formats
   rejectionReason?: string;
+  CourseLanguage?: string; // Course language
 }
 
 export default function PendingCoursesPage() {
@@ -267,7 +269,7 @@ export default function PendingCoursesPage() {
                       {getStatusBadge(course.status)}
                     </div>
                       {/* Course Meta Information */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                       <div className="flex items-center gap-1">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <Link 
@@ -289,6 +291,12 @@ export default function PendingCoursesPage() {
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span>{formatDate(course.createdAt)}</span>
                       </div>
+                      {course.CourseLanguage && (
+                        <div className="flex items-center gap-1">
+                          <Globe className="h-4 w-4 text-muted-foreground" />
+                          <span>{getLanguageDisplayName(course.CourseLanguage)}</span>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="text-sm text-muted-foreground mt-2">

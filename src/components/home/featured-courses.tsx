@@ -14,6 +14,7 @@ interface Course {
     avatar?: string;
   };
   duration: string;
+  language?: string; // Course language code
 }
 
 interface FeaturedCoursesProps {
@@ -51,6 +52,7 @@ export function FeaturedCourses({ courses, showHeader = true }: FeaturedCoursesP
           category={course.category}
           instructor={course.instructor}
           duration={course.duration}
+          language={course.language}
         />
       ))}
     </div>

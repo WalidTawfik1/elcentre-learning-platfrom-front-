@@ -568,6 +568,7 @@ export const API = {
       DurationInHours: number;
       Requirements?: string;
       UseAIAssistant?: boolean;
+      CourseLanguage: string;
     }) => {
       const formData = createFormData(data);
       return apiRequest('/Course/add-course', 'POST', formData, true, true);
@@ -584,6 +585,7 @@ export const API = {
       DurationInHours?: number;
       Requirements?: string;
       UseAIAssistant?: boolean;
+      CourseLanguage?: string;
     }) => {
       const formData = createFormData(data);
       return apiRequest('/Course/update-course', 'PUT', formData, true, true);
@@ -598,6 +600,7 @@ export const API = {
       pagesize?: number; 
       Maxpagesize?: number;
       sort?: string;
+      langauge?: string;
       categoryId?: number;
       search?: string;
       minPrice?: number;
