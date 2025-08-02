@@ -459,10 +459,10 @@ export function QuizTaking({ lessonId, courseId, onQuizComplete }: QuizTakingPro
 
         {/* Answer status indicator */}
         {currentAnswer && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <span className="text-sm text-green-800">
+              <CheckCircle className="h-4 w-4 text-blue-600" />
+              <span className="text-sm text-blue-800">
                 Answer saved: Option {currentAnswer}
               </span>
             </div>

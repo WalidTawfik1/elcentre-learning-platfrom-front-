@@ -185,9 +185,16 @@ export default function CourseLearn() {
             modulesData.map(async (module) => {
               try {
                 const lessons = await CourseService.getLessons(id, module.id);
+                
+                // Filter lessons based on publish status
+                let filteredLessons = Array.isArray(lessons) ? lessons : [];
+                
+                // Hide unpublished lessons for all users (instructors can manage them in content management)
+                filteredLessons = filteredLessons.filter(lesson => lesson.isPublished);
+                
                 return {
                   ...module,
-                  lessons: Array.isArray(lessons) ? lessons : []
+                  lessons: filteredLessons
                 };
               } catch (error) {
                 console.error(`Error fetching lessons for module ${module.id}:`, error);
@@ -196,11 +203,19 @@ export default function CourseLearn() {
             })
           );
           
-          setModules(modulesWithLessons);
+          // Filter modules based on publish status
+          let filteredModules = modulesWithLessons;
+          
+          // Hide unpublished modules or modules with no published lessons for all users
+          filteredModules = modulesWithLessons.filter(module => 
+            module.isPublished && module.lessons.length > 0
+          );
+          
+          setModules(filteredModules);
           
           // Set the first lesson as active if there are any
-          if (modulesWithLessons.length > 0 && modulesWithLessons[0].lessons.length > 0) {
-            setActiveLesson(modulesWithLessons[0].lessons[0]);
+          if (filteredModules.length > 0 && filteredModules[0].lessons.length > 0) {
+            setActiveLesson(filteredModules[0].lessons[0]);
           }
           
           // Get completed lessons (skip for instructor viewing)
@@ -210,7 +225,7 @@ export default function CourseLearn() {
               setCompletedLessons(Array.isArray(completed) ? completed : []);
               
               // Calculate progress
-              const totalLessons = modulesWithLessons.reduce(
+              const totalLessons = filteredModules.reduce(
                 (total, module) => total + (module.lessons?.length || 0),
                 0
               );
@@ -1216,12 +1231,12 @@ export default function CourseLearn() {
                                   {courseQuizzes.filter(quiz => quiz.lessonId === activeLesson.id).length} quiz{courseQuizzes.filter(quiz => quiz.lessonId === activeLesson.id).length > 1 ? 'es' : ''} available
                                 </p>
                               </div>
-                              <Badge variant={completedLessons.includes(activeLesson.id) ? "default" : "secondary"}>
-                                {completedLessons.includes(activeLesson.id) ? "Unlocked" : "Complete lesson to unlock"}
+                              <Badge variant={isLessonCompleted(activeLesson.id) ? "default" : "secondary"}>
+                                {isLessonCompleted(activeLesson.id) ? "Unlocked" : "Complete lesson to unlock"}
                               </Badge>
                             </div>
                           </CardHeader>
-                          {completedLessons.includes(activeLesson.id) && (
+                          {isLessonCompleted(activeLesson.id) && (
                             <CardContent className="pt-0">
                               <QuizTaking 
                                 key={`quiz-${activeLesson.id}`} // Add key to ensure re-render when lesson changes

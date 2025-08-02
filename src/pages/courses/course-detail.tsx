@@ -290,17 +290,34 @@ export default function CourseDetail() {
           CourseService.getModules(id).then(async (modules) => {
             if (!modules) return [];
             const modulesArray = Array.isArray(modules) ? modules : [];
-            return Promise.all(modulesArray.map(async (module) => {
+            const modulesWithLessons = await Promise.all(modulesArray.map(async (module) => {
               try {
                 const lessons = await CourseService.getLessons(id, module.id);
+                
+                // Filter lessons based on publish status
+                let filteredLessons = Array.isArray(lessons) ? lessons : [];
+                
+                // Hide unpublished lessons for all users (instructors can manage them in content management)
+                filteredLessons = filteredLessons.filter(lesson => lesson.isPublished);
+                
                 return {
                   ...module,
-                  lessons: Array.isArray(lessons) ? lessons : []
+                  lessons: filteredLessons
                 };
               } catch (error) {
                 return { ...module, lessons: [] };
               }
             }));
+            
+            // Filter modules based on publish status
+            let filteredModules = modulesWithLessons;
+            
+            // Hide unpublished modules or modules with no published lessons for all users
+            filteredModules = modulesWithLessons.filter(module => 
+              module.isPublished && module.lessons.length > 0
+            );
+            
+            return filteredModules;
           }),
           
           // Get enrollment count
