@@ -61,8 +61,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { CourseService } from "@/services/course-service";
 import { ModuleService } from "@/services/module-service";
 import { LessonService } from "@/services/lesson-service";
+import { NotificationService, NotificationResponse } from "@/services/notification-service";
 import { CourseModule, Lesson } from "@/types/api";
 import { QuizManagement } from "@/components/quiz/quiz-management";
+import { formatDistanceToNow } from "date-fns";
 import { 
   ChevronLeft, 
   PlusCircle, 
@@ -124,6 +126,10 @@ export default function CourseContentManagement() {
   const [isUploading, setIsUploading] = useState(false);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
 
+  // Instructor notifications state
+  const [instructorNotifications, setInstructorNotifications] = useState<NotificationResponse[]>([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+
   useEffect(() => {
     // Check authentication and redirect if needed
     if (!isAuthenticated && user === null) {
@@ -172,6 +178,9 @@ export default function CourseContentManagement() {
       
       // Get modules and lessons
       await fetchModules();
+      
+      // Get instructor notifications
+      await fetchInstructorNotifications();
       
     } catch (error) {
       console.error("Error fetching course data:", error);
@@ -242,6 +251,50 @@ export default function CourseContentManagement() {
         variant: "destructive"
       });
       return [];
+    }
+  };
+
+  // Fetch instructor notifications for the course
+  const fetchInstructorNotifications = async () => {
+    if (!id) return;
+    
+    setIsLoadingNotifications(true);
+    try {
+      const notifications = await NotificationService.getInstructorNotifications(parseInt(id));
+      setInstructorNotifications(notifications);
+    } catch (error) {
+      console.error("Error fetching instructor notifications:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load notifications. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  };
+
+  // Delete instructor notification
+  const handleDeleteNotification = async (notificationId: number) => {
+    try {
+      await NotificationService.deleteNotification(notificationId);
+      
+      // Remove from local state
+      setInstructorNotifications(prev => 
+        prev.filter(notification => notification.id !== notificationId)
+      );
+      
+      toast({
+        title: "Notification Deleted",
+        description: "The notification has been deleted successfully."
+      });
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete notification. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -812,7 +865,100 @@ export default function CourseContentManagement() {
                 courseId={parseInt(id!)}
                 courseName={course?.title || "Course"}
                 variant="card"
+                onNotificationCreated={fetchInstructorNotifications}
               />
+
+              {/* Instructor Notifications List */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-md font-medium">Your Notifications</h4>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchInstructorNotifications}
+                    disabled={isLoadingNotifications}
+                  >
+                    {isLoadingNotifications ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Refresh"
+                    )}
+                  </Button>
+                </div>
+
+                {isLoadingNotifications ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : instructorNotifications.length === 0 ? (
+                  <div className="border border-dashed rounded-lg p-8 text-center">
+                    <Bell className="h-10 w-10 mx-auto mb-2 text-muted-foreground/50" />
+                    <h3 className="text-lg font-medium mb-1">No notifications yet</h3>
+                    <p className="text-muted-foreground">You haven't created any notifications for this course yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {instructorNotifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className="border rounded-lg p-4 bg-card"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h5 className="font-medium">{notification.title}</h5>
+                              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                                {notification.notificationType}
+                              </span>
+                              <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                                {notification.priority}
+                              </span>
+                            </div>
+                            <p className="text-muted-foreground text-sm mb-2 whitespace-pre-wrap">
+                              {notification.message}
+                            </p>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <span>Created: {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
+                              <span>Target: {notification.targetUserRole}</span>
+                              {notification.expiresAt && (
+                                <span>Expires: {formatDistanceToNow(new Date(notification.expiresAt), { addSuffix: true })}</span>
+                              )}
+                            </div>
+                          </div>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Notification</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this notification? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteNotification(notification.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </TabsContent>
         </Tabs>

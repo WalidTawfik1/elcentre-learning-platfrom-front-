@@ -87,8 +87,14 @@ export default function EditCourse() {
           navigate("/instructor/courses", { replace: true });
           return;
         }
-
-
+        
+        // Handle multiple possible field names for course language
+        const courseLanguage = courseData.CourseLanguage || 
+                              courseData.courseLanguage || 
+                              courseData.language || 
+                              courseData.Language || 
+                              DEFAULT_LANGUAGE;
+                
         setFormData({
           title: courseData.title,
           description: courseData.description,
@@ -100,7 +106,7 @@ export default function EditCourse() {
           durationInHours: courseData.durationInHours || 0,
           requirements: courseData.requirements || "", // Use the string directly
           useAIAssistant: courseData.useAIAssistant ?? false, // Use nullish coalescing to handle null/undefined
-          CourseLanguage: courseData.CourseLanguage || DEFAULT_LANGUAGE // Use course language or default
+          CourseLanguage: courseLanguage // Use the detected language
         });
       } catch (error) {
         console.error("Error fetching course:", error);
@@ -266,7 +272,6 @@ export default function EditCourse() {
                   {SUPPORTED_LANGUAGES.map((language) => (
                     <SelectItem key={language.code} value={language.code}>
                       <div className="flex items-center gap-2">
-                        <span>{language.flag}</span>
                         <span>{language.name}</span>
                         <span className="text-muted-foreground text-sm">({language.englishName})</span>
                       </div>

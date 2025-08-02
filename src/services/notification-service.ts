@@ -188,6 +188,17 @@ export const NotificationService = {
     );
   },
 
+  // Get instructor notifications for a course
+  getInstructorNotifications: async (courseId: number): Promise<NotificationResponse[]> => {
+    return apiRequest<NotificationResponse[]>(
+      `/Notifications/get-instructor-notifications/${courseId}`,
+      {
+        method: 'GET',
+      },
+      true
+    );
+  },
+
   // Mark a notification as read
   markNotificationAsRead: async (notificationId: number): Promise<{ message: string }> => {
     return apiRequest<{ message: string }>(

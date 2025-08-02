@@ -754,7 +754,7 @@ export default function CourseLearn() {
             </div>
             <div className="prose max-w-none">
               <h1>{lesson.title}</h1>
-              <p>{lesson.description || "No description available for this lesson."}</p>
+              <p className="whitespace-pre-wrap">{lesson.description || "No description available for this lesson."}</p>
             </div>
           </div>
         );
@@ -769,10 +769,9 @@ export default function CourseLearn() {
               <div className="border-b pb-4">
                 <h1 className="text-3xl font-bold text-gray-900 mb-3">{lesson.title}</h1>
                 {lesson.description && (
-                  <div 
-                    className="text-lg text-gray-600 prose max-w-none"
-                    dangerouslySetInnerHTML={{ __html: lesson.description }}
-                  />
+                  <p className="text-lg text-gray-600 whitespace-pre-wrap">
+                    {lesson.description}
+                  </p>
                 )}
               </div>
             </div>
@@ -1392,7 +1391,8 @@ export default function CourseLearn() {
                       .filter(notification => 
                         notification.courseId === parseInt(id!) && 
                         notification.notificationType !== 'NewQuestion' && 
-                        notification.notificationType !== 'NewAnswer'
+                        notification.notificationType !== 'NewAnswer' &&
+                        notification.notificationType !== 'NewLesson'
                       )
                       .map((notification) => {
                         const isTargetNotification = window.location.hash === `#notification-${notification.id}`;
@@ -1478,7 +1478,8 @@ export default function CourseLearn() {
                     {notifications.filter(n => 
                       n.courseId === parseInt(id!) && 
                       n.notificationType !== 'NewQuestion' && 
-                      n.notificationType !== 'NewAnswer'
+                      n.notificationType !== 'NewAnswer' &&
+                      n.notificationType !== 'NewLesson'
                     ).length === 0 && (
                       <div className="text-center py-12 border-2 border-dashed border-muted rounded-lg">
                         <Bell className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
