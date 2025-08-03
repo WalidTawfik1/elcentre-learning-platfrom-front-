@@ -1,48 +1,37 @@
-# Welcome to ElCentre project
+# Welcome to ElCentre Learning Platform
 
-## Project info
+## 📚 About
 
-It's an E-Learning Platform
+ElCentre is a comprehensive e-learning platform designed to provide an intuitive and engaging educational experience for both instructors and students. The platform offers a complete solution for online course creation, management, and delivery.
 
-## How can I edit this code?
+## ✨ Key Features
 
-**Use your preferred IDE**
+### For Students
+- 📖 **Interactive Learning** - Engage with multimedia lessons and interactive content
+- 🎯 **Progress Tracking** - Monitor your learning progress with detailed analytics
+- 📱 **Responsive Design** - Learn seamlessly across all devices
+- 🔔 **Smart Notifications** - Stay updated with course announcements and progress
+- 🎥 **Video Lessons** - High-quality video content with transcription support
+- 📝 **Quizzes & Assessments** - Test your knowledge with interactive quizzes
+- 💬 **Q&A System** - Ask questions and get answers from instructors
+- ⭐ **Course Reviews** - Rate and review courses to help other learners
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### For Instructors
+- 🎨 **Course Builder** - Create rich, multimedia courses with ease
+- 📊 **Analytics Dashboard** - Track student engagement and performance
+- 🔧 **Content Management** - Organize lessons, modules, and resources
+- 👥 **Student Management** - Track enrollments and student progress
+- 📢 **Announcement System** - Communicate with students effectively
+- 🎫 **Coupon System** - Create discount codes and promotional offers
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### For Administrators
+- 🛠️ **Platform Management** - Complete control over platform settings
+- 👤 **User Management** - Manage instructors and students
+- 📈 **Platform Analytics** - Comprehensive insights into platform usage
+- 💳 **Payment Processing** - Secure payment handling and reporting
+- 🔐 **Security Features** - Role-based access control and data protection
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
+## 🛠️ Technologies Used
 
 This project is built with:
 
@@ -51,3 +40,8 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+
+## 📝 License
+
+This project is licensed under **All Rights Reserved**.  
+Unauthorized use or distribution is prohibited. - see the [LICENSE](LICENSE) file for details.
