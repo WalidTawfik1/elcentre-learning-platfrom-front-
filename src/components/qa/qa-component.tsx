@@ -172,13 +172,23 @@ export function QAComponent({
     setIsSubmittingQuestion(true);
     try {
       const question = await QAService.addQuestion(newQuestion.trim(), lessonId);
-      setQuestions(prev => [question, ...prev]);
+      
+      setQuestions(prev => {
+        const updated = [question, ...prev];
+        return updated;
+      });
+      
       setQuestionAnswers(prev => ({ ...prev, [question.id]: [] }));
       setNewQuestion("");
       toast({
         title: "Success",
         description: "Your question has been posted!",
       });
+      
+      // Fallback: Refresh data to ensure UI is in sync
+      setTimeout(() => {
+        fetchQuestions();
+      }, 500);
     } catch (error) {
       console.error("Error submitting question:", error);
       toast({
@@ -202,6 +212,11 @@ export function QAComponent({
         title: "Success",
         description: "Question updated successfully!",
       });
+      
+      // Fallback: Refresh data to ensure UI is in sync
+      setTimeout(() => {
+        fetchQuestions();
+      }, 500);
     } catch (error) {
       console.error("Error updating question:", error);
       toast({
@@ -242,15 +257,25 @@ export function QAComponent({
     setSubmittingAnswers(prev => new Set([...prev, questionId]));
     try {
       const answer = await QAService.addAnswer(answerText.trim(), questionId);
-      setQuestionAnswers(prev => ({
-        ...prev,
-        [questionId]: [...(prev[questionId] || []), answer]
-      }));
+      
+      setQuestionAnswers(prev => {
+        const updated = {
+          ...prev,
+          [questionId]: [...(prev[questionId] || []), answer]
+        };
+        return updated;
+      });
+      
       setAnswerInputs(prev => ({ ...prev, [questionId]: "" }));
       toast({
         title: "Success",
         description: "Your answer has been posted!",
       });
+      
+      // Fallback: Refresh data to ensure UI is in sync
+      setTimeout(() => {
+        fetchQuestions();
+      }, 500);
     } catch (error) {
       console.error("Error submitting answer:", error);
       toast({
@@ -272,20 +297,38 @@ export function QAComponent({
 
     try {
       const updatedAnswer = await QAService.updateAnswer(answerId, newText.trim());
+      
+      // Find which question this answer belongs to and update it
       setQuestionAnswers(prev => {
         const newAnswers = { ...prev };
-        Object.keys(newAnswers).forEach(questionId => {
-          newAnswers[parseInt(questionId)] = newAnswers[parseInt(questionId)].map(a => 
-            a.id === answerId ? updatedAnswer : a
-          );
-        });
+        
+        // Find the question that contains this answer
+        for (const [questionId, answers] of Object.entries(newAnswers)) {
+          const answerIndex = answers.findIndex(a => a.id === answerId);
+          if (answerIndex !== -1) {
+            // Update the specific answer
+            newAnswers[parseInt(questionId)] = [
+              ...answers.slice(0, answerIndex),
+              updatedAnswer,
+              ...answers.slice(answerIndex + 1)
+            ];
+            break;
+          }
+        }
+        
         return newAnswers;
       });
+      
       setEditingAnswer(null);
       toast({
         title: "Success",
         description: "Answer updated successfully!",
       });
+      
+      // Fallback: Refresh data to ensure UI is in sync
+      setTimeout(() => {
+        fetchQuestions();
+      }, 500);
     } catch (error) {
       console.error("Error updating answer:", error);
       toast({
