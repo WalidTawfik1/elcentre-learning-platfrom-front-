@@ -12,6 +12,7 @@ export interface Question {
   editedAt?: string;
   lessonId: number;
   isPinned: boolean;
+  helpfulCount: number;
 }
 
 export interface Answer {
@@ -25,6 +26,7 @@ export interface Answer {
   isEdited: boolean;
   editedAt?: string;
   questionId: number;
+  helpfulCount: number;
 }
 
 export const QAService = {
@@ -44,7 +46,8 @@ export const QAService = {
         )
         .map(question => ({
           ...question,
-          isPinned: typeof question.isPinned === 'boolean' ? question.isPinned : false
+          isPinned: typeof question.isPinned === 'boolean' ? question.isPinned : false,
+          helpfulCount: typeof question.helpfulCount === 'number' ? question.helpfulCount : 0
         })) : [];
       return validQuestions;
     } catch (error) {
@@ -65,7 +68,10 @@ export const QAService = {
         typeof answer.id === 'number' && 
         typeof answer.answer === 'string' &&
         typeof answer.questionId === 'number'
-      ) : [];
+      ).map(answer => ({
+        ...answer,
+        helpfulCount: typeof answer.helpfulCount === 'number' ? answer.helpfulCount : 0
+      })) : [];
       return validAnswers;
     } catch (error) {
       console.error("Error fetching question answers:", error);
@@ -146,6 +152,19 @@ export const QAService = {
     if (reason) params.append('reason', reason);
     
     return apiRequest<void>(`/Q_A/report-qa?${params.toString()}`, {
+      method: "POST",
+    });
+  },
+
+  /**
+   * Mark a question or answer as helpful
+   */
+  markHelpful: async (questionId?: number, answerId?: number): Promise<void> => {
+    const params = new URLSearchParams();
+    if (questionId) params.append('questionId', questionId.toString());
+    if (answerId) params.append('answerId', answerId.toString());
+    
+    return apiRequest<void>(`/Q_A/helpful-qa?${params.toString()}`, {
       method: "POST",
     });
   },

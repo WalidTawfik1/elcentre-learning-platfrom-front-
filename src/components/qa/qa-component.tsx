@@ -36,7 +36,8 @@ import {
   ChevronUp,
   Pin,
   PinOff,
-  Flag
+  Flag,
+  ThumbsUp
 } from "lucide-react";
 import { QAService, Question, Answer } from "@/services/qa-service";
 import { useAuth } from "@/hooks/use-auth";
@@ -401,7 +402,43 @@ export function QAComponent({
       console.error("Error reporting Q&A:", error);
       toast({
         title: "Error",
-        description: "Failed to submit report. Please try again.",
+        description: "You've already reported this or something went wrong.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMarkHelpful = async (type: 'question' | 'answer', id: number) => {
+    try {
+      if (type === 'question') {
+        await QAService.markHelpful(id, undefined);
+        // Update the question's helpful count in state
+        setQuestions(prev => prev.map(q => 
+          q.id === id ? { ...q, helpfulCount: q.helpfulCount + 1 } : q
+        ));
+      } else {
+        await QAService.markHelpful(undefined, id);
+        // Update the answer's helpful count in state
+        setQuestionAnswers(prev => {
+          const newAnswers = { ...prev };
+          for (const [questionId, answers] of Object.entries(newAnswers)) {
+            newAnswers[parseInt(questionId)] = answers.map(a => 
+              a.id === id ? { ...a, helpfulCount: a.helpfulCount + 1 } : a
+            );
+          }
+          return newAnswers;
+        });
+      }
+      
+      toast({
+        title: "Success",
+        description: `Marked ${type} as helpful!`,
+      });
+    } catch (error) {
+      console.error("Error marking as helpful:", error);
+      toast({
+        title: "Error",
+        description: "You may have already marked this as helpful or something went wrong.",
         variant: "destructive",
       });
     }
@@ -671,10 +708,24 @@ export function QAComponent({
                           variant="ghost"
                           size="sm"
                           onClick={() => setReportingItem({ type: 'question', id: question.id })}
-                          className="text-orange-500 hover:text-orange-700"
+                          className="text-orange-500 hover:text-orange-600 hover:bg-orange-50 flex items-center gap-1 px-2 py-1 h-auto"
                           title="Report question"
                         >
                           <Flag className="h-3 w-3" />
+                        </Button>
+                      )}
+                      
+                      {/* Helpful button for questions */}
+                      {user?.id !== question.createdById && !editingQuestion && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleMarkHelpful('question', question.id)}
+                          className="text-eduBlue-500 hover:text-eduBlue-600 hover:bg-eduBlue-50 flex items-center gap-1 px-2 py-1 h-auto"
+                          title="Mark question as helpful"
+                        >
+                          <ThumbsUp className="h-3 w-3" />
+                          <span className="text-xs font-medium">{question.helpfulCount} Helpful</span>
                         </Button>
                       )}
                       
@@ -838,10 +889,24 @@ export function QAComponent({
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => setReportingItem({ type: 'answer', id: answer.id })}
-                                      className="text-orange-500 hover:text-orange-700"
+                                      className="text-orange-500 hover:text-orange-600 hover:bg-orange-50 flex items-center gap-1 px-2 py-1 h-auto"
                                       title="Report answer"
                                     >
                                       <Flag className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                  
+                                  {/* Helpful button for answers */}
+                                  {user?.id !== answer.createdById && !editingAnswer && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleMarkHelpful('answer', answer.id)}
+                                      className="text-eduBlue-500 hover:text-eduBlue-600 hover:bg-eduBlue-50 flex items-center gap-1 px-2 py-1 h-auto"
+                                      title="Mark answer as helpful"
+                                    >
+                                      <ThumbsUp className="h-3 w-3" />
+                                      <span className="text-xs font-medium">{answer.helpfulCount} Helpful</span>
                                     </Button>
                                   )}
                                 </div>
