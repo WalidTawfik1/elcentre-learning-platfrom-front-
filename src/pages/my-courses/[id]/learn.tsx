@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { StarIcon, Play, Clock, Book, Video, CheckCircle, FileText, ArrowLeft, Check, HelpCircle, Trophy, Bell, MessageSquare, Bot } from "lucide-react";
+import { StarIcon, Play, Clock, Book, Video, CheckCircle, FileText, ArrowLeft, Check, HelpCircle, Trophy, Bell, MessageSquare, Bot, X } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { EnrollmentService } from "@/services/enrollment-service";
 import { InstructorService } from "@/services/instructor-service";
@@ -579,6 +579,16 @@ export default function CourseLearn() {
     2000 // 2 second cooldown between lesson completions
   );
 
+  // Rate-limited lesson uncomplete to prevent spam
+  const { executeAction: uncompleteLesson, isOnCooldown: isUncompletingLesson } = useRateLimitedAction(
+    async () => {
+      if (!activeLesson || !isLessonCompleted(activeLesson.id)) return;
+      
+      await handleUncompleteLesson(activeLesson.id);
+    },
+    2000 // 2 second cooldown between lesson operations
+  );
+
   const handleCompleteLesson = async (lessonId: number) => {
     if (isLessonCompleted(lessonId)) {
       // Lesson already completed
@@ -651,6 +661,60 @@ export default function CourseLearn() {
       toast({
         title: "Error",
         description: "Could not mark lesson as completed. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUncompleteLesson = async (lessonId: number) => {
+    if (!isLessonCompleted(lessonId)) {
+      // Lesson is not completed
+      return;
+    }
+    
+    try {
+      await EnrollmentService.uncompleteLesson(lessonId);
+      
+      // Since backend handles deletion and progress recalculation,
+      // we just need to refresh the data from server
+      if (id) {
+        try {
+          // Refresh completed lessons from server
+          const completed = await EnrollmentService.getCompletedLessons(Number(id));
+          setCompletedLessons(Array.isArray(completed) ? completed : []);
+          
+          // Refresh progress from server if we have enrollment ID
+          if (enrollmentId) {
+            const result = await EnrollmentService.recalculateProgress(enrollmentId);
+            setCourseProgress(result.progress);
+          } else {
+            // Fallback: calculate progress locally if no enrollment ID
+            if (modules.length > 0) {
+              const totalLessons = modules.reduce(
+                (total, module) => total + (module.lessons?.length || 0),
+                0
+              );
+              
+              if (totalLessons > 0) {
+                const progress = Math.round((completed.length / totalLessons) * 100);
+                setCourseProgress(Math.max(0, progress));
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error refreshing data after uncompleting lesson:", error);
+        }
+      }
+      
+      toast({
+        title: "Lesson Uncompleted",
+        description: "Your progress has been updated!",
+      });
+    } catch (error) {
+      console.error("Error marking lesson as uncompleted:", error);
+      toast({
+        title: "Error",
+        description: "Could not mark lesson as uncompleted. Please try again.",
         variant: "destructive",
       });
     }
@@ -978,13 +1042,13 @@ export default function CourseLearn() {
                       {!isInstructorViewing && (
                         <Button
                           variant={isLessonCompleted(activeLesson.id) ? "outline" : "default"}
-                          onClick={() => handleCompleteLesson(activeLesson.id)}
-                          disabled={isLessonCompleted(activeLesson.id)}
+                          onClick={() => isLessonCompleted(activeLesson.id) ? uncompleteLesson() : completeLesson()}
+                          disabled={isCompletingLesson || isUncompletingLesson}
                           className={isLessonCompleted(activeLesson.id) ? "border-eduBlue-500 text-eduBlue-500" : ""}
                         >
                           {isLessonCompleted(activeLesson.id) ? (
                             <>
-                              <Check className="h-4 w-4 mr-2" /> Completed
+                              Mark as Uncompleted
                             </>
                           ) : (
                             "Mark as Completed"

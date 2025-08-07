@@ -99,6 +99,12 @@ export const EnrollmentService = {
     });
   },
   
+  uncompleteLesson: async (lessonId: number): Promise<any> => {
+    return apiRequest(`/Enrollment/uncomplete-lesson/${lessonId}`, {
+      method: "DELETE",
+    });
+  },
+  
   isLessonCompleted: async (lessonId: number): Promise<boolean> => {
     return apiRequest<boolean>(`/Enrollment/is-lesson-completed/${lessonId}`);
   },
