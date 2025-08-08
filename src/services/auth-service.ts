@@ -314,5 +314,18 @@ export const AuthService = {
     const googleAuthUrl = `${DIRECT_API_URL}/Account/google-login?role=${encodeURIComponent(role)}`;
     window.location.href = googleAuthUrl;
   },
+
+  // Get current user from localStorage (synchronous)
+  getCurrentUser: (): UserDTO | null => {
+    try {
+      const storedUser = localStorage.getItem("elcentre_user");
+      if (storedUser) {
+        return JSON.parse(storedUser);
+      }
+    } catch (error) {
+      // Silent error handling
+    }
+    return null;
+  },
   
 };

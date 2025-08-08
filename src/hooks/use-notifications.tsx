@@ -3,6 +3,7 @@ import { signalRService, CourseNotification } from '@/services/signalr-service';
 import { NotificationService, NotificationResponse } from '@/services/notification-service';
 import { EnrollmentService } from '@/services/enrollment-service';
 import { CourseService } from '@/services/course-service';
+import { AuthService } from '@/services/auth-service';
 import { useAuth } from './use-auth';
 import { SIGNALR_CONFIG } from '@/config/api-config';
 import { useRateLimiter } from '@/lib/rate-limiter';
@@ -33,6 +34,8 @@ interface NotificationContextType {
   isSubscribedToCourse: (courseId: number) => boolean;
   toggleCourseSubscription: (courseId: number, courseName?: string) => Promise<void>;
   getAllSubscriptions: () => LocalNotificationSubscription[];
+  // Enrollment date management
+  refreshEnrollmentDates: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -50,6 +53,48 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const courseCacheRef = useRef<{ instructor?: any[], student?: any[], timestamp?: number }>({});
   const initializingRef = useRef(false);
   
+  // Store enrollment dates for filtering notifications
+  const [enrollmentDates, setEnrollmentDates] = useState<Record<number, string>>({});
+  
+  // Helper function to filter notifications based on user permissions and enrollment date
+  const shouldShowNotification = useCallback((notification: NotificationResponse | CourseNotification, currentUser?: any): boolean => {
+    if (!currentUser) {
+      return false; // No user logged in, don't show any notifications
+    }
+
+    // Check if notification is targeted to a specific user
+    if (notification.targetUserId) {
+      // If notification has a specific target user ID, only show to that user
+      if (notification.targetUserId !== currentUser.id.toString()) {
+        return false;
+      }
+    } else {
+      // Check target role filtering
+      if (notification.targetUserRole && notification.targetUserRole !== "All") {
+        if (notification.targetUserRole !== currentUser.userType) {
+          return false;
+        }
+      }
+    }
+
+    // For students, only show notifications created after their enrollment date
+    if (currentUser.userType === "Student" && notification.courseId) {
+      const enrollmentDate = enrollmentDates[notification.courseId];
+      if (enrollmentDate) {
+        const notificationDate = new Date(notification.createdAt);
+        const userEnrollmentDate = new Date(enrollmentDate);
+        
+        // Only show notifications created after enrollment date
+        if (notificationDate <= userEnrollmentDate) {
+          console.log(`Filtering out notification "${notification.title}" - created ${notificationDate.toISOString()} before enrollment ${userEnrollmentDate.toISOString()}`);
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }, [enrollmentDates]);
+
   // Rate limiting: minimum 30 seconds between full notification reloads
   const MIN_RELOAD_INTERVAL = 30000;
   // Cache duration: 2 minutes for course data
@@ -108,6 +153,23 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
+  // Function to refresh enrollment dates (call this when user enrolls in new courses)
+  const refreshEnrollmentDates = async () => {
+    if (!user || user.userType !== "Student") return;
+    
+    try {
+      const enrollments = await EnrollmentService.getStudentEnrollments();
+      const enrollmentDateMap: Record<number, string> = {};
+      enrollments.forEach((enrollment: any) => {
+        enrollmentDateMap[enrollment.courseId] = enrollment.enrollmentDate;
+      });
+      setEnrollmentDates(enrollmentDateMap);
+      console.log("Updated enrollment dates:", enrollmentDateMap);
+    } catch (error) {
+      console.error("Error refreshing enrollment dates:", error);
+    }
+  };
+
   // FAST PATH: Load notifications immediately via REST API (no SignalR dependency)
   const loadNotificationsImmediate = async () => {
     if (!user) return;
@@ -120,12 +182,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         try {
           const instructorNotifications = await NotificationService.getAllNotificationsOptimized();
           
-          // Apply local read status cache
+          // Apply local read status cache and filter notifications
           const localReadStatuses = getLocalReadStatuses();
-          const convertedNotifications: NotificationResponse[] = instructorNotifications.map(n => ({
-            ...n,
-            isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
-          }));
+          const convertedNotifications: NotificationResponse[] = instructorNotifications
+            .map(n => ({
+              ...n,
+              isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
+            }))
+            .filter(notification => shouldShowNotification(notification, user));
           
           allNotifications.push(...convertedNotifications);
         } catch (error) {
@@ -151,12 +215,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             try {
               const courseNotifications = await NotificationService.getCourseNotifications(subscription.courseId, false);
               
-              // Apply local read status cache
+              // Apply local read status cache and filter notifications
               const localReadStatuses = getLocalReadStatuses();
-              return courseNotifications.map(n => ({
-                ...n,
-                isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
-              }));
+              return courseNotifications
+                .map(n => ({
+                  ...n,
+                  isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
+                }))
+                .filter(notification => shouldShowNotification(notification, user));
             } catch (error) {
               return [];
             }
@@ -273,6 +339,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (connected) {
         // Set up callback for new notifications (real-time updates)
         signalRService.setNotificationCallback((notification: CourseNotification) => {
+          // Filter notification before adding to state
+          if (!shouldShowNotification(notification, user)) {
+            return; // Don't add notification if it's not for this user
+          }
+
           // Convert CourseNotification to NotificationResponse format
           const notificationResponse: NotificationResponse = {
             ...notification,
@@ -325,6 +396,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         student: enrollments,
         timestamp: now
       };
+      
+      // Store enrollment dates for notification filtering
+      const enrollmentDateMap: Record<number, string> = {};
+      enrollments.forEach((enrollment: any) => {
+        enrollmentDateMap[enrollment.courseId] = enrollment.enrollmentDate;
+      });
+      setEnrollmentDates(enrollmentDateMap);
       
       const currentSubscriptions = getLocalSubscriptions();
       
@@ -568,11 +646,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           // Apply local read status cache
           const localReadStatuses = getLocalReadStatuses();
           
-          // Convert and update notifications for this course
-          const convertedNotifications: NotificationResponse[] = courseNotifications.map(n => ({
-            ...n,
-            isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
-          }));
+          // Convert and update notifications for this course with filtering
+          const convertedNotifications: NotificationResponse[] = courseNotifications
+            .map(n => ({
+              ...n,
+              isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
+            }))
+            .filter(notification => shouldShowNotification(notification, user));
           
           setNotifications(prev => {
             const filtered = prev.filter(n => n.courseId !== courseId);
@@ -587,10 +667,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             );
             
             const localReadStatuses = getLocalReadStatuses();
-            const convertedNotifications: NotificationResponse[] = courseNotifications.map(n => ({
-              ...n,
-              isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
-            }));
+            const convertedNotifications: NotificationResponse[] = courseNotifications
+              .map(n => ({
+                ...n,
+                isRead: localReadStatuses[n.id] !== undefined ? localReadStatuses[n.id] : (n.isRead ?? false),
+              }))
+              .filter(notification => shouldShowNotification(notification, user));
             
             setNotifications(prev => {
               const filtered = prev.filter(n => n.courseId !== courseId);
@@ -655,6 +737,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     isSubscribedToCourse,
     toggleCourseSubscription,
     getAllSubscriptions,
+    refreshEnrollmentDates,
   };
 
   return (

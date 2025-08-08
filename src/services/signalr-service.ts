@@ -1,6 +1,7 @@
 import * as signalR from "@microsoft/signalr";
 import { DIRECT_API_URL, SIGNALR_CONFIG } from "@/config/api-config";
 import { AuthService } from "./auth-service";
+import { UserDTO } from "@/types/api";
 import { toast } from "@/components/ui/use-toast";
 
 export interface CourseNotification {
@@ -180,7 +181,28 @@ class SignalRService {
     // Handle incoming course notifications
     this.connection.on("ReceiveCourseNotification", (notification: CourseNotification) => {
       
-      // Show toast notification
+      // Client-side filtering: Only process notification if it's meant for current user
+      const currentUser = AuthService.getCurrentUser();
+      if (!currentUser) {
+        return; // No user logged in, ignore notification
+      }
+
+      // Check if notification is targeted to a specific user
+      if (notification.targetUserId) {
+        // If notification has a specific target user ID, only show to that user
+        if (notification.targetUserId !== currentUser.id.toString()) {
+          return; // This notification is not for the current user
+        }
+      } else {
+        // If no specific target user, check target role
+        if (notification.targetUserRole && notification.targetUserRole !== "All") {
+          if (notification.targetUserRole !== currentUser.userType) {
+            return; // This notification is not for the current user's role
+          }
+        }
+      }
+
+      // Show toast notification only if it passes filtering
       toast({
         title: notification.title,
         description: notification.message,
