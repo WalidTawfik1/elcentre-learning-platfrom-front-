@@ -696,7 +696,7 @@ export default function CourseDetail() {
                 <Link to={`/instructors/${courseData.instructorId || courseData.instructor?.id}/courses`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                   <Avatar className="h-12 w-12">
                     <AvatarImage src={(courseData.instructorImage) ? getImageUrl(courseData.instructorImage) : ""} />
-                    <AvatarFallback className="bg-primary/10 text-primary">{getInitials(courseData.instructorName || courseData.instructor?.name || 'Unknown')}</AvatarFallback>
+                    <AvatarFallback className="bg-eduBlue-500 text-white">{getInitials(courseData.instructorName || courseData.instructor?.name || 'Unknown')}</AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="font-medium hover:text-primary transition-colors">Created by {courseData.instructorName || courseData.instructor?.name || "Unknown Instructor"}</p>
@@ -1061,7 +1061,7 @@ export default function CourseDetail() {
                 <>                  <div className="flex items-start gap-4 mb-6">
                     <Avatar className="h-16 w-16">
                       <AvatarImage src={(courseData.instructorImage) ? getImageUrl(courseData.instructorImage) : ""} />
-                      <AvatarFallback className="bg-primary/10 text-primary">{getInitials(courseData.instructorName || courseData.instructor?.name || 'Unknown')}</AvatarFallback>
+                      <AvatarFallback className="bg-eduBlue-500 text-white">{getInitials(courseData.instructorName || courseData.instructor?.name || 'Unknown')}</AvatarFallback>
                     </Avatar>
                     <div>
                       <h2 className="text-2xl font-bold">{courseData.instructorName || courseData.instructor.name}</h2>
@@ -1144,7 +1144,7 @@ export default function CourseDetail() {
                     reviews.map((review: any) => (
                       <div key={review.id} className="border-b pb-6 last:border-0">                        <div className="flex items-start">                          <Avatar className="h-10 w-10 mr-3">
                             <AvatarImage src={(review.studentImage) ? getImageUrl(review.studentImage) : ""} />
-                            <AvatarFallback className="bg-primary/10 text-primary">{getInitials(review.studentName || review.userName || 'Anonymous')}</AvatarFallback>
+                            <AvatarFallback className="bg-eduBlue-500 text-white">{getInitials(review.studentName || review.userName || 'Anonymous')}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
@@ -1314,7 +1314,8 @@ export default function CourseDetail() {
                             src={previewLesson.content.startsWith('http') ? previewLesson.content : `${API_BASE_URL}/${previewLesson.content}`}
                             title={previewLesson.title}
                             className="w-full h-full"
-                            allowFullscreen={false}
+                            allowFullscreen={true}
+                            allowExpanded={false}
                           />
                         </div>
                       ) : (

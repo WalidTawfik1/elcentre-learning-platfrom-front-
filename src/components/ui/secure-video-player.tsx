@@ -12,6 +12,7 @@ interface SecureVideoPlayerProps {
   className?: string;
   allowFullscreen?: boolean;
   allowQualityChange?: boolean;
+  allowExpanded?: boolean;
   theme?: 'light' | 'dark';
   cloudinaryPublicId?: string; // Add this for Cloudinary support
 }
@@ -22,6 +23,7 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
   className = "w-full h-full rounded-lg object-cover",
   allowFullscreen = true,
   allowQualityChange = true,
+  allowExpanded = true,
   theme = 'light',
   cloudinaryPublicId // Add this prop
 }) => {
@@ -776,15 +778,17 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
                 </div>
                 
                 {/* Expanded View Button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleExpanded}
-                  className="text-white hover:bg-white/30 h-8 w-8 p-0 transition-all duration-200 rounded-md"
-                  title={isExpanded ? "Exit expanded view" : "Expanded view"}
-                >
-                  {isExpanded ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
-                </Button>
+                {allowExpanded && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleExpanded}
+                    className="text-white hover:bg-white/30 h-8 w-8 p-0 transition-all duration-200 rounded-md"
+                    title={isExpanded ? "Exit expanded view" : "Expanded view"}
+                  >
+                    {isExpanded ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
+                  </Button>
+                )}
 
                 {/* Fullscreen Button */}
                 {allowFullscreen && (
@@ -822,7 +826,7 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
       </div>
 
       {/* Expanded view close button */}
-      {isExpanded && (
+      {isExpanded && allowExpanded && (
         <Button
           variant="ghost"
           size="sm"

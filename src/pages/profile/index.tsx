@@ -256,7 +256,7 @@ export default function ProfilePage() {
                     alt={`${user?.firstName} ${user?.lastName}`}
                     className="object-cover"
                   />
-                  <AvatarFallback className="text-3xl bg-primary/10 text-primary">{getInitials()}</AvatarFallback>
+                  <AvatarFallback className="text-3xl bg-eduBlue-500 text-white">{getInitials()}</AvatarFallback>
                 </Avatar>
                 {isEditing && (
                   <div className="absolute bottom-4 right-0">

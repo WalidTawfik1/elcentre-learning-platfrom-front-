@@ -83,7 +83,7 @@ export function UserNav() {
               alt={fullName}
               className="object-cover"
             />
-            <AvatarFallback className="bg-primary/10 text-primary">
+            <AvatarFallback className="bg-eduBlue-500 text-white">
               {getInitials()}
             </AvatarFallback>
           </Avatar>

@@ -1154,7 +1154,7 @@ export default function CourseLearn() {
                         <Link to={`/instructors/${instructor.id}/courses`} className="flex-shrink-0">
                           <Avatar className="h-16 w-16 hover:ring-2 hover:ring-primary/20 transition-all cursor-pointer">
                             <AvatarImage src={instructor.avatar || instructor.profilePicture ? getImageUrl(instructor.avatar || instructor.profilePicture) : ""} />
-                            <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                            <AvatarFallback className="bg-eduBlue-500 text-white text-lg">
                               {getInitials(`${instructor.firstName || ''} ${instructor.lastName || ''}` || instructor.name || 'Unknown')}
                             </AvatarFallback>
                           </Avatar>
@@ -1175,7 +1175,7 @@ export default function CourseLearn() {
                       <div className="flex items-start gap-4">
                         <Avatar className="h-12 w-12">
                           <AvatarImage src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} />
-                          <AvatarFallback className="bg-primary/10 text-primary">
+                          <AvatarFallback className="bg-eduBlue-500 text-white">
                             {getInitials(course.instructorName || 'Unknown')}
                           </AvatarFallback>
                         </Avatar>
@@ -1395,7 +1395,7 @@ export default function CourseLearn() {
                             <div className="flex items-start">
                               <Avatar className="h-10 w-10 mr-3">
                                 <AvatarImage src={(review.studentImage) ? getImageUrl(review.studentImage) : ""} />
-                                <AvatarFallback className="bg-primary/10 text-primary">{getInitials(review.studentName || review.userName || 'Anonymous')}</AvatarFallback>
+                                <AvatarFallback className="bg-eduBlue-500 text-white">{getInitials(review.studentName || review.userName || 'Anonymous')}</AvatarFallback>
                               </Avatar>
                               <div className="flex-1">
                                 <div className="flex items-center justify-between">

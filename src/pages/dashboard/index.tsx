@@ -315,7 +315,7 @@ export default function StudentDashboard() {
                                   src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} 
                                   alt={course.instructorName} 
                                 />
-                                <AvatarFallback className="bg-eduBlue-50 text-eduBlue-600 text-xs font-medium">
+                                <AvatarFallback className="bg-eduBlue-500 text-white text-xs font-medium">
                                   {getInitials(course.instructorName)}
                                 </AvatarFallback>
                               </Avatar>
@@ -432,7 +432,7 @@ export default function StudentDashboard() {
                                   src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} 
                                   alt={course.instructorName} 
                                 />
-                                <AvatarFallback className="bg-eduBlue-50 text-eduBlue-600 text-xs font-medium">
+                                <AvatarFallback className="bg-eduBlue-500 text-white text-xs font-medium">
                                   {getInitials(course.instructorName)}
                                 </AvatarFallback>
                               </Avatar>
@@ -534,7 +534,7 @@ export default function StudentDashboard() {
                               <div className="flex items-center mt-1">
                                 <Avatar className="h-5 w-5 mr-1.5">
                                   <AvatarImage src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} alt={course.instructorName} />
-                                  <AvatarFallback className="bg-blue-50 text-blue-500 text-xs">{getInitials(course.instructorName)}</AvatarFallback>
+                                  <AvatarFallback className="bg-eduBlue-500 text-white text-xs">{getInitials(course.instructorName)}</AvatarFallback>
                                 </Avatar>
                                 <span className="text-xs text-gray-500">{course.instructorName}</span>
                               </div>

@@ -105,7 +105,7 @@ export function CourseCard({
                 src={avatarSrc} 
                 alt={instructor.name} 
               />
-              <AvatarFallback className="bg-eduBlue-50 text-eduBlue-600 text-xs font-medium">
+              <AvatarFallback className="bg-eduBlue-500 text-white text-xs font-medium">
                 {getInitials(instructor.name)}
               </AvatarFallback>
             </Avatar>

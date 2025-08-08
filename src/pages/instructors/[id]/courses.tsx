@@ -142,7 +142,7 @@ export default function InstructorCoursesPage() {
                         alt={`${instructor.firstName} ${instructor.lastName}`}
                         className="object-cover"
                       />
-                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/30 text-primary text-2xl font-semibold">
+                      <AvatarFallback className="bg-eduBlue-500 text-white text-2xl font-semibold">
                         {getInitials(`${instructor.firstName} ${instructor.lastName}`)}
                       </AvatarFallback>
                     </Avatar>

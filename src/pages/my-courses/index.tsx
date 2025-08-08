@@ -162,7 +162,7 @@ export default function MyCourses() {
                             src={course.instructorImage ? getImageUrl(course.instructorImage) : ""} 
                             alt={course.instructorName} 
                           />
-                          <AvatarFallback className="bg-eduBlue-50 text-eduBlue-600 text-xs font-medium">
+                          <AvatarFallback className="bg-eduBlue-500 text-white text-xs font-medium">
                             {getInitials(course.instructorName)}
                           </AvatarFallback>
                         </Avatar>

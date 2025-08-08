@@ -598,7 +598,7 @@ export function QAComponent({
                     <div className="flex items-start gap-3 flex-1">
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={question.creatorImage ? getImageUrl(question.creatorImage) : ""} />
-                        <AvatarFallback className="bg-primary/10 text-primary">
+                        <AvatarFallback className="bg-eduBlue-500 text-white">
                           {getInitials(question.createdByName)}
                         </AvatarFallback>
                       </Avatar>
@@ -793,7 +793,7 @@ export function QAComponent({
                                 <div className="flex items-start gap-3">
                                   <Avatar className="h-8 w-8">
                                     <AvatarImage src={answer.creatorImage ? getImageUrl(answer.creatorImage) : ""} />
-                                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                    <AvatarFallback className="bg-eduBlue-500 text-white">
                                       {getInitials(answer.createdByName)}
                                     </AvatarFallback>
                                   </Avatar>
