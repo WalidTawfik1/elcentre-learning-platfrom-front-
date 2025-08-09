@@ -89,10 +89,11 @@ export function CourseCard({
       <div className="flex flex-col flex-1 p-4">
         {/* Header Section */}
         <div className="mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem] leading-tight">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2 min-h-[4.5rem] leading-tight">
             <Link 
               to={`/courses/${id}`} 
-              className="hover:text-eduBlue-600 transition-colors duration-200"
+              className="hover:text-eduBlue-600 transition-colors duration-200 line-clamp-3 block"
+              title={title}
             >
               {title}
             </Link>

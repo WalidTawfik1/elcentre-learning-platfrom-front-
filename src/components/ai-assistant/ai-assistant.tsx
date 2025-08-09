@@ -437,68 +437,81 @@ export function AIAssistant({ lessonId, lessonTitle, lessonTranscript, isLoading
             </div>
           )}
           
-          {/* Input Area */}
-          <div className="p-4 border-t flex-shrink-0">
-            <form onSubmit={handleSubmit} className="flex gap-2 w-full">
-              <div className="flex-1 relative min-w-0">
-                <Textarea
-                  ref={textareaRef}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask about this lesson..."
-                  disabled={isLoading}
-                  className="min-h-[40px] max-h-[120px] resize-none pr-12 w-full"
-                  rows={1}
-                />
-                <Button 
-                  type="submit" 
-                  disabled={isLoading || !inputValue.trim()}
+          {/* Input Area - Hidden during transcription */}
+          {!isLoadingTranscript && (
+            <div className="p-4 border-t flex-shrink-0">
+              <form onSubmit={handleSubmit} className="flex gap-2 w-full">
+                <div className="flex-1 relative min-w-0">
+                  <Textarea
+                    ref={textareaRef}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask about this lesson..."
+                    disabled={isLoading}
+                    className="min-h-[40px] max-h-[120px] resize-none pr-12 w-full"
+                    rows={1}
+                  />
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading || !inputValue.trim()}
+                    size="sm"
+                    className="absolute right-2 bottom-2 h-6 w-6 p-0 flex-shrink-0"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Send className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
+              </form>
+              <div className="flex flex-wrap gap-2 mt-4 justify-end">
+                <Button
+                  variant="outline"
                   size="sm"
-                  className="absolute right-2 bottom-2 h-6 w-6 p-0 flex-shrink-0"
+                  onClick={() => handleQuickPrompt('Summarize this lesson in simple terms.')}
                 >
-                  {isLoading ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Send className="h-3 w-3" />
-                  )}
+                  Summarize Lesson
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickPrompt('List the key points of this lesson.')}
+                >
+                  List Key Points
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickPrompt('Generate a quiz based on this lesson.')}
+                >
+                  Generate Quiz
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickPrompt('Explain the most difficult concept in this lesson.')}
+                >
+                  Explain Difficult Concept
                 </Button>
               </div>
-            </form>
-            <div className="flex flex-wrap gap-2 mt-4 justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleQuickPrompt('Summarize this lesson in simple terms.')}
-              >
-                Summarize Lesson
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleQuickPrompt('List the key points of this lesson.')}
-              >
-                List Key Points
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleQuickPrompt('Generate a quiz based on this lesson.')}
-              >
-                Generate Quiz
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleQuickPrompt('Explain the most difficult concept in this lesson.')}
-              >
-                Explain Difficult Concept
-              </Button>
+              <p className="text-xs text-muted-foreground mt-2">
+                Press Enter to send, Shift+Enter for new line
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Press Enter to send, Shift+Enter for new line
-            </p>
-          </div>
+          )}
+          
+          {/* Transcription in progress message */}
+          {isLoadingTranscript && (
+            <div className="p-4 border-t flex-shrink-0">
+              <div className="text-center text-muted-foreground py-4">
+                <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin text-blue-600" />
+                <p className="font-medium">Processing lesson content...</p>
+                <p className="text-sm">Chat will be available once transcription is complete</p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
