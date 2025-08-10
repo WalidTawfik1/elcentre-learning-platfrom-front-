@@ -44,12 +44,49 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
   const [originalDuration, setOriginalDuration] = useState(0);
   const [isQualitySwitching, setIsQualitySwitching] = useState(false);
   const [lastSeekTime, setLastSeekTime] = useState<number | null>(null);
+  const [qualitySwitchCount, setQualitySwitchCount] = useState(0);
+  const qualitySwitchRef = useRef<{ id: number; cancelled: boolean } | null>(null);
 
   // Extract Cloudinary public ID from URL if not provided as prop
   const getPublicIdFromUrl = (url: string): string | null => {
-    // Match Cloudinary video URL pattern and extract public ID (with or without extension)
-    const match = url.match(/\/video\/upload\/(?:v\d+\/)?([^/]+?)(?:\.[^.]+)?$/);
-    return match ? match[1] : null;
+    try {
+      // Handle different Cloudinary URL patterns
+      // Pattern 1: Basic upload URL with public ID at the end
+      let match = url.match(/\/video\/upload\/(?:v\d+\/)?(?:[^/]*\/)*([^/]+?)(?:\.[^.]+)?(?:\?.*)?$/);
+      if (match) {
+        return match[1];
+      }
+      
+      // Pattern 2: URL with transformations
+      match = url.match(/\/video\/upload\/[^/]*\/([^/]+?)(?:\.[^.]+)?(?:\?.*)?$/);
+      if (match) {
+        return match[1];
+      }
+      
+      // Pattern 3: Extract from path segments
+      const urlParts = new URL(url);
+      const pathSegments = urlParts.pathname.split('/');
+      const uploadIndex = pathSegments.indexOf('upload');
+      
+      if (uploadIndex >= 0 && uploadIndex < pathSegments.length - 1) {
+        // Find the last segment that looks like a public ID
+        for (let i = pathSegments.length - 1; i > uploadIndex; i--) {
+          const segment = pathSegments[i];
+          // Remove file extension if present
+          const cleanSegment = segment.replace(/\.[^.]+$/, '');
+          // Check if it's not a transformation parameter
+          if (cleanSegment && !cleanSegment.startsWith('q_') && !cleanSegment.startsWith('h_') && !cleanSegment.startsWith('w_')) {
+            return cleanSegment;
+          }
+        }
+      }
+      
+      console.warn('Could not extract public ID from URL:', url);
+      return null;
+    } catch (error) {
+      console.error('Error extracting public ID:', error);
+      return null;
+    }
   };
 
   const publicId = cloudinaryPublicId || getPublicIdFromUrl(src);
@@ -236,6 +273,11 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
 
     // Cleanup
     return () => {
+      // Cancel any pending quality switch
+      if (qualitySwitchRef.current) {
+        qualitySwitchRef.current.cancelled = true;
+      }
+      
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('durationchange', handleDurationChange);
       video.removeEventListener('play', handlePlay);
@@ -284,21 +326,24 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
   };
 
   const seekBackward = () => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
+    if (videoRef.current && !isQualitySwitching) {
+      const newTime = Math.max(0, videoRef.current.currentTime - 10);
+      videoRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
     }
   };
 
   const seekForward = () => {
-    if (videoRef.current) {
-      const totalDuration = originalDuration || duration;
-      videoRef.current.currentTime = Math.min(totalDuration, videoRef.current.currentTime + 10);
+    if (videoRef.current && !isQualitySwitching) {
+      const totalDuration = videoRef.current.duration || originalDuration || duration;
+      const newTime = Math.min(totalDuration, videoRef.current.currentTime + 10);
+      videoRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
     }
   };
 
   const handleSeek = (time: number) => {
     if (videoRef.current && !isQualitySwitching) {
-      setLastSeekTime(time);
       videoRef.current.currentTime = time;
       setCurrentTime(time);
     } else if (isQualitySwitching) {
@@ -330,160 +375,224 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
       return;
     }
     
-    setSelectedQuality(quality);
+    const video = videoRef.current;
+    if (!video || !publicId) {
+      return;
+    }
+
+    // Cancel any previous quality switch operation
+    if (qualitySwitchRef.current) {
+      qualitySwitchRef.current.cancelled = true;
+    }
+
+    // Create new quality switch operation
+    const switchId = qualitySwitchCount + 1;
+    setQualitySwitchCount(switchId);
+    qualitySwitchRef.current = { id: switchId, cancelled: false };
     
-    if (publicId) {
-      setIsQualitySwitching(true);
-      
-      // Store current playback state
-      const currentTimeBeforeSwitch = lastSeekTime ?? videoRef.current?.currentTime ?? 0;
-      const wasPlaying = isPlaying;
-      const currentVolume = videoRef.current?.volume || volume;
-      const currentMuted = videoRef.current?.muted || isMuted;
-      
-      
-      // Clear last seek time since we're handling it
-      setLastSeekTime(null);
-      
-      // Generate new Cloudinary URL with quality transformation
-      const newSrc = getCloudinaryUrl(publicId, quality);
-      
-      // Update video source
-      if (videoRef.current) {
-        const video = videoRef.current;
+    setSelectedQuality(quality);
+    setIsQualitySwitching(true);
+    
+    // Store current playback state more precisely
+    const currentTimeBeforeSwitch = video.currentTime;
+    const wasPlaying = !video.paused;
+    const currentVolume = video.volume;
+    const currentMuted = video.muted;
+    const currentPlaybackRate = video.playbackRate;
         
-        // Pause video if playing
-        if (wasPlaying) {
-          video.pause();
+    // Generate new Cloudinary URL with quality transformation
+    const newSrc = getCloudinaryUrl(publicId, quality);
+    
+    // Pause video first
+    if (wasPlaying) {
+      video.pause();
+    }
+    
+    // Clear any pending seek operation to avoid conflicts
+    setLastSeekTime(null);
+    
+    // Create a promise-based approach for better control
+    const switchQuality = () => {
+      return new Promise<void>((resolve, reject) => {
+        // Check if this operation was cancelled
+        if (qualitySwitchRef.current?.cancelled || qualitySwitchRef.current?.id !== switchId) {
+          reject(new Error('Quality switch cancelled'));
+          return;
         }
+
+        let isResolved = false;
+        let loadTimeout: NodeJS.Timeout;
         
-        // Store the previous src for comparison
-        const previousSrc = video.src;
-        
-        // Set new source
-        video.src = newSrc;
-        setCurrentVideoSrc(newSrc);
-        
-        // Use loadstart event to detect when loading begins
-        const handleLoadStart = () => {
+        const cleanup = () => {
+          clearTimeout(loadTimeout);
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+          video.removeEventListener('canplaythrough', handleCanPlayThrough);
+          video.removeEventListener('error', handleError);
+          video.removeEventListener('loadstart', handleLoadStart);
+          video.removeEventListener('seeking', handleSeeking);
+          video.removeEventListener('seeked', handleSeeked);
         };
         
-        // Use loadedmetadata instead of loadeddata - fires once when metadata is loaded
+        const resolveOnce = () => {
+          if (!isResolved && qualitySwitchRef.current?.id === switchId) {
+            isResolved = true;
+            cleanup();
+            resolve();
+          }
+        };
+        
+        const rejectOnce = (error: any) => {
+          if (!isResolved) {
+            isResolved = true;
+            cleanup();
+            reject(error);
+          }
+        };
+        
+        const handleLoadStart = () => {
+          // Check if cancelled
+          if (qualitySwitchRef.current?.cancelled || qualitySwitchRef.current?.id !== switchId) {
+            rejectOnce(new Error('Quality switch cancelled during load start'));
+            return;
+          }
+        };
+        
         const handleLoadedMetadata = () => {
-          
-          // Restore volume and mute state
+          // Check if cancelled
+          if (qualitySwitchRef.current?.cancelled || qualitySwitchRef.current?.id !== switchId) {
+            rejectOnce(new Error('Quality switch cancelled during metadata load'));
+            return;
+          }
+                    
+          // Restore video properties
           video.volume = currentVolume;
           video.muted = currentMuted;
-          video.playbackRate = playbackSpeed;
-        };
-        
-        // Use loadeddata to set the time position
-        const handleLoadedData = () => {
+          video.playbackRate = currentPlaybackRate;
           
-          // Set the time if we had a previous position
-          if (currentTimeBeforeSwitch > 0 && currentTimeBeforeSwitch <= video.duration) {
+          // Set current time if valid and within bounds
+          if (currentTimeBeforeSwitch > 0 && video.duration > 0 && currentTimeBeforeSwitch <= video.duration) {
             video.currentTime = currentTimeBeforeSwitch;
-            setCurrentTime(currentTimeBeforeSwitch);
+          }
+        };
+
+        let seekingHandled = false;
+        const handleSeeking = () => {
+        };
+
+        const handleSeeked = () => {
+          if (!seekingHandled) {
+            seekingHandled = true;
+            setCurrentTime(video.currentTime);
           }
         };
         
-        // Use canplaythrough event - fires when enough data is loaded to play through
         const handleCanPlayThrough = () => {
-          
-          // Double-check the time is set correctly
-          if (currentTimeBeforeSwitch > 0 && Math.abs(video.currentTime - currentTimeBeforeSwitch) > 1) {
-            video.currentTime = currentTimeBeforeSwitch;
-            setCurrentTime(currentTimeBeforeSwitch);
+          // Check if cancelled
+          if (qualitySwitchRef.current?.cancelled || qualitySwitchRef.current?.id !== switchId) {
+            rejectOnce(new Error('Quality switch cancelled during can play through'));
+            return;
           }
+          
+          // Final time verification and correction
+          const timeDifference = Math.abs(video.currentTime - currentTimeBeforeSwitch);
+          if (currentTimeBeforeSwitch > 0 && timeDifference > 0.5 && video.duration > 0) {
+            video.currentTime = Math.min(currentTimeBeforeSwitch, video.duration);
+          }
+          
+          // Update UI state
+          setCurrentTime(video.currentTime);
           
           // Resume playing if it was playing before
           if (wasPlaying) {
-            video.play().catch(error => {
-              console.error('Error resuming playback:', error);
+            video.play().then(() => {
+              resolveOnce();
+            }).catch((error) => {
+              console.error('Error resuming playback for switch', switchId, error);
+              resolveOnce(); // Still resolve, playback error is not critical for quality switch
             });
+          } else {
+            resolveOnce();
           }
-          
-          // Quality switch complete
-          setIsQualitySwitching(false);
-          
-          // Remove event listeners
-          video.removeEventListener('loadstart', handleLoadStart);
-          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-          video.removeEventListener('loadeddata', handleLoadedData);
-          video.removeEventListener('canplaythrough', handleCanPlayThrough);
-          video.removeEventListener('error', handleError);
         };
         
-        // Handle loading errors
         const handleError = (error: Event) => {
-          console.error('Error loading video quality:', error);
-          
-          // Quality switch failed
-          setIsQualitySwitching(false);
-          
-          toast({
-            title: "Quality Change Failed",
-            description: "Failed to load the selected quality. Please try again.",
-            variant: "destructive",
-          });
-          
-          // Fallback to original source
-          video.src = src;
-          video.load();
-          setCurrentVideoSrc(src);
-          setSelectedQuality('auto');
-          
-          // Remove event listeners
-          video.removeEventListener('loadstart', handleLoadStart);
-          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-          video.removeEventListener('loadeddata', handleLoadedData);
-          video.removeEventListener('canplaythrough', handleCanPlayThrough);
-          video.removeEventListener('error', handleError);
+          console.error('Error loading video quality for switch', switchId, error);
+          rejectOnce(error);
         };
         
         // Add event listeners
         video.addEventListener('loadstart', handleLoadStart, { once: true });
         video.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
-        video.addEventListener('loadeddata', handleLoadedData, { once: true });
         video.addEventListener('canplaythrough', handleCanPlayThrough, { once: true });
         video.addEventListener('error', handleError, { once: true });
+        video.addEventListener('seeking', handleSeeking);
+        video.addEventListener('seeked', handleSeeked, { once: true });
         
-        // Add a timeout as fallback in case events don't fire
-        const qualityChangeTimeout = setTimeout(() => {
+        // Set timeout as fallback
+        loadTimeout = setTimeout(() => {
+          rejectOnce(new Error('Quality switch timeout'));
+        }, 10000); // Reduced timeout to 10 seconds
+        
+        // Update source and load
+        try {
+          video.src = newSrc;
+          setCurrentVideoSrc(newSrc);
+          video.load();
+        } catch (error) {
+          rejectOnce(error);
+        }
+      });
+    };
+    
+    // Execute the quality switch
+    switchQuality()
+      .then(() => {
+        // Only update state if this is still the current operation
+        if (qualitySwitchRef.current?.id === switchId) {
           setIsQualitySwitching(false);
+          qualitySwitchRef.current = null;
+        }
+      })
+      .catch((error) => {
+        // Only handle error if this is still the current operation
+        if (qualitySwitchRef.current?.id === switchId) {
+          console.error('Quality switch failed for', switchId, error.message);
+          setIsQualitySwitching(false);
+          qualitySwitchRef.current = null;
           
-          // Remove event listeners
-          video.removeEventListener('loadstart', handleLoadStart);
-          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-          video.removeEventListener('loadeddata', handleLoadedData);
-          video.removeEventListener('canplaythrough', handleCanPlayThrough);
-          video.removeEventListener('error', handleError);
-        }, 10000); // 10 second timeout
-        
-        // Clear timeout when quality change completes
-        const originalHandleCanPlayThrough = handleCanPlayThrough;
-        const wrappedHandleCanPlayThrough = () => {
-          clearTimeout(qualityChangeTimeout);
-          originalHandleCanPlayThrough();
-        };
-        
-        const originalHandleError = handleError;
-        const wrappedHandleError = (error: Event) => {
-          clearTimeout(qualityChangeTimeout);
-          originalHandleError(error);
-        };
-        
-        // Replace the event listeners with wrapped versions
-        video.removeEventListener('canplaythrough', handleCanPlayThrough);
-        video.removeEventListener('error', handleError);
-        video.addEventListener('canplaythrough', wrappedHandleCanPlayThrough, { once: true });
-        video.addEventListener('error', wrappedHandleError, { once: true });
-        
-        // Load the new video
-        video.load();
-      }
-    }
-    // If not using Cloudinary, just update the state (for other video sources)
+          // Only show error if it's not a cancellation
+          if (!error.message.includes('cancelled')) {
+            toast({
+              title: "Quality Change Failed",
+              description: "Failed to load the selected quality. Reverting to original.",
+              variant: "destructive",
+            });
+            
+            // Revert to original source
+            video.src = src;
+            setCurrentVideoSrc(src);
+            setSelectedQuality('auto');
+            
+            // Try to restore time on original video
+            const restoreOriginal = () => {
+              if (video.duration > 0 && currentTimeBeforeSwitch <= video.duration) {
+                video.currentTime = currentTimeBeforeSwitch;
+                setCurrentTime(currentTimeBeforeSwitch);
+              }
+              if (wasPlaying) {
+                video.play().catch(console.error);
+              }
+            };
+            
+            if (video.readyState >= 2) {
+              restoreOriginal();
+            } else {
+              video.addEventListener('loadeddata', restoreOriginal, { once: true });
+              video.load();
+            }
+          }
+        }
+      });
   };
 
   const handleSpeedChange = (speed: number) => {
@@ -626,18 +735,24 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
             <div className="mb-3">
               <div className="relative h-1 bg-white/30 rounded-full cursor-pointer progress-bar"
                    onClick={(e) => {
+                     if (isQualitySwitching) return; // Prevent seeking during quality switch
+                     
                      const rect = e.currentTarget.getBoundingClientRect();
                      const percent = (e.clientX - rect.left) / rect.width;
-                     const totalDuration = originalDuration || duration;
-                     handleSeek(percent * totalDuration);
+                     const totalDuration = videoRef.current?.duration || originalDuration || duration;
+                     
+                     if (totalDuration > 0) {
+                       const newTime = Math.min(Math.max(0, percent * totalDuration), totalDuration);
+                       handleSeek(newTime);
+                     }
                    }}>
                 <div 
                   className="absolute left-0 top-0 h-full bg-blue-500 rounded-full"
-                  style={{ width: `${(currentTime / (originalDuration || duration)) * 100}%` }}
+                  style={{ width: `${(currentTime / (videoRef.current?.duration || originalDuration || duration)) * 100}%` }}
                 />
                 <div 
                   className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-blue-500 rounded-full"
-                  style={{ left: `${(currentTime / (originalDuration || duration)) * 100}%` }}
+                  style={{ left: `${(currentTime / (videoRef.current?.duration || originalDuration || duration)) * 100}%` }}
                 />
               </div>
             </div>
@@ -702,7 +817,7 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
               <div className="flex items-center gap-4">
                 {/* Time Display */}
                 <span className="text-sm text-white/80">
-                  {formatTime(currentTime)} / {formatTime(originalDuration || duration)}
+                  {formatTime(currentTime)} / {formatTime(videoRef.current?.duration || originalDuration || duration)}
                 </span>
                 
                 {/* Settings Button with Custom Dropdown */}
