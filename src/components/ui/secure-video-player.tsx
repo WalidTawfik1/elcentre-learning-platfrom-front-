@@ -57,7 +57,7 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
   // Cloudinary video quality configurations
   const getCloudinaryUrl = (publicId: string, quality: string) => {
     // Use your actual Cloudinary cloud name
-    const baseUrl = "https://res.cloudinary.com/dybdj1qiw/video/upload";
+    const baseUrl = "https://res.cloudinary.com/dahat0phs/video/upload";
     
     switch (quality) {
       case '1080p':
