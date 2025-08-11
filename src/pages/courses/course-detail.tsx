@@ -914,7 +914,7 @@ export default function CourseDetail() {
                             <span className="bg-red-500 text-white px-2 py-1 rounded-md text-xs font-medium line-through opacity-75">
                               {courseData.price} EGP
                             </span>
-                            <span className="bg-green-500 text-white px-2 py-1 rounded-md text-xs font-medium block">
+                            <span className="bg-green-500 text-white px-2 py-1 rounded-md text-xs font-medium flex justify-center items-center">
                               {finalPrice === 0 ? "FREE!" : `${finalPrice} EGP`}
                             </span>
                           </div>
