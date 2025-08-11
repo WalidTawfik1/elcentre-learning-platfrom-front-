@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ interface CouponCodeInputProps {
     discountAmount: number;
   };
   disabled?: boolean;
+  preAppliedCoupon?: string; // Add this for URL-based coupons
 }
 
 export function CouponCodeInput({
@@ -26,14 +27,22 @@ export function CouponCodeInput({
   onCouponApplied,
   onCouponRemoved,
   appliedCoupon,
-  disabled = false
+  disabled = false,
+  preAppliedCoupon
 }: CouponCodeInputProps) {
   const [couponCode, setCouponCode] = useState("");
   const [isApplying, setIsApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) {
+  // Auto-apply pre-applied coupon when component mounts
+  useEffect(() => {
+    if (preAppliedCoupon && !appliedCoupon) {
+      handleApplyCouponCode(preAppliedCoupon);
+    }
+  }, [preAppliedCoupon, appliedCoupon]);
+
+  const handleApplyCouponCode = async (codeToApply: string) => {
+    if (!codeToApply.trim()) {
       setError("Please enter a coupon code");
       return;
     }
@@ -43,13 +52,13 @@ export function CouponCodeInput({
 
     try {
       const result = await CouponService.validateAndFormatCoupon(
-        couponCode.trim(),
+        codeToApply.trim(),
         courseId,
         originalPrice
       );
 
       if (result.isValid) {
-        onCouponApplied(couponCode.trim(), result.finalPrice, result.discountAmount);
+        onCouponApplied(codeToApply.trim(), result.finalPrice, result.discountAmount);
         setCouponCode("");
       } else {
         setError(result.errorMessage || "Invalid coupon code");
@@ -59,6 +68,10 @@ export function CouponCodeInput({
     } finally {
       setIsApplying(false);
     }
+  };
+
+  const handleApplyCoupon = async () => {
+    await handleApplyCouponCode(couponCode);
   };
 
   const handleRemoveCoupon = () => {

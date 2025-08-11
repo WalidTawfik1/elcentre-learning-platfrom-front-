@@ -22,6 +22,7 @@ interface PaymentMethodDialogProps {
   courseTitle?: string;
   coursePrice?: number;
   courseId?: number;
+  preAppliedCoupon?: string; // Add this prop for URL-based coupons
 }
 
 export function PaymentMethodDialog({
@@ -32,7 +33,8 @@ export function PaymentMethodDialog({
   isLoading = false,
   courseTitle,
   coursePrice,
-  courseId
+  courseId,
+  preAppliedCoupon
 }: PaymentMethodDialogProps) {
   const [selectedMethod, setSelectedMethod] = useState<'card' | 'wallet'>('card');
   const [appliedCoupon, setAppliedCoupon] = useState<{
@@ -95,6 +97,7 @@ export function PaymentMethodDialog({
                 onCouponRemoved={handleCouponRemoved}
                 appliedCoupon={appliedCoupon}
                 disabled={isLoading}
+                preAppliedCoupon={preAppliedCoupon}
               />
             </div>
           )}

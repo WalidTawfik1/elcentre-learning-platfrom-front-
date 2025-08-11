@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   MoreHorizontal, 
   Edit, 
@@ -37,17 +38,21 @@ import {
   Users, 
   AlertCircle,
   Globe,
-  BookOpen
+  BookOpen,
+  Link,
+  Share2
 } from "lucide-react";
 import { CouponService } from "@/services/coupon-service";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { CouponCodeForm } from "./coupon-code-form";
+import { CouponLinkGenerator } from "@/components/courses/coupon-link-generator";
 import type { CouponCode } from "@/types/coupon";
 
 interface CouponCodeManagerProps {
   courseId?: number | null; // If provided, show coupons for specific course
   courseName?: string; // Name of the course for display purposes
+  coursePrice?: number; // Price of the course for link generation
   showGlobalCoupons?: boolean; // If true, show global coupons (admin only)
   showAllCoupons?: boolean; // If true, show all coupons (admin only)
   showCreateButton?: boolean;
@@ -60,6 +65,7 @@ interface CouponCodeManagerProps {
 export function CouponCodeManager({
   courseId = null,
   courseName,
+  coursePrice = 0,
   showGlobalCoupons = false,
   showAllCoupons = false,
   showCreateButton = true,
@@ -246,105 +252,33 @@ export function CouponCodeManager({
           </div>
         </CardHeader>
         <CardContent>
-          {coupons.length === 0 ? (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                No coupon codes found. 
-                {showCreateButton && " Click 'Create Coupon' to add your first coupon code."}
-              </AlertDescription>
-            </Alert>
+          {courseId && courseName ? (
+            <Tabs defaultValue="manage" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="manage">
+                  <Tag className="h-4 w-4 mr-2" />
+                  Manage Coupons
+                </TabsTrigger>
+                <TabsTrigger value="links">
+                  <Link className="h-4 w-4 mr-2" />
+                  Create Links
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="manage" className="mt-6">
+                {renderCouponsTable()}
+              </TabsContent>
+              
+              <TabsContent value="links" className="mt-6">
+                <CouponLinkGenerator
+                  courseId={courseId}
+                  courseName={courseName}
+                  coursePrice={coursePrice}
+                />
+              </TabsContent>
+            </Tabs>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Discount</TableHead>
-                    <TableHead>Scope</TableHead>
-                    {showAllCoupons && <TableHead>Course</TableHead>}
-                    <TableHead>Status</TableHead>
-                    <TableHead>Usage</TableHead>
-                    <TableHead>Expires</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {coupons.map((coupon) => (
-                    <TableRow key={coupon.id}>
-                      <TableCell className="font-mono font-medium">
-                        {coupon.code}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {CouponService.getDiscountTypeDisplay(coupon.discountType)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {getDiscountDisplay(coupon)}
-                      </TableCell>
-                      <TableCell>
-                        {getScopeBadge(coupon)}
-                      </TableCell>
-                      {showAllCoupons && (
-                        <TableCell>
-                          {coupon.isGlobal ? (
-                            <span className="text-muted-foreground italic">All Courses</span>
-                          ) : (
-                            <span className="text-sm">
-                              {coupon.courseName || (coupon.courseId ? `Course ID: ${coupon.courseId}` : "Unknown Course")}
-                            </span>
-                          )}
-                        </TableCell>
-                      )}
-                      <TableCell>
-                        {getStatusBadge(coupon)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 text-sm">
-                          <Users className="h-3 w-3" />
-                          {coupon.usageLimit}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 text-sm">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(coupon.expirationDate).toLocaleDateString()}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {canEditCoupon(coupon) && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleEditCoupon(coupon)}
-                                className="cursor-pointer"
-                              >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteCoupon(coupon)}
-                                className="cursor-pointer text-red-600 focus:text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            renderCouponsTable()
           )}
         </CardContent>
       </Card>
@@ -386,4 +320,112 @@ export function CouponCodeManager({
       </AlertDialog>
     </>
   );
+
+  // Helper function to render the coupons table
+  function renderCouponsTable() {
+    if (coupons.length === 0) {
+      return (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            No coupon codes found. 
+            {showCreateButton && " Click 'Create Coupon' to add your first coupon code."}
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    return (
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Code</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Discount</TableHead>
+              <TableHead>Scope</TableHead>
+              {showAllCoupons && <TableHead>Course</TableHead>}
+              <TableHead>Status</TableHead>
+              <TableHead>Usage</TableHead>
+              <TableHead>Expires</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {coupons.map((coupon) => (
+              <TableRow key={coupon.id}>
+                <TableCell className="font-mono font-medium">
+                  {coupon.code}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline">
+                    {CouponService.getDiscountTypeDisplay(coupon.discountType)}
+                  </Badge>
+                </TableCell>
+                <TableCell className="font-medium">
+                  {getDiscountDisplay(coupon)}
+                </TableCell>
+                <TableCell>
+                  {getScopeBadge(coupon)}
+                </TableCell>
+                {showAllCoupons && (
+                  <TableCell>
+                    {coupon.isGlobal ? (
+                      <span className="text-muted-foreground italic">All Courses</span>
+                    ) : (
+                      <span className="text-sm">
+                        {coupon.courseName || (coupon.courseId ? `Course ID: ${coupon.courseId}` : "Unknown Course")}
+                      </span>
+                    )}
+                  </TableCell>
+                )}
+                <TableCell>
+                  {getStatusBadge(coupon)}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 text-sm">
+                    <Users className="h-3 w-3" />
+                    {coupon.usageLimit}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 text-sm">
+                    <Calendar className="h-3 w-3" />
+                    {new Date(coupon.expirationDate).toLocaleDateString()}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {canEditCoupon(coupon) && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleEditCoupon(coupon)}
+                          className="cursor-pointer"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteCoupon(coupon)}
+                          className="cursor-pointer text-red-600 focus:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  }
 }

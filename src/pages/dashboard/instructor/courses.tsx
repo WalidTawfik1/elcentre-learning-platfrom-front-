@@ -247,6 +247,7 @@ export default function InstructorCourses() {
               <CouponCodeManager
                 courseId={selectedCourseForCoupon.id}
                 courseName={selectedCourseForCoupon.title}
+                coursePrice={selectedCourseForCoupon.price || 0}
               />
             </div>
           </div>

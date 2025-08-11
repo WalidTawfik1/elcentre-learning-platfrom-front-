@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { StarIcon, Play, Clock, User, Book, Video, CheckCircle, Edit, Trash2, Heart, BookOpen, Globe, X, Loader2 } from "lucide-react";
+import { StarIcon, Play, Clock, User, Book, Video, CheckCircle, Edit, Trash2, Heart, BookOpen, Globe, X, Loader2, Tag } from "lucide-react";
 import { CourseService } from "@/services/course-service";
 import { LessonService } from "@/services/lesson-service";
 import { WishlistService } from "@/services/wishlist-service";
@@ -71,6 +71,16 @@ export default function CourseDetail() {
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [previewLesson, setPreviewLesson] = useState<any>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  
+  // Coupon related state
+  const [appliedCoupon, setAppliedCoupon] = useState<string>('');
+  const [couponDiscount, setCouponDiscount] = useState<{
+    isValid: boolean;
+    finalPrice: number;
+    discountAmount: number;
+    errorMessage?: string;
+  } | null>(null);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
   
   // Form handling for reviews
   const form = useForm<ReviewFormValues>({
@@ -267,6 +277,73 @@ export default function CourseDetail() {
     setPreviewLesson(null);
   };  // Backend base URL for serving static content
   const API_BASE_URL = DIRECT_API_URL;
+
+  // Handle coupon validation
+  const validateCoupon = async (couponCode: string, coursePrice: number) => {
+    if (!couponCode || !id) return;
+
+    setIsValidatingCoupon(true);
+    try {
+      const result = await CouponService.validateAndFormatCoupon(
+        couponCode, 
+        Number(id), 
+        coursePrice
+      );
+      
+      setCouponDiscount(result);
+      
+      if (result.isValid) {
+        toast({
+          title: "Coupon Applied!",
+          description: `You saved ${result.discountAmount} EGP with coupon code "${couponCode}"`,
+        });
+      } else {
+        toast({
+          title: "Invalid Coupon",
+          description: result.errorMessage || "This coupon code is not valid for this course",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error validating coupon:", error);
+      setCouponDiscount({
+        isValid: false,
+        finalPrice: coursePrice,
+        discountAmount: 0,
+        errorMessage: "Failed to validate coupon code"
+      });
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
+  // Check for coupon in URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const couponFromUrl = urlParams.get('coupon');
+    
+    if (couponFromUrl && course) {
+      setAppliedCoupon(couponFromUrl);
+      
+      // Show coupon info even if not authenticated, but don't validate until they log in
+      if (isAuthenticated) {
+        validateCoupon(couponFromUrl, course.price || 0);
+      } else {
+        // Show that coupon will be applied after login
+        toast({
+          title: "Coupon Detected",
+          description: `Coupon code "${couponFromUrl}" will be applied after you log in.`,
+        });
+      }
+    }
+  }, [course, id, isAuthenticated]);
+
+  // Validate coupon when user becomes authenticated (after login redirect)
+  useEffect(() => {
+    if (isAuthenticated && appliedCoupon && course && !couponDiscount) {
+      validateCoupon(appliedCoupon, course.price || 0);
+    }
+  }, [isAuthenticated, appliedCoupon, course]);
   
   useEffect(() => {
     if (!id) return;
@@ -394,18 +471,33 @@ export default function CourseDetail() {
   };
   const handleEnroll = async () => {
     if (!isAuthenticated) {
-      // Redirect to login
-      window.location.href = `/auth/login?redirect=/courses/${id}`;
+      // Redirect to login with coupon preserved in redirect URL
+      const currentUrl = window.location.pathname + window.location.search;
+      window.location.href = `/login?redirect=${encodeURIComponent(currentUrl)}`;
       return;
     }
     
     if (!courseData) return;
 
-    // If course is free, enroll directly
-    if (courseData.price === 0) {
+    // Check if we have a valid coupon that makes the course free
+    const finalPrice = couponDiscount?.isValid ? couponDiscount.finalPrice : courseData.price;
+
+    // If course is free (either originally or with coupon), enroll directly
+    if (finalPrice === 0) {
       setIsEnrolling(true);
       try {
-        await CourseService.freeEnroll(id!);
+        if (appliedCoupon && couponDiscount?.isValid) {
+          // Create payment token with coupon (backend will handle free enrollment)
+          await PaymentService.createPaymentToken({
+            courseId: Number(id),
+            paymentMethod: 'card', // Doesn't matter for free courses
+            couponCode: appliedCoupon
+          });
+        } else {
+          // Regular free enrollment
+          await CourseService.freeEnroll(id!);
+        }
+        
         setIsEnrolled(true);
         toast({
           title: "Success!",
@@ -432,12 +524,15 @@ export default function CourseDetail() {
 
     setIsProcessingPayment(true);
     try {
+      // Use applied coupon if available, otherwise use provided coupon
+      const finalCouponCode = appliedCoupon || couponCode;
+      
       // First check if there's a coupon and get the final price
       let finalPrice = courseData.price;
       
-      if (couponCode) {
+      if (finalCouponCode) {
         try {
-          const couponResponse = await CouponService.applyCouponCode(couponCode, Number(id));
+          const couponResponse = await CouponService.applyCouponCode(finalCouponCode, Number(id));
           if (couponResponse.statusCode === 200) {
             finalPrice = parseFloat(couponResponse.message);
           }
@@ -453,7 +548,7 @@ export default function CourseDetail() {
         await PaymentService.createPaymentToken({
           courseId: Number(id),
           paymentMethod,
-          couponCode
+          couponCode: finalCouponCode
         });
 
         // Close the payment method dialog
@@ -477,7 +572,7 @@ export default function CourseDetail() {
       const response = await PaymentService.createPaymentToken({
         courseId: Number(id),
         paymentMethod,
-        couponCode
+        couponCode: finalCouponCode
       });
 
       // Open payment window
@@ -775,8 +870,13 @@ export default function CourseDetail() {
                       >
                         {isEnrolling ? "Enrolling..." : 
                          !canEnroll() ? "Students Only" :
-                         courseData.price === 0 ? "Enroll for Free" : 
-                         `Enroll Now - ${courseData.price} EGP`}
+                         (() => {
+                           if (!isAuthenticated && appliedCoupon) {
+                             return `Login to use coupon "${appliedCoupon}"`;
+                           }
+                           const finalPrice = couponDiscount?.isValid ? couponDiscount.finalPrice : courseData.price;
+                           return finalPrice === 0 ? "Enroll for Free" : `Enroll Now - ${finalPrice} EGP`;
+                         })()}
                       </Button>
                     )}
                     {!isInstructor() && !isAdmin() && (
@@ -805,9 +905,28 @@ export default function CourseDetail() {
                   
                   {/* Price Badge - Top Right */}
                   <div className="absolute top-3 right-3">
-                    <span className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs font-medium">
-                      {courseData.price === 0 ? "Free" : `${courseData.price} EGP`}
-                    </span>
+                    {(() => {
+                      const finalPrice = couponDiscount?.isValid ? couponDiscount.finalPrice : courseData.price;
+                      
+                      if (couponDiscount?.isValid && couponDiscount.discountAmount > 0) {
+                        return (
+                          <div className="space-y-1">
+                            <span className="bg-red-500 text-white px-2 py-1 rounded-md text-xs font-medium line-through opacity-75">
+                              {courseData.price} EGP
+                            </span>
+                            <span className="bg-green-500 text-white px-2 py-1 rounded-md text-xs font-medium block">
+                              {finalPrice === 0 ? "FREE!" : `${finalPrice} EGP`}
+                            </span>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <span className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs font-medium">
+                          {finalPrice === 0 ? "Free" : `${finalPrice} EGP`}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
                 
@@ -815,12 +934,62 @@ export default function CourseDetail() {
                   {/* Header Section */}
                   <div className="mb-3">
                     <div className="text-2xl font-bold mb-2">
-                      {courseData.price === 0 ? (
-                        <span className="text-green-600">Free Course</span>
-                      ) : (
-                        <span>{courseData.price} EGP</span>
-                      )}
+                      {(() => {
+                        const finalPrice = couponDiscount?.isValid ? couponDiscount.finalPrice : courseData.price;
+                        
+                        if (couponDiscount?.isValid && couponDiscount.discountAmount > 0) {
+                          return (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg text-gray-500 line-through">{courseData.price} EGP</span>
+                                <Badge variant="destructive" className="text-xs">
+                                  -{couponDiscount.discountAmount} EGP
+                                </Badge>
+                              </div>
+                              <div className="text-green-600">
+                                {finalPrice === 0 ? "Free with coupon!" : `${finalPrice} EGP`}
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        return finalPrice === 0 ? (
+                          <span className="text-green-600">Free Course</span>
+                        ) : (
+                          <span>{finalPrice} EGP</span>
+                        );
+                      })()}
                     </div>
+                    
+                    {/* Applied Coupon Indicator */}
+                    {appliedCoupon && couponDiscount?.isValid && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-2">
+                        <div className="flex items-center gap-2">
+                          <Tag className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-800">
+                            Coupon "{appliedCoupon}" applied
+                          </span>
+                        </div>
+                        <p className="text-xs text-green-600 mt-1">
+                          You saved {couponDiscount.discountAmount} EGP!
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Pending Coupon Indicator for Unauthenticated Users */}
+                    {appliedCoupon && !isAuthenticated && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
+                        <div className="flex items-center gap-2">
+                          <Tag className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium text-blue-800">
+                            Coupon "{appliedCoupon}"
+                          </span>
+                        </div>
+                        <p className="text-xs text-blue-600 mt-1">
+                          Login to apply this discount to your purchase
+                        </p>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Course Stats Section */}
@@ -909,8 +1078,13 @@ export default function CourseDetail() {
                           >
                             {isEnrolling ? "Enrolling..." : 
                              !canEnroll() ? "Students Only" :
-                             courseData.price === 0 ? "Enroll for Free" : 
-                             `Enroll Now - ${courseData.price} EGP`}
+                             (() => {
+                               if (!isAuthenticated && appliedCoupon) {
+                                 return `Login to use coupon "${appliedCoupon}"`;
+                               }
+                               const finalPrice = couponDiscount?.isValid ? couponDiscount.finalPrice : courseData.price;
+                               return finalPrice === 0 ? "Enroll for Free" : `Enroll Now - ${finalPrice} EGP`;
+                             })()}
                           </Button>
                         )}
                         {!isInstructor() && (
@@ -1393,6 +1567,7 @@ export default function CourseDetail() {
         courseTitle={courseData?.title}
         coursePrice={courseData?.price}
         courseId={courseData?.id}
+        preAppliedCoupon={appliedCoupon}
       />
     </MainLayout>
   );
