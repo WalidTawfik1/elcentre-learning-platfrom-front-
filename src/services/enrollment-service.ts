@@ -62,10 +62,14 @@ export const EnrollmentService = {
     }
 
     
-    // Count completed enrollments (assuming progress >= 100 or completed flag)
+    // Count completed enrollments (checking status field and progress >= 100)
     const completedCount = enrollments.filter(enrollment => {
       const progress = enrollment.progress || enrollment.Progress || 0;
-      const isCompleted = enrollment.completed || enrollment.Completed || progress >= 100;
+      const status = enrollment.status || enrollment.Status || '';
+      const isCompleted = status.toLowerCase() === 'completed' || 
+                         enrollment.completed || 
+                         enrollment.Completed || 
+                         progress >= 100;
       return isCompleted;
     }).length;
 
@@ -81,14 +85,24 @@ export const EnrollmentService = {
     }
     
     const courseRates = coursesEnrollments.map(({ courseId, enrollments }) => {
-      const rate = EnrollmentService.calculateCourseCompletionRate(enrollments);
+      // Ensure enrollments is an array
+      const validEnrollments = Array.isArray(enrollments) ? enrollments : [];
+      const rate = EnrollmentService.calculateCourseCompletionRate(validEnrollments);
       return rate;
     });
 
-    const validRates = courseRates.filter(rate => !isNaN(rate) && rate >= 0);
-    const averageRate = validRates.length > 0 
-      ? validRates.reduce((sum, rate) => sum + rate, 0) / validRates.length 
-      : 0;
+    // Filter out invalid rates (NaN, negative, or undefined)
+    const validRates = courseRates.filter(rate => 
+      typeof rate === 'number' && 
+      !isNaN(rate) && 
+      rate >= 0
+    );
+    
+    if (validRates.length === 0) {
+      return 0;
+    }
+
+    const averageRate = validRates.reduce((sum, rate) => sum + rate, 0) / validRates.length;
 
     return Math.round(averageRate); // Round to integer
   },
