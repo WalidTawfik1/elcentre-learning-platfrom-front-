@@ -147,7 +147,7 @@ class SignalRService {
           transport: signalR.HttpTransportType.WebSockets | 
                     signalR.HttpTransportType.ServerSentEvents | 
                     signalR.HttpTransportType.LongPolling, // Enable all transports
-          withCredentials: false, // Set to false to avoid CORS issues in production
+          withCredentials: true, // Set to true to match CORS
           skipNegotiation: false, // Allow negotiation to determine best transport
           headers: {
             // Add rate limiting headers to help server identify clients
