@@ -17,6 +17,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (isProduction
 // Direct API URL for SignalR and operations that need direct access (bypassing proxy)
 // SignalR WebSocket connections cannot go through Vercel proxy, so always use direct URL
 export const DIRECT_API_URL = import.meta.env.VITE_API_BASE_URL || FALLBACK_API_URL;
+export const DIRECT_API_URL_HUB = import.meta.env.VITE_API_BASE_URL_HUB || FALLBACK_API_URL;
 
 // SignalR Configuration for rate limiting prevention
 export const SIGNALR_CONFIG = {

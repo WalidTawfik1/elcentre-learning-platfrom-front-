@@ -1,5 +1,5 @@
 import * as signalR from "@microsoft/signalr";
-import { DIRECT_API_URL, SIGNALR_CONFIG } from "@/config/api-config";
+import { DIRECT_API_URL_HUB, SIGNALR_CONFIG } from "@/config/api-config";
 import { AuthService } from "./auth-service";
 import { UserDTO } from "@/types/api";
 import { toast } from "@/components/ui/use-toast";
@@ -135,14 +135,14 @@ class SignalRService {
       return;
     }
 
-    const hubUrl = `${DIRECT_API_URL}/hubs/notifications`;
+    const hubUrl = `${DIRECT_API_URL_HUB}/hubs/notifications`;
     if (!import.meta.env.PROD) {
     }
 
     try {
       // Build the SignalR connection with authentication and fallback transports
       this.connection = new signalR.HubConnectionBuilder()
-        .withUrl(`${DIRECT_API_URL}/hubs/notifications`, {
+        .withUrl(`${DIRECT_API_URL_HUB}/hubs/notifications`, {
           accessTokenFactory: () => AuthService.getAuthToken() || "", // Always get fresh token
           transport: signalR.HttpTransportType.WebSockets | 
                     signalR.HttpTransportType.ServerSentEvents | 

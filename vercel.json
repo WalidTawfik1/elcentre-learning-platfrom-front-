@@ -13,7 +13,7 @@
     },
     {
       "source": "/api/(.*)",
-      "destination": "https://elcentre-api.runasp.net/$1"
+      "destination": "https://elcentre-api.runasp.net/api/v2/$1"
     },
     {
       "source": "/(.*)",
