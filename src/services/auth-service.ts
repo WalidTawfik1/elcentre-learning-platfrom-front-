@@ -1,6 +1,6 @@
 import { apiRequest } from "./api";
 import { LoginDTO, RegisterDTO, UserDTO } from "@/types/api";
-import { DIRECT_API_URL, API_BASE_URL } from "@/config/api-config";
+import { DIRECT_API_URL } from "@/config/api-config";
 
 // Helper function to set a cookie with expiration
 const setCookie = (name: string, value: string, days = 7) => {
@@ -306,24 +306,12 @@ export const AuthService = {
 
   // Google authentication methods
   googleLogin: () => {
-    // For OAuth redirects, we need the full absolute URL
-    // Check if API_BASE_URL is relative (production) or absolute (development)
-    const baseUrl = API_BASE_URL.startsWith('/') ? 
-      `${window.location.protocol}//${window.location.host}${API_BASE_URL}` : 
-      API_BASE_URL;
-    
-    const googleAuthUrl = `${baseUrl}/Account/google-login`;
+    const googleAuthUrl = `${DIRECT_API_URL}/api/v2/Account/google-login`;
     window.location.href = googleAuthUrl;
   },
 
   googleRegister: (role: string) => {
-    // For OAuth redirects, we need the full absolute URL
-    // Check if API_BASE_URL is relative (production) or absolute (development)
-    const baseUrl = API_BASE_URL.startsWith('/') ? 
-      `${window.location.protocol}//${window.location.host}${API_BASE_URL}` : 
-      API_BASE_URL;
-    
-    const googleAuthUrl = `${baseUrl}/Account/google-login?role=${encodeURIComponent(role)}`;
+    const googleAuthUrl = `${DIRECT_API_URL}/api/v2/Account/google-login?role=${encodeURIComponent(role)}`;
     window.location.href = googleAuthUrl;
   },
 
