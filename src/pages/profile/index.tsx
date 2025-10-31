@@ -476,6 +476,31 @@ export default function ProfilePage() {
               </div>
             </TabsContent>
           </Tabs>
+
+          {/* Danger Zone - Delete Account */}
+          <div className="mt-8 bg-white rounded-xl shadow-md border border-red-200 overflow-hidden">
+            <div className="p-6 border-b border-red-100">
+              <h3 className="text-lg font-semibold text-red-600">Danger Zone</h3>
+              <p className="text-sm text-gray-500 mt-1">Irreversible and destructive actions</p>
+            </div>
+            <div className="p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h4 className="font-medium text-gray-900">Delete Account</h4>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Permanently delete your account and all associated data. This action cannot be undone.
+                  </p>
+                </div>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => navigate("/profile/delete-account")}
+                  className="sm:w-auto"
+                >
+                  Delete Account
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </MainLayout>

@@ -27,6 +27,7 @@ export interface UserDTO {
   userType: string;
   dateOfBirth: string;
   isActive: boolean;
+  isDeleted?: boolean;
   name?: string;
   avatar?: string;
   bio?: string;

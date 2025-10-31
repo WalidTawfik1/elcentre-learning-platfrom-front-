@@ -22,6 +22,7 @@ import CoursesIndex from "./pages/courses/index";
 import CourseDetail from "./pages/courses/course-detail";
 import PreviewLesson from "./pages/courses/preview-lesson";
 import ProfilePage from "./pages/profile";
+import DeleteAccountPage from "./pages/profile/delete-account";
 import CategoriesIndex from "./pages/categories";
 import MyCourses from "./pages/my-courses";
 import CourseLearn from "./pages/my-courses/[id]/learn";
@@ -86,6 +87,7 @@ const App = () => (
               {/* Protected routes */}
             <Route path="/dashboard" element={<StudentDashboard />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile/delete-account" element={<DeleteAccountPage />} />
             
             {/* Notification demo route */}
             <Route path="/demo/notifications" element={

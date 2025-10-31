@@ -111,6 +111,14 @@ export const AuthService = {
         body: JSON.stringify(credentials)
       }, false);
       
+      // Check if the account has been deleted
+      if (response && response.message && 
+          (response.message.toLowerCase().includes('deleted') || 
+           response.message.toLowerCase().includes('been deleted'))) {
+        // Throw error so it's handled properly in the catch block
+        throw new Error(response.message);
+      }
+      
       // Check for token in response and manually set it as a cookie if needed
       if (response) {
         // Try to extract token from multiple possible locations in the response
@@ -326,6 +334,14 @@ export const AuthService = {
       // Silent error handling
     }
     return null;
+  },
+
+  // Delete account
+  deleteAccount: async (): Promise<any> => {
+    return apiRequest<any>("/Account/delete-account", {
+      method: "PUT",
+      credentials: "include"
+    }, true);
   },
   
 };
